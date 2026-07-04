@@ -1,0 +1,2722 @@
+[
+  {
+    "pregunta": "Which of the following best describes the Lakehouse architecture pattern used by Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "A data architecture that combines the low-cost storage of data lakes with the reliability, governance, and performance features of data warehouses, built on open formats.",
+        "es_correcta": true,
+        "explicacion": "The Lakehouse pattern unifies data lake storage (cheap, open, flexible) with data warehouse capabilities (ACID, governance, BI performance) on a single platform — exactly what Databricks delivers with Delta Lake + Unity Catalog."
+      },
+      {
+        "texto_opcion": "A two-tier architecture where raw data is stored in HDFS and processed data is stored in a relational database.",
+        "es_correcta": false,
+        "explicacion": "This describes a classic Lambda or traditional ETL architecture, not the Lakehouse pattern. The Lakehouse avoids HDFS and relational silos."
+      },
+      {
+        "texto_opcion": "A cloud-native architecture where data is replicated from a data lake into a separate data warehouse for analytics.",
+        "es_correcta": false,
+        "explicacion": "This describes a traditional ETL-to-warehouse approach, which the Lakehouse is explicitly designed to replace by eliminating the need for data duplication."
+      },
+      {
+        "texto_opcion": "A streaming-only architecture that processes all data in real time without persistent storage.",
+        "es_correcta": false,
+        "explicacion": "The Lakehouse supports both batch and streaming, and it definitely uses persistent storage (Delta tables on cloud object storage)."
+      },
+      {
+        "texto_opcion": "A proprietary Databricks format that locks data into the platform and prevents access from external tools.",
+        "es_correcta": false,
+        "explicacion": "The Lakehouse is built on open formats like Parquet and Delta Lake (open source). External tools such as Apache Spark, Presto, and Trino can read the data directly."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "In the Databricks platform, what is the primary role of the control plane?",
+    "opciones": [
+      {
+        "texto_opcion": "It manages the web application, notebooks, job orchestration, and cluster management metadata, while the customer's data stays in their own cloud account.",
+        "es_correcta": true,
+        "explicacion": "The control plane is hosted by Databricks and handles the UI, APIs, cluster lifecycle, and job scheduling logic. Actual data processing and storage happens in the customer's data plane."
+      },
+      {
+        "texto_opcion": "It stores all customer data and executes Spark computations on Databricks-managed cloud infrastructure.",
+        "es_correcta": false,
+        "explicacion": "This describes the data plane, not the control plane. The data plane is where computation runs and where data resides, typically in the customer's own cloud account."
+      },
+      {
+        "texto_opcion": "It acts as the Unity Catalog metastore, storing table metadata and enforcing governance policies.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog runs as part of the Databricks-managed infrastructure but the control plane's primary role is cluster/job/notebook management, not just metadata governance."
+      },
+      {
+        "texto_opcion": "It provides direct read and write access to Delta tables stored in cloud object storage.",
+        "es_correcta": false,
+        "explicacion": "Direct data access happens in the data plane. The control plane does not read or write data files — it only coordinates the execution."
+      },
+      {
+        "texto_opcion": "It handles all network egress from the workspace to external SaaS applications.",
+        "es_correcta": false,
+        "explicacion": "Network egress to external sources is managed at the data plane level, not the control plane. The control plane manages orchestration and platform services."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "What underlying file format does Delta Lake use to store table data?",
+    "opciones": [
+      {
+        "texto_opcion": "Parquet",
+        "es_correcta": true,
+        "explicacion": "Delta Lake stores data as Parquet files in cloud object storage. The Delta Lake transaction log (_delta_log) sits alongside these Parquet files and adds ACID guarantees, versioning, and metadata."
+      },
+      {
+        "texto_opcion": "ORC (Optimized Row Columnar)",
+        "es_correcta": false,
+        "explicacion": "ORC is used by Apache Hive and some other systems, but Delta Lake specifically uses Parquet as its underlying file format."
+      },
+      {
+        "texto_opcion": "Avro",
+        "es_correcta": false,
+        "explicacion": "Avro is a row-based binary format commonly used for Kafka messages and schema registry. Delta Lake data files are Parquet, not Avro."
+      },
+      {
+        "texto_opcion": "JSON",
+        "es_correcta": false,
+        "explicacion": "JSON is used by the Delta transaction log entries (the commit files in _delta_log), but the actual table data is stored as Parquet files, not JSON."
+      },
+      {
+        "texto_opcion": "CSV",
+        "es_correcta": false,
+        "explicacion": "CSV is an ingestion format, not a Delta Lake storage format. Delta tables always store data as Parquet regardless of the original source format."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "What is the Delta Lake transaction log (_delta_log) and what does it enable?",
+    "opciones": [
+      {
+        "texto_opcion": "A series of JSON commit files that record every change to a Delta table, enabling ACID transactions, time travel, and audit history.",
+        "es_correcta": true,
+        "explicacion": "The _delta_log directory contains JSON files (and periodic Parquet checkpoints) that log every add, remove, or metadata change. This is what gives Delta Lake its ACID guarantees and the ability to query previous table versions."
+      },
+      {
+        "texto_opcion": "A binary index file that accelerates query performance by storing pre-computed statistics about each Parquet file.",
+        "es_correcta": false,
+        "explicacion": "While the transaction log does store file-level statistics (min/max values) for data skipping, it is not a binary index — it is a series of JSON commit files. The description mixes two different concepts."
+      },
+      {
+        "texto_opcion": "A streaming checkpoint that tracks the position of a Structured Streaming query in its source table.",
+        "es_correcta": false,
+        "explicacion": "Streaming checkpoints are separate from the Delta transaction log. The checkpoint tracks consumer progress, while the _delta_log tracks table-level mutations."
+      },
+      {
+        "texto_opcion": "A schema registry that enforces data types and column constraints before data is written to storage.",
+        "es_correcta": false,
+        "explicacion": "Schema enforcement in Delta Lake is a feature, but it is not what the _delta_log is. The log records committed transactions — schema is one piece of metadata stored within it, not the log's primary purpose."
+      },
+      {
+        "texto_opcion": "A log of Spark driver events used to debug job failures and performance bottlenecks.",
+        "es_correcta": false,
+        "explicacion": "Spark driver events are stored in the Spark Event Log, which is unrelated to the Delta Lake transaction log. The _delta_log is table-level, not job-level."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "Which Delta Lake feature allows a user to query a table as it existed at a previous point in time?",
+    "opciones": [
+      {
+        "texto_opcion": "Time travel, using VERSION AS OF or TIMESTAMP AS OF syntax.",
+        "es_correcta": true,
+        "explicacion": "Delta Lake's time travel feature lets you query historical table versions using `SELECT * FROM table VERSION AS OF 5` or `SELECT * FROM table TIMESTAMP AS OF '2024-01-01'`. This works because the transaction log preserves all previous table versions."
+      },
+      {
+        "texto_opcion": "Table cloning using SHALLOW CLONE to create a snapshot at the current moment.",
+        "es_correcta": false,
+        "explicacion": "SHALLOW CLONE creates a copy that references the same files — it does not allow you to query an older version of the original table. Time travel is the correct feature for historical queries."
+      },
+      {
+        "texto_opcion": "The RESTORE command, which is the only way to access historical table data.",
+        "es_correcta": false,
+        "explicacion": "RESTORE is used to roll back a table to a previous version permanently. Time travel (VERSION AS OF / TIMESTAMP AS OF) is the way to query historical data without modifying the table."
+      },
+      {
+        "texto_opcion": "Change Data Feed (CDF), which exposes row-level changes between two table versions.",
+        "es_correcta": false,
+        "explicacion": "CDF exposes incremental changes (inserts, updates, deletes) between versions. Time travel lets you query the full table as of a specific version, which is a different capability."
+      },
+      {
+        "texto_opcion": "VACUUM, which compacts old files and makes them available for historical reads.",
+        "es_correcta": false,
+        "explicacion": "VACUUM actually deletes old data files that are no longer referenced by the current version, which removes the ability to time travel to versions before the vacuum threshold."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "What does the VACUUM command do in Delta Lake, and what is its default retention threshold?",
+    "opciones": [
+      {
+        "texto_opcion": "It removes data files no longer referenced by the Delta transaction log; the default retention threshold is 7 days.",
+        "es_correcta": true,
+        "explicacion": "VACUUM removes obsolete Parquet files that are not part of the current or recent table versions. The default retention period is 7 days (168 hours), protecting time travel for that window. Files younger than the threshold are not deleted."
+      },
+      {
+        "texto_opcion": "It compacts small Parquet files into larger ones to improve query performance; default retention is 30 days.",
+        "es_correcta": false,
+        "explicacion": "File compaction is performed by OPTIMIZE, not VACUUM. VACUUM deletes unreferenced files. The 30-day figure applies to the transaction log retention, not VACUUM's default."
+      },
+      {
+        "texto_opcion": "It deletes all versions of a table older than 30 days, including the current version.",
+        "es_correcta": false,
+        "explicacion": "VACUUM never deletes the current version of a table. It only removes files that are no longer referenced by any version within the retention window. The 30-day figure applies to logRetentionDuration, not VACUUM."
+      },
+      {
+        "texto_opcion": "It clears streaming checkpoints associated with a Delta table to allow a full reprocessing.",
+        "es_correcta": false,
+        "explicacion": "Streaming checkpoints are separate from VACUUM. VACUUM only manages data files in the Delta table; it has no effect on streaming checkpoints."
+      },
+      {
+        "texto_opcion": "It rebuilds the Delta transaction log from the underlying Parquet files to fix corruption.",
+        "es_correcta": false,
+        "explicacion": "There is no such automatic rebuild capability. VACUUM is a cleanup operation, not a repair operation. Corruption scenarios require different approaches."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to improve query performance on a large Delta table that is frequently filtered on `country` and `event_date` columns. Which optimization technique should they use on Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "Apply Liquid Clustering using CLUSTER BY (country, event_date) to co-locate related data and enable data skipping.",
+        "es_correcta": true,
+        "explicacion": "Liquid Clustering is Databricks' recommended replacement for static partitioning and Z-ordering. It co-locates similar data based on the clustering keys, enabling efficient data skipping during queries filtered on those columns."
+      },
+      {
+        "texto_opcion": "Run VACUUM RETAIN 0 HOURS to free up disk space and speed up scans.",
+        "es_correcta": false,
+        "explicacion": "VACUUM removes old file versions — it has no direct effect on query performance for current data. Running it with RETAIN 0 HOURS also disables time travel and requires overriding a safety check."
+      },
+      {
+        "texto_opcion": "Increase the number of shuffle partitions by setting spark.sql.shuffle.partitions to a very high value.",
+        "es_correcta": false,
+        "explicacion": "Increasing shuffle partitions affects join and aggregation performance but has no impact on read-time data skipping for filter queries on a Delta table."
+      },
+      {
+        "texto_opcion": "Convert the table to CSV format so the query engine can scan it faster without deserialization overhead.",
+        "es_correcta": false,
+        "explicacion": "CSV is slower than Parquet for analytical queries because it lacks columnar storage, compression, and statistics. Converting to CSV would dramatically worsen performance."
+      },
+      {
+        "texto_opcion": "Use DESCRIBE HISTORY to find the best-performing version and always query that version with VERSION AS OF.",
+        "es_correcta": false,
+        "explicacion": "DESCRIBE HISTORY shows table versions but does not identify a 'best-performing' version. Querying old versions via time travel is for auditing, not performance optimization."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "What is Predictive Optimization in the context of Delta Lake on Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "A Databricks-managed feature that automatically runs OPTIMIZE and VACUUM on Unity Catalog managed tables based on table usage patterns, without manual scheduling.",
+        "es_correcta": true,
+        "explicacion": "Predictive optimization intelligently decides when to run OPTIMIZE (compaction) and VACUUM (cleanup) on Unity Catalog managed tables, removing the need for engineers to schedule these maintenance jobs manually."
+      },
+      {
+        "texto_opcion": "A machine learning model that predicts future data volumes and pre-scales clusters before jobs run.",
+        "es_correcta": false,
+        "explicacion": "This describes cluster autoscaling or workload-aware compute provisioning, not predictive optimization. Predictive optimization is specifically about table maintenance (OPTIMIZE and VACUUM)."
+      },
+      {
+        "texto_opcion": "A query planner feature that pre-caches frequently accessed Delta tables in Spark memory.",
+        "es_correcta": false,
+        "explicacion": "Caching is a separate Spark feature (spark.catalog.cacheTable). Predictive optimization is about storage-layer maintenance, not in-memory caching."
+      },
+      {
+        "texto_opcion": "A feature that automatically partitions new Delta tables based on the columns most frequently used in WHERE clauses.",
+        "es_correcta": false,
+        "explicacion": "While Liquid Clustering auto-selects clustering columns (CLUSTER BY AUTO), predictive optimization is specifically about automating maintenance operations like OPTIMIZE and VACUUM."
+      },
+      {
+        "texto_opcion": "A Unity Catalog feature that monitors query patterns and automatically rewrites slow SQL queries.",
+        "es_correcta": false,
+        "explicacion": "Predictive optimization does not rewrite queries. It manages table-level maintenance tasks. Query rewriting is done by the Spark optimizer, which is a different component."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "Which of the following is a key advantage of Delta Lake over plain Parquet files stored in cloud object storage?",
+    "opciones": [
+      {
+        "texto_opcion": "Delta Lake provides ACID transactions, meaning concurrent reads and writes are isolated and each write either fully succeeds or fully fails.",
+        "es_correcta": true,
+        "explicacion": "Plain Parquet files on object storage have no transaction support, so concurrent writes can corrupt data. Delta Lake's transaction log enables ACID guarantees, allowing safe concurrent reads and writes."
+      },
+      {
+        "texto_opcion": "Delta Lake compresses data more efficiently than Parquet, reducing storage costs by 10x.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake uses Parquet as its underlying format, so the compression is the same. The benefit is reliability and governance features, not improved compression ratios."
+      },
+      {
+        "texto_opcion": "Delta Lake can only be read by Databricks, ensuring stronger data security than open Parquet files.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake is open source and can be read by other engines (Apache Spark, Trino, Athena, etc.). Better security comes from Unity Catalog access controls, not a proprietary lock-in."
+      },
+      {
+        "texto_opcion": "Delta Lake automatically encrypts all data at rest, whereas Parquet does not support encryption.",
+        "es_correcta": false,
+        "explicacion": "Encryption at rest is a cloud storage and cluster configuration concern, not something Delta Lake adds on top of Parquet. Both Parquet and Delta tables rely on cloud storage encryption settings."
+      },
+      {
+        "texto_opcion": "Delta Lake eliminates the need for Apache Spark and allows direct SQL access from any JDBC driver.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake works with Apache Spark and is not a replacement for it. SQL access via JDBC is provided by Databricks SQL warehouses, not by Delta Lake itself."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "What does the OPTIMIZE command do in Databricks Delta Lake?",
+    "opciones": [
+      {
+        "texto_opcion": "It compacts small Parquet files in a Delta table into larger, more efficiently sized files to improve query performance.",
+        "es_correcta": true,
+        "explicacion": "OPTIMIZE performs file compaction — merging many small files into fewer, larger files. This reduces the number of file opens during scans and improves data skipping effectiveness. It can also apply Z-ordering if specified."
+      },
+      {
+        "texto_opcion": "It rebuilds the transaction log by scanning all Parquet files and recreating the _delta_log directory.",
+        "es_correcta": false,
+        "explicacion": "OPTIMIZE does not touch or rebuild the transaction log. It reorganizes data files. The transaction log is append-only and not rebuilt by OPTIMIZE."
+      },
+      {
+        "texto_opcion": "It analyzes table statistics and rewrites SQL queries to run faster.",
+        "es_correcta": false,
+        "explicacion": "Query rewriting is done by the Spark SQL optimizer at query planning time. OPTIMIZE is a table maintenance command that reorganizes physical data files, not query plans."
+      },
+      {
+        "texto_opcion": "It deletes duplicate records from a Delta table using a primary key column.",
+        "es_correcta": false,
+        "explicacion": "Deduplication requires a MERGE or DELETE statement with explicit logic. OPTIMIZE does not inspect or remove duplicate row data — it only compacts files."
+      },
+      {
+        "texto_opcion": "It converts a Delta table to Parquet format for compatibility with external systems.",
+        "es_correcta": false,
+        "explicacion": "Delta tables are already stored as Parquet files. OPTIMIZE does not convert formats — it reorganizes the existing Parquet files within the Delta table."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is the three-level namespace in Unity Catalog, and what is the correct hierarchy?",
+    "opciones": [
+      {
+        "texto_opcion": "Catalog → Schema → Table (or Volume, View, Function), where the catalog is the top-level container.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog organizes objects in a three-level hierarchy: Catalog (top level) → Schema (database) → Tables/Views/Volumes/Functions. This is referenced as catalog.schema.table in fully qualified names."
+      },
+      {
+        "texto_opcion": "Database → Schema → Table, where the database is the top-level container.",
+        "es_correcta": false,
+        "explicacion": "In the legacy Hive metastore, the hierarchy was database → table. Unity Catalog introduces a new top level called 'catalog', making it catalog → schema → table."
+      },
+      {
+        "texto_opcion": "Workspace → Catalog → Table, where the workspace is the top-level container.",
+        "es_correcta": false,
+        "explicacion": "Workspaces attach to a Unity Catalog metastore, but the three-level namespace within Unity Catalog is catalog → schema → table, not workspace → catalog → table."
+      },
+      {
+        "texto_opcion": "Metastore → Database → Table, where the metastore is referenced in SQL queries.",
+        "es_correcta": false,
+        "explicacion": "The metastore is the top-level Unity Catalog service, but it is not part of the three-level object namespace. The namespace used in SQL is catalog.schema.table."
+      },
+      {
+        "texto_opcion": "Region → Catalog → Schema, where region determines data residency.",
+        "es_correcta": false,
+        "explicacion": "Region is an infrastructure concept, not part of the Unity Catalog object hierarchy. The three-level namespace is catalog → schema → table, independent of cloud region."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "A company has multiple Databricks workspaces across different business units. They want centralized governance, a single source of data lineage, and cross-workspace data sharing. Which Databricks feature addresses this?",
+    "opciones": [
+      {
+        "texto_opcion": "Unity Catalog, which provides a single metastore that can be shared across multiple workspaces for centralized governance and lineage.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog uses a single metastore that multiple workspaces can attach to. This enables centralized access control, unified data lineage, and auditing across all attached workspaces."
+      },
+      {
+        "texto_opcion": "Lakeflow Jobs, which can orchestrate tasks across multiple workspaces via cross-workspace job dependencies.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Jobs handles pipeline orchestration within a workspace. While it can be configured for cross-workspace use with Declarative Automation Bundles, it does not provide centralized governance or lineage."
+      },
+      {
+        "texto_opcion": "Delta Sharing, which creates shared catalogs across workspaces automatically.",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing enables read-only data sharing with external recipients, but it does not provide centralized governance or lineage tracking. Unity Catalog is the governance layer."
+      },
+      {
+        "texto_opcion": "Databricks Repos, which synchronizes code and table definitions across multiple workspaces via Git.",
+        "es_correcta": false,
+        "explicacion": "Databricks Repos is a Git-based code management tool. It synchronizes notebooks and code, not table governance, access policies, or data lineage."
+      },
+      {
+        "texto_opcion": "Cluster policies, which enforce consistent compute configurations and permissions across all workspaces.",
+        "es_correcta": false,
+        "explicacion": "Cluster policies govern compute resource constraints within a workspace. They have no role in data governance, lineage, or cross-workspace catalog sharing."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "In Unity Catalog, which of the following is a 'securable object' that can have privileges granted to principals?",
+    "opciones": [
+      {
+        "texto_opcion": "Catalog, Schema, Table, View, Volume, Function, and External Location are all securable objects in Unity Catalog.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog's privilege model applies to a hierarchy of securable objects. Each of these objects can have GRANT, REVOKE, and DENY statements applied to users, groups, or service principals."
+      },
+      {
+        "texto_opcion": "Only tables and views are securable objects; schemas and catalogs are administrative containers with no GRANT support.",
+        "es_correcta": false,
+        "explicacion": "Schemas and catalogs are themselves securable objects. Granting USE CATALOG or USE SCHEMA on a catalog or schema is required for principals to access objects within them."
+      },
+      {
+        "texto_opcion": "Clusters and SQL warehouses are the primary securable objects in Unity Catalog.",
+        "es_correcta": false,
+        "explicacion": "Compute resources like clusters and SQL warehouses have their own access control (cluster policies, warehouse permissions), but they are not managed as securable objects within Unity Catalog's data governance hierarchy."
+      },
+      {
+        "texto_opcion": "Only the metastore itself can have privileges granted; all objects below inherit the metastore permissions.",
+        "es_correcta": false,
+        "explicacion": "Privileges can be granted at every level of the hierarchy — metastore, catalog, schema, table, column, etc. There is no automatic inheritance model where metastore-level grants propagate to all objects."
+      },
+      {
+        "texto_opcion": "Notebooks and jobs are the securable objects used to control access to data in Unity Catalog.",
+        "es_correcta": false,
+        "explicacion": "Notebooks and jobs are workspace objects with their own permission model (folders, ACLs), separate from the Unity Catalog data governance layer."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What is the difference between a Unity Catalog managed table and an external table?",
+    "opciones": [
+      {
+        "texto_opcion": "For a managed table, Databricks controls both the metadata and the data files' lifecycle; dropping it deletes the data. For an external table, only the metadata is dropped; the data files in external storage remain.",
+        "es_correcta": true,
+        "explicacion": "Managed tables store data in a Unity Catalog-controlled location. When you DROP a managed table, both the metadata and the underlying Parquet files are deleted. External tables point to a user-specified external location, so dropping the table only removes the metadata entry."
+      },
+      {
+        "texto_opcion": "Managed tables support ACID transactions but external tables do not.",
+        "es_correcta": false,
+        "explicacion": "Both managed and external tables in Unity Catalog can use Delta Lake format and therefore support ACID transactions. The distinction is about who controls the data files' lifecycle, not ACID support."
+      },
+      {
+        "texto_opcion": "External tables can only store CSV or JSON files, while managed tables always use Parquet format.",
+        "es_correcta": false,
+        "explicacion": "External tables can use any supported format including Delta, Parquet, CSV, JSON, ORC, and Avro. The format is not what distinguishes managed from external tables."
+      },
+      {
+        "texto_opcion": "Managed tables are shared across workspaces automatically, while external tables require Delta Sharing to be accessed.",
+        "es_correcta": false,
+        "explicacion": "Both managed and external tables registered in Unity Catalog are accessible to all workspaces attached to the same metastore, subject to access controls. Delta Sharing is for sharing with external parties."
+      },
+      {
+        "texto_opcion": "External tables are read-only; you can only INSERT into managed tables.",
+        "es_correcta": false,
+        "explicacion": "External tables support full DML operations (INSERT, UPDATE, DELETE, MERGE) just like managed tables, as long as they are in Delta format and the user has appropriate permissions."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "Which role in Unity Catalog has the highest level of administrative privileges and is responsible for managing the metastore itself?",
+    "opciones": [
+      {
+        "texto_opcion": "Metastore Admin, who can manage all objects within the metastore including assigning catalog-level ownership and granting privileges to other principals.",
+        "es_correcta": true,
+        "explicacion": "The Metastore Admin is the top-level administrator role in Unity Catalog. They can manage all securable objects, assign catalog admins, create storage credentials, and configure sharing settings."
+      },
+      {
+        "texto_opcion": "Workspace Admin, who has full control over all Unity Catalog objects within their workspace.",
+        "es_correcta": false,
+        "explicacion": "Workspace Admins manage compute, users, and workspace settings, but they do not automatically have metastore-level admin rights in Unity Catalog. Those are separate roles."
+      },
+      {
+        "texto_opcion": "Catalog Owner, who has the same privileges as Metastore Admin but scoped to a single catalog.",
+        "es_correcta": false,
+        "explicacion": "Catalog Owner can manage objects within their catalog, but they cannot manage the metastore configuration, storage credentials, or cross-catalog settings. Metastore Admin has broader privileges."
+      },
+      {
+        "texto_opcion": "Data Steward, who is a Unity Catalog built-in role that enforces data quality and lineage rules.",
+        "es_correcta": false,
+        "explicacion": "Data Steward is not a built-in Unity Catalog role. Unity Catalog roles include Metastore Admin, Catalog Owner, Schema Owner, and Table Owner, among others."
+      },
+      {
+        "texto_opcion": "Account Admin, who directly manages all Unity Catalog objects across all workspaces from the Databricks console.",
+        "es_correcta": false,
+        "explicacion": "Account Admins manage Databricks accounts and can assign Metastore Admin roles, but the Metastore Admin role itself is the highest administrative role within Unity Catalog governance."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following query: `SELECT * FROM my_catalog.my_schema.orders TIMESTAMP AS OF '2025-01-15'`. What is the prerequisite for this query to succeed?",
+    "opciones": [
+      {
+        "texto_opcion": "The Delta table must have a version committed on or before January 15, 2025, and the corresponding data files must not have been removed by VACUUM.",
+        "es_correcta": true,
+        "explicacion": "Time travel requires that the requested version's data files still exist. If VACUUM was run with a retention period that excludes January 15, 2025, those files would have been deleted and the query would fail."
+      },
+      {
+        "texto_opcion": "The table must have Change Data Feed (CDF) enabled to support timestamp-based queries.",
+        "es_correcta": false,
+        "explicacion": "Time travel with TIMESTAMP AS OF works via the transaction log, not CDF. CDF is used for reading incremental row-level changes, not for full table time travel."
+      },
+      {
+        "texto_opcion": "The query must be run on a SQL warehouse; classic compute does not support TIMESTAMP AS OF.",
+        "es_correcta": false,
+        "explicacion": "Time travel is a Delta Lake feature that works across all Databricks compute types — classic clusters, SQL warehouses, and serverless compute."
+      },
+      {
+        "texto_opcion": "The table must be registered in the Hive metastore; Unity Catalog tables do not support time travel.",
+        "es_correcta": false,
+        "explicacion": "Time travel is a Delta Lake feature that works equally for both Hive metastore and Unity Catalog registered Delta tables."
+      },
+      {
+        "texto_opcion": "A backup of the table must have been created using CLONE SHALLOW before January 15, 2025.",
+        "es_correcta": false,
+        "explicacion": "No explicit backup is required. Time travel relies on the existing Delta transaction log and retained data files — CLONE is a separate operation and not a prerequisite for time travel."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "Which of the following compute types in Databricks is best suited for interactive data exploration and collaborative notebook development?",
+    "opciones": [
+      {
+        "texto_opcion": "All-purpose compute (interactive clusters), which stays running between notebook executions and supports multiple users attaching to the same cluster.",
+        "es_correcta": false,
+        "explicacion": "All-purpose compute (classic) is no longer the default recommendation. The latest documentation advises using it only when you specifically need RDD APIs or R language support. For most interactive exploration, Serverless compute is now preferred."
+      },
+      {
+        "texto_opcion": "Job compute (job clusters), which starts automatically when a job runs and is ideal for interactive data exploration.",
+        "es_correcta": false,
+        "explicacion": "Job compute is designed for automated batch workloads. It starts when a job runs and terminates immediately after, making it unsuitable for interactive exploration where you need persistent state between commands."
+      },
+      {
+        "texto_opcion": "SQL warehouses, which support all notebook languages including Python and Scala, making them the best choice for multi-language exploration.",
+        "es_correcta": false,
+        "explicacion": "SQL warehouses are optimized specifically for SQL queries and BI tool connections. They do not support Python, PySpark, or Scala notebooks, making them inappropriate for general-purpose interactive data exploration."
+      },
+      {
+        "texto_opcion": "Serverless compute, which offers fast startup, automatic scaling, pay-only-for-what-you-use pricing, and full support for collaborative notebook development.",
+        "es_correcta": true,
+        "explicacion": "According to the latest Databricks documentation, Serverless compute is 'generally recommended' for interactive notebooks. It offers faster start-up (2-6 seconds), automatic scaling, lower cost (you only pay for what you use), and fully supports collaborative notebook development with multiple users."
+      },
+      {
+        "texto_opcion": "GPU clusters, which are the default compute type for all notebook-based work in Databricks.",
+        "es_correcta": false,
+        "explicacion": "GPU clusters are specialized compute resources for machine learning workloads like deep learning or model training. They are not the default compute type and are overkill for general data exploration tasks."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is the main cost advantage of using **Classic** Job compute (job clusters) over Classic All-purpose compute for running production pipelines?",
+    "opciones": [
+      {
+        "texto_opcion": "Classic job clusters are created for the duration of a single job run and terminated immediately afterward, so you only pay for compute during the actual job execution.",
+        "es_correcta": true,
+        "explicacion": "Classic job clusters have a start-on-demand, terminate-on-completion lifecycle. Unlike all-purpose clusters that keep running (and incurring cost) even when idle, job clusters minimize DBU spending by existing only during job execution. (Note: Serverless compute for jobs is now the recommended choice for most automated workloads, offering even faster startup and lower cost.)"
+      },
+      {
+        "texto_opcion": "Job clusters use spot instances by default, which are always 80% cheaper than on-demand instances.",
+        "es_correcta": false,
+        "explicacion": "While classic job clusters can be configured to use spot instances, this is not the default or guaranteed. The key cost advantage is their ephemeral lifecycle, not spot pricing."
+      },
+      {
+        "texto_opcion": "Job clusters run at a lower DBU rate than all-purpose clusters for the same instance types.",
+        "es_correcta": false,
+        "explicacion": "Classic job cluster DBU rates are indeed lower than all-purpose cluster rates for the same instance type, but the primary reason engineers choose job clusters is their auto-termination, which avoids idle costs."
+      },
+      {
+        "texto_opcion": "Job clusters skip the Databricks Runtime initialization, starting faster and reducing billable time.",
+        "es_correcta": false,
+        "explicacion": "Classic job clusters still go through cluster startup and Databricks Runtime initialization. There is no skipping of initialization steps. (Serverless compute avoids this startup delay, but classic job clusters do not.)"
+      },
+      {
+        "texto_opcion": "Job clusters are free when used with Lakeflow Jobs; you only pay for the underlying cloud VMs.",
+        "es_correcta": false,
+        "explicacion": "Classic job clusters are not free. You still pay Databricks DBUs in addition to cloud VM costs. (Serverless compute offers a different pricing model, but classic job clusters are not free.)"
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "A data team wants to run interactive SQL queries using a BI tool like Tableau or Power BI against their Delta tables. Which Databricks compute type should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "SQL Warehouse, which provides an optimized, serverless-capable endpoint for SQL analytics and is compatible with standard JDBC/ODBC BI tool connections.",
+        "es_correcta": true,
+        "explicacion": "SQL Warehouses are specifically designed for BI and SQL analytics workloads. They expose JDBC/ODBC endpoints, support Databricks SQL, and can auto-scale or run as serverless compute."
+      },
+      {
+        "texto_opcion": "All-purpose cluster with a Spark JDBC driver configured for BI tool connectivity.",
+        "es_correcta": false,
+        "explicacion": "While technically possible, all-purpose clusters are expensive and designed for development, not for serving concurrent BI queries. SQL Warehouses are the correct and recommended choice for BI tools."
+      },
+      {
+        "texto_opcion": "Job cluster triggered via Lakeflow Jobs on a schedule to pre-compute and cache BI query results.",
+        "es_correcta": false,
+        "explicacion": "Job clusters are ephemeral and cannot serve interactive BI queries. Pre-computing results and caching is a workaround, not the Databricks-recommended approach for BI connectivity."
+      },
+      {
+        "texto_opcion": "GPU cluster, which accelerates SQL query execution through hardware parallelism.",
+        "es_correcta": false,
+        "explicacion": "GPU clusters accelerate machine learning and deep learning workloads, not SQL analytics. SQL Warehouses use Photon (a vectorized query engine) for SQL performance, not GPUs."
+      },
+      {
+        "texto_opcion": "Delta Live Tables pipeline compute, which is always available for real-time BI queries.",
+        "es_correcta": false,
+        "explicacion": "Pipeline compute is used exclusively to run Lakeflow Spark Declarative Pipelines — it does not expose a SQL endpoint for BI tools to connect to."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is Serverless Compute in Databricks and what is its primary operational benefit over classic compute?",
+    "opciones": [
+      {
+        "texto_opcion": "Serverless compute is fully managed by Databricks — you do not need to configure, provision, or manage clusters. It starts instantly and auto-scales, eliminating cluster startup delays.",
+        "es_correcta": true,
+        "explicacion": "With serverless compute, Databricks handles all cluster management in their own cloud accounts. This means no cluster configuration overhead, instant start times (no cluster boot wait), and automatic scaling — engineers focus on code, not infrastructure."
+      },
+      {
+        "texto_opcion": "Serverless compute runs workloads on the end user's local machine, eliminating cloud costs entirely.",
+        "es_correcta": false,
+        "explicacion": "Serverless compute still runs in Databricks-managed cloud infrastructure. The 'serverless' refers to the absence of user-managed cluster configuration, not the absence of cloud resources."
+      },
+      {
+        "texto_opcion": "Serverless compute bypasses Apache Spark and uses a proprietary query engine that is 100x faster for all workloads.",
+        "es_correcta": false,
+        "explicacion": "Serverless compute still uses Apache Spark (and Photon for SQL). The benefit is operational simplicity, not a fundamentally different execution engine."
+      },
+      {
+        "texto_opcion": "Serverless compute is only available for SQL warehouses; notebooks and jobs must use classic compute.",
+        "es_correcta": false,
+        "explicacion": "Serverless compute is available for SQL warehouses, notebooks, Lakeflow Jobs, and Lakeflow Spark Declarative Pipelines. It is not limited to SQL."
+      },
+      {
+        "texto_opcion": "Serverless compute is free of charge; customers only pay for storage costs.",
+        "es_correcta": false,
+        "explicacion": "Serverless compute is billed by DBUs consumed. It can be more cost-efficient due to fine-grained billing and no idle time, but it is not free."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "Which of the following best explains what Lakeflow Spark Declarative Pipelines (SDP) is?",
+    "opciones": [
+      {
+        "texto_opcion": "A declarative framework in Databricks for building reliable batch and streaming ETL pipelines in SQL or Python, where users define what data to ingest and how to transform it, and the system handles execution, orchestration, and maintenance.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow SDP (formerly Delta Live Tables) is a declarative pipeline framework. Engineers declare datasets and transformations; Databricks handles execution ordering, dependency resolution, data quality, monitoring, and table maintenance."
+      },
+      {
+        "texto_opcion": "A low-code drag-and-drop UI for building data pipelines without writing any code.",
+        "es_correcta": false,
+        "explicacion": "SDP requires writing SQL or Python code to define datasets. There is a pipeline designer UI, but the framework itself is code-based and declarative, not a drag-and-drop no-code tool."
+      },
+      {
+        "texto_opcion": "A job scheduler that replaces Lakeflow Jobs for all pipeline orchestration needs.",
+        "es_correcta": false,
+        "explicacion": "SDP and Lakeflow Jobs are complementary. SDP handles data transformation pipelines declaratively, while Lakeflow Jobs orchestrates broader workflows including non-pipeline tasks. SDP does not replace Jobs."
+      },
+      {
+        "texto_opcion": "A Spark SQL extension that adds window functions and aggregations not available in standard SQL.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow SDP is a pipeline framework, not a SQL language extension. Standard Spark SQL already supports window functions and aggregations; SDP provides pipeline lifecycle management."
+      },
+      {
+        "texto_opcion": "A streaming-only framework that processes data in real time and does not support batch workloads.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow SDP supports both batch and streaming processing. Users can define streaming tables (for continuous ingestion) and materialized views (for batch/incremental processing) within the same pipeline."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "What is the Databricks Data Intelligence Platform's relationship to Apache Spark?",
+    "opciones": [
+      {
+        "texto_opcion": "Databricks was co-founded by the creators of Apache Spark and provides an optimized, managed Spark environment with additional enterprise features like Unity Catalog, Delta Lake, and Lakeflow Jobs.",
+        "es_correcta": true,
+        "explicacion": "Databricks was founded by the original Apache Spark team. The platform runs a performance-optimized Databricks Runtime based on Spark, extended with proprietary features like Photon, Delta Lake, and Unity Catalog."
+      },
+      {
+        "texto_opcion": "Databricks replaces Apache Spark with a proprietary execution engine that is not compatible with Spark APIs.",
+        "es_correcta": false,
+        "explicacion": "Databricks is fully compatible with Apache Spark APIs. The Databricks Runtime is an optimized distribution of Spark; existing Spark code runs without modification."
+      },
+      {
+        "texto_opcion": "Databricks uses Apache Spark only for streaming workloads; batch processing uses a separate proprietary engine.",
+        "es_correcta": false,
+        "explicacion": "Databricks uses Apache Spark (via Databricks Runtime) for both batch and streaming workloads. The Photon engine accelerates SQL queries but does not replace Spark for batch."
+      },
+      {
+        "texto_opcion": "Apache Spark is an optional add-on for Databricks; the default compute engine is Delta Lake.",
+        "es_correcta": false,
+        "explicacion": "Apache Spark is the core computation engine, not an optional add-on. Delta Lake is a storage layer, not a compute engine — the two serve different purposes."
+      },
+      {
+        "texto_opcion": "Databricks and Apache Spark are unrelated; Databricks is built on Apache Kafka for all data processing.",
+        "es_correcta": false,
+        "explicacion": "Databricks is fundamentally built on Apache Spark, not Kafka. Kafka is a message broker sometimes used as a data source for Spark Structured Streaming workloads on Databricks."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "Which of the following accurately describes the Medallion Architecture as implemented in Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "A multi-layer data design pattern with Bronze (raw ingested data), Silver (cleaned and enriched data), and Gold (aggregated, business-ready data) layers, each stored as Delta tables.",
+        "es_correcta": true,
+        "explicacion": "The Medallion Architecture progressively refines data through three layers: Bronze (raw, landing zone), Silver (validated, cleaned, joined), and Gold (aggregated, domain-specific, BI-ready). All layers typically use Delta format in Databricks."
+      },
+      {
+        "texto_opcion": "A network security model with three zones: DMZ (public), internal (restricted), and vault (encrypted), each storing a different data classification.",
+        "es_correcta": false,
+        "explicacion": "This describes a network security architecture, not a data engineering pattern. The Medallion Architecture is about data quality and transformation stages, not network zones."
+      },
+      {
+        "texto_opcion": "A streaming pipeline pattern where Bronze is real-time, Silver is near-real-time, and Gold is batch-only.",
+        "es_correcta": false,
+        "explicacion": "The Medallion Architecture does not prescribe specific latency requirements per layer. All three layers can be batch, streaming, or incremental depending on requirements."
+      },
+      {
+        "texto_opcion": "A three-cluster architecture where separate Databricks clusters are required for each layer to ensure isolation.",
+        "es_correcta": false,
+        "explicacion": "The Medallion Architecture is a logical data organization pattern, not a compute architecture. A single cluster or pipeline can read from and write to all three layers."
+      },
+      {
+        "texto_opcion": "A data catalog convention where Bronze is for internal data, Silver is for partner data, and Gold is for public data.",
+        "es_correcta": false,
+        "explicacion": "Bronze, Silver, and Gold refer to data quality/refinement stages, not data classification by audience or origin. The same source data flows through all three layers."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "A data engineer notices that their Delta table has accumulated thousands of small files over time due to frequent micro-batch streaming writes. Which two operations should they use to address this?",
+    "opciones": [
+      {
+        "texto_opcion": "Run OPTIMIZE to compact small files into larger ones, then run VACUUM to remove the old unreferenced files after the retention period.",
+        "es_correcta": true,
+        "explicacion": "OPTIMIZE compacts small files into larger, efficiently-sized files. After OPTIMIZE runs, old small files become unreferenced but are retained for time travel. VACUUM cleans up those old files after the configured retention window."
+      },
+      {
+        "texto_opcion": "Run DELETE followed by INSERT OVERWRITE to rewrite the entire table from scratch.",
+        "es_correcta": false,
+        "explicacion": "Rewriting the entire table with DELETE + INSERT OVERWRITE is destructive and inefficient. OPTIMIZE is designed specifically for file compaction without data loss or full rewrite."
+      },
+      {
+        "texto_opcion": "Drop and recreate the table using CREATE TABLE AS SELECT to eliminate small files.",
+        "es_correcta": false,
+        "explicacion": "Dropping and recreating the table would lose all history, time travel capability, and streaming state. OPTIMIZE is the correct non-destructive approach."
+      },
+      {
+        "texto_opcion": "Increase spark.sql.shuffle.partitions to reduce the number of output files written by Spark.",
+        "es_correcta": false,
+        "explicacion": "spark.sql.shuffle.partitions controls the number of partitions after a shuffle (join/aggregation), not the number of files written by streaming sinks. It would not fix existing small file accumulation."
+      },
+      {
+        "texto_opcion": "Enable Auto Loader with schema evolution so it automatically merges small files during ingestion.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader is an ingestion tool for reading new files from cloud storage — it has no role in compacting files in an existing Delta table."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is the purpose of Unity Catalog's data lineage feature?",
+    "opciones": [
+      {
+        "texto_opcion": "It automatically tracks how data flows between tables, notebooks, jobs, and queries, showing upstream sources and downstream consumers of any dataset.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog captures lineage at the column and table level — you can see which tables feed into a given table and which tables consume it, as well as which notebooks or queries produced the data."
+      },
+      {
+        "texto_opcion": "It enforces referential integrity constraints between tables, preventing orphaned records.",
+        "es_correcta": false,
+        "explicacion": "Referential integrity (foreign key constraints) is a data quality/modeling concern, not what lineage provides. Lineage tracks data flow provenance, not constraint enforcement."
+      },
+      {
+        "texto_opcion": "It creates automatic backup snapshots of all Unity Catalog tables for disaster recovery.",
+        "es_correcta": false,
+        "explicacion": "Lineage is a metadata tracking feature that shows data flow, not a backup system. Delta Lake time travel and external backup solutions handle data recovery."
+      },
+      {
+        "texto_opcion": "It monitors query performance and recommends index improvements for slow-running tables.",
+        "es_correcta": false,
+        "explicacion": "Performance monitoring is handled by the Spark UI and Lakeflow Jobs run history. Lineage is about tracking data provenance and relationships between datasets, not query optimization."
+      },
+      {
+        "texto_opcion": "It enforces column-level access controls by tracking which users have queried sensitive columns.",
+        "es_correcta": false,
+        "explicacion": "Column-level access control is managed through column masking policies and GRANT/DENY on columns. Lineage is a separate observability feature that shows data flow, not user access enforcement."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "Which of the following best describes Photon in the Databricks platform?",
+    "opciones": [
+      {
+        "texto_opcion": "A vectorized query execution engine written in C++ that accelerates SQL and DataFrame workloads by processing data in batches of columns rather than row by row.",
+        "es_correcta": true,
+        "explicacion": "Photon is a native vectorized engine that runs alongside the Databricks Runtime. It significantly accelerates SQL queries, joins, aggregations, and scans by using columnar vectorized processing rather than the traditional Volcano/iterator model."
+      },
+      {
+        "texto_opcion": "A machine learning framework that accelerates model training using GPU parallelism.",
+        "es_correcta": false,
+        "explicacion": "Photon is a SQL/DataFrame query engine, not an ML framework. GPU acceleration for ML is provided separately via GPU clusters and libraries like TensorFlow, PyTorch, etc."
+      },
+      {
+        "texto_opcion": "A streaming message broker that replaces Apache Kafka for real-time data ingestion.",
+        "es_correcta": false,
+        "explicacion": "Photon has nothing to do with message brokers. Apache Kafka remains the external streaming source; Photon is a query execution engine within Databricks."
+      },
+      {
+        "texto_opcion": "A Databricks monitoring tool that analyzes Spark execution plans and suggests query rewrites.",
+        "es_correcta": false,
+        "explicacion": "Photon is an execution engine, not a monitoring or recommendation tool. The Spark UI and query profiler provide execution plan analysis."
+      },
+      {
+        "texto_opcion": "A feature of Unity Catalog that encrypts data at rest using AES-256 encryption for all managed tables.",
+        "es_correcta": false,
+        "explicacion": "Encryption is handled at the cloud storage and cluster level, not by Photon. Photon is purely a performance acceleration layer for query execution."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to choose between a classic all-purpose cluster and a serverless SQL warehouse for a batch ETL job that runs every hour using PySpark. Which should they choose and why?",
+    "opciones": [
+      {
+        "texto_opcion": "A job cluster (not all-purpose) is the best fit for a scheduled batch ETL job in PySpark — it auto-terminates after each run. A SQL warehouse cannot execute PySpark code.",
+        "es_correcta": true,
+        "explicacion": "SQL Warehouses only support SQL; they cannot run PySpark. For a scheduled hourly PySpark job, job compute is the correct and cost-efficient choice — it starts for the job and terminates afterward."
+      },
+      {
+        "texto_opcion": "A serverless SQL warehouse, because it supports PySpark and auto-scales based on job demand.",
+        "es_correcta": false,
+        "explicacion": "SQL Warehouses, including serverless SQL Warehouses, do not support PySpark execution. They are SQL-only endpoints. PySpark requires cluster-based compute (job, all-purpose, or serverless compute for notebooks/jobs)."
+      },
+      {
+        "texto_opcion": "An all-purpose cluster kept running 24/7 to avoid the cluster startup delay for the hourly job.",
+        "es_correcta": false,
+        "explicacion": "Keeping an all-purpose cluster running 24/7 is extremely costly for an hourly job. Job clusters are designed exactly for this — they start, run the job, and terminate, minimizing cost."
+      },
+      {
+        "texto_opcion": "A GPU cluster, which executes PySpark faster than CPU-based compute for ETL workloads.",
+        "es_correcta": false,
+        "explicacion": "GPU clusters do not accelerate standard PySpark ETL workloads. GPUs benefit only specific operations like deep learning or GPU-accelerated libraries. Standard ETL on GPUs costs more for no benefit."
+      },
+      {
+        "texto_opcion": "Any compute type works equally — the choice does not matter for a PySpark ETL job.",
+        "es_correcta": false,
+        "explicacion": "The choice of compute type significantly affects both capability and cost. SQL Warehouses cannot run PySpark, and all-purpose clusters are far more expensive than job clusters for scheduled jobs."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is Databricks Connect, and in what scenario is it most useful?",
+    "opciones": [
+      {
+        "texto_opcion": "A client library that allows you to run Apache Spark code from a local IDE (e.g., VS Code, IntelliJ) or any remote environment against a Databricks cluster, without uploading code to the workspace.",
+        "es_correcta": true,
+        "explicacion": "Databricks Connect enables local development workflows where engineers write and test Spark code in their preferred IDE, then execute it against a remote Databricks cluster. This avoids the round-trip of uploading notebooks and provides a better local development experience."
+      },
+      {
+        "texto_opcion": "A network configuration tool that connects a Databricks workspace to an on-premises data center via a VPN tunnel.",
+        "es_correcta": false,
+        "explicacion": "Databricks Connect is a software library for remote Spark execution from local environments, not a networking tool. VPN and private link are separate networking features."
+      },
+      {
+        "texto_opcion": "A feature that allows multiple Databricks workspaces to share the same cluster without separate authentication.",
+        "es_correcta": false,
+        "explicacion": "Databricks Connect is for local IDE-to-cluster connectivity, not cross-workspace cluster sharing. Each workspace maintains its own authentication and access controls."
+      },
+      {
+        "texto_opcion": "A Lakeflow Jobs feature that connects dependent tasks across different pipelines in a DAG.",
+        "es_correcta": false,
+        "explicacion": "Task dependencies within Lakeflow Jobs are configured in the Jobs UI or via YAML/JSON, not through Databricks Connect. Databricks Connect is a development tool, not an orchestration feature."
+      },
+      {
+        "texto_opcion": "A Unity Catalog connector that links external databases via JDBC for Lakehouse Federation.",
+        "es_correcta": false,
+        "explicacion": "Lakehouse Federation uses Unity Catalog connections and foreign catalogs to query external databases. Databricks Connect is unrelated — it is for local Spark execution, not for external database federation."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "When a Databricks workspace is configured with Unity Catalog, where does the default storage for managed tables reside?",
+    "opciones": [
+      {
+        "texto_opcion": "In the cloud object storage location specified as the root storage for the Unity Catalog metastore or the catalog/schema-level managed storage location.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog uses a root storage location (set at metastore creation) as the default for managed table data. Catalog and schema owners can specify overriding managed storage locations. All managed table data lives in cloud object storage managed by the Unity Catalog hierarchy."
+      },
+      {
+        "texto_opcion": "On the Databricks cluster's local disk (NVMe SSD attached to worker nodes).",
+        "es_correcta": false,
+        "explicacion": "Cluster local disks are ephemeral and disappear when a cluster terminates. Managed table data is stored persistently in cloud object storage, never on local cluster disks."
+      },
+      {
+        "texto_opcion": "In the legacy DBFS (Databricks File System) root, specifically at /user/hive/warehouse.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog managed tables are stored in Unity Catalog-specified cloud object storage locations, not in DBFS. DBFS root storage at /user/hive/warehouse is the legacy Hive metastore location."
+      },
+      {
+        "texto_opcion": "In a Databricks-owned S3 bucket that is not accessible to customers for security purposes.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog managed storage uses the customer's own cloud storage account and bucket, not a Databricks-owned bucket. Customers have access and ownership of the underlying storage."
+      },
+      {
+        "texto_opcion": "In Apache Kafka topics, which serve as the persistent storage layer for all Unity Catalog tables.",
+        "es_correcta": false,
+        "explicacion": "Kafka is a streaming message broker, not a persistent table storage system. Unity Catalog tables are stored as Delta/Parquet files in cloud object storage (S3, ADLS, GCS)."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "What is the key difference between procedural data processing and declarative data processing in Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "In procedural processing, the engineer explicitly defines step-by-step execution logic (e.g., PySpark with Lakeflow Jobs). In declarative processing, the engineer defines the desired result and the system determines the execution plan (e.g., Lakeflow Spark Declarative Pipelines with SQL).",
+        "es_correcta": true,
+        "explicacion": "Procedural processing (Apache Spark + Lakeflow Jobs) requires the engineer to define how data is transformed step by step. Declarative processing (Lakeflow SDP) lets the engineer define what the output should look like, and the framework handles execution ordering, optimization, and maintenance."
+      },
+      {
+        "texto_opcion": "Procedural processing only supports SQL, while declarative processing only supports Python.",
+        "es_correcta": false,
+        "explicacion": "This is reversed. Procedural processing with PySpark uses Python (and Scala). Declarative processing with Lakeflow SDP supports both SQL and Python. Neither is limited to a single language."
+      },
+      {
+        "texto_opcion": "Procedural processing is always faster because it gives the engine more optimization hints.",
+        "es_correcta": false,
+        "explicacion": "Declarative processing often achieves better performance because the system can apply automatic optimizations. Procedural control does not inherently lead to better performance."
+      },
+      {
+        "texto_opcion": "Declarative processing requires more code and is harder to maintain than procedural processing.",
+        "es_correcta": false,
+        "explicacion": "One of declarative processing's key advantages is reduced complexity and improved maintainability, since the developer defines what rather than how, removing the need for explicit control structures."
+      },
+      {
+        "texto_opcion": "Procedural and declarative processing refer to read and write operations respectively, with no relationship to pipeline design.",
+        "es_correcta": false,
+        "explicacion": "Procedural and declarative refer to programming paradigms for designing data pipelines, not to read/write operations. Both paradigms can involve reads and writes."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "A streaming table in Unity Catalog receives continuous inserts. A data engineer wants to query this table from Databricks SQL. What is the correct understanding of a streaming table in Unity Catalog?",
+    "opciones": [
+      {
+        "texto_opcion": "A streaming table is a Unity Catalog managed Delta table that includes processing logic (flows) defining how data is continuously written to it, and it can be queried at any time like a regular table.",
+        "es_correcta": true,
+        "explicacion": "Streaming tables are a special type of Unity Catalog managed table designed for incremental/streaming ingestion. They are backed by Delta Lake, so users can query them with standard SQL at any time, seeing the latest committed data."
+      },
+      {
+        "texto_opcion": "A streaming table is a Kafka topic alias — querying it returns real-time messages directly from the broker.",
+        "es_correcta": false,
+        "explicacion": "Streaming tables are Delta tables, not Kafka topics. They consume from sources like Kafka and materialize the results as a queryable Delta table in Unity Catalog."
+      },
+      {
+        "texto_opcion": "A streaming table can only be queried by the pipeline that writes to it; external SQL queries are not permitted.",
+        "es_correcta": false,
+        "explicacion": "Streaming tables, once published to Unity Catalog, are queryable by any principal with appropriate SELECT permissions, including via Databricks SQL or notebooks outside the pipeline."
+      },
+      {
+        "texto_opcion": "A streaming table permanently locks its schema and does not support schema evolution after creation.",
+        "es_correcta": false,
+        "explicacion": "Streaming tables support schema evolution through the pipeline configuration and mergeSchema options. They are not permanently locked to their initial schema."
+      },
+      {
+        "texto_opcion": "A streaming table requires an always-on Structured Streaming job to be queryable; stopping the job makes the table unavailable.",
+        "es_correcta": false,
+        "explicacion": "The streaming job writes to the table, but the Delta table itself remains readable at all times, regardless of whether the streaming job is running. Delta tables are always queryable."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What is the role of Lakeflow Jobs in the Databricks Data Intelligence Platform?",
+    "opciones": [
+      {
+        "texto_opcion": "Lakeflow Jobs is the orchestration service for scheduling and running tasks (notebooks, SQL queries, pipelines, Python scripts, etc.) as automated workflows with dependency management, retry logic, and monitoring.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Jobs (formerly Databricks Jobs) is the production orchestration layer. It supports DAG-based task dependencies, multiple task types, retry policies, alerting, and integrates with CI/CD workflows."
+      },
+      {
+        "texto_opcion": "Lakeflow Jobs is a replacement for Apache Kafka that handles all streaming ingestion into Databricks.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Jobs is an orchestration and scheduling tool, not a streaming message broker. Kafka remains an external streaming source; Lakeflow Jobs schedules when pipelines run."
+      },
+      {
+        "texto_opcion": "Lakeflow Jobs is the Databricks UI for creating and editing Delta tables interactively.",
+        "es_correcta": false,
+        "explicacion": "Interactive table creation is done via notebooks, the Databricks SQL editor, or the catalog explorer. Lakeflow Jobs is for automated workflow orchestration, not interactive data manipulation."
+      },
+      {
+        "texto_opcion": "Lakeflow Jobs is a Git-based CI/CD tool for deploying code across dev, staging, and production environments.",
+        "es_correcta": false,
+        "explicacion": "CI/CD deployment is handled by Declarative Automation Bundles (DABs) and the Databricks CLI. Lakeflow Jobs handles runtime execution of tasks, not deployment pipelines."
+      },
+      {
+        "texto_opcion": "Lakeflow Jobs is a cost management service that automatically shuts down idle clusters to reduce spending.",
+        "es_correcta": false,
+        "explicacion": "Cluster auto-termination is a cluster configuration option, not a Lakeflow Jobs feature. Lakeflow Jobs is for defining and running data workflows."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "Which of the following compute options does NOT support running PySpark code in Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "SQL Warehouse (including serverless SQL Warehouse)",
+        "es_correcta": true,
+        "explicacion": "SQL Warehouses are optimized for SQL-only workloads. They expose a SQL endpoint and cannot execute PySpark, Scala, or R code. Any PySpark code requires cluster-based compute."
+      },
+      {
+        "texto_opcion": "All-purpose compute (interactive cluster)",
+        "es_correcta": false,
+        "explicacion": "All-purpose clusters fully support PySpark, Scala, R, and SQL. They are the primary compute type for interactive notebook development in multiple languages."
+      },
+      {
+        "texto_opcion": "Job compute (job cluster)",
+        "es_correcta": false,
+        "explicacion": "Job clusters fully support PySpark. They are the recommended compute type for running PySpark-based production jobs via Lakeflow Jobs."
+      },
+      {
+        "texto_opcion": "Serverless compute for notebooks and jobs",
+        "es_correcta": false,
+        "explicacion": "Serverless compute for notebooks and Lakeflow Jobs supports PySpark code execution. It is different from serverless SQL Warehouses, which are SQL-only."
+      },
+      {
+        "texto_opcion": "Classic compute with a GPU instance type",
+        "es_correcta": false,
+        "explicacion": "GPU clusters are a variant of classic compute and fully support PySpark. Engineers use GPU clusters with PySpark-based ML libraries like Rapids or deep learning frameworks."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to audit all data access events on their Delta tables registered in Unity Catalog. Which feature should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "Unity Catalog audit logs, which capture all read, write, and administrative events on securable objects and can be delivered to a cloud storage location for analysis.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog generates detailed audit logs for all access events (SELECT, INSERT, GRANT, etc.) on securable objects. These logs are stored in the system.access.audit table and can be queried in Databricks SQL."
+      },
+      {
+        "texto_opcion": "The Delta Lake transaction log (_delta_log), which records all DML operations and the users who performed them.",
+        "es_correcta": false,
+        "explicacion": "The Delta transaction log records what data changes occurred (file adds/removes), but not who performed them or read-only SELECT queries. Audit logs in Unity Catalog capture user identity and query details."
+      },
+      {
+        "texto_opcion": "Spark Event Logs, which capture all Spark operations including user identities and table access patterns.",
+        "es_correcta": false,
+        "explicacion": "Spark Event Logs capture execution stages, tasks, and metrics for Spark jobs, but not table-level access audit trails with user identity in a governance context. Unity Catalog audit logs are the correct tool."
+      },
+      {
+        "texto_opcion": "Lakeflow Jobs run history, which shows which jobs accessed which tables over time.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Jobs run history shows job execution status and timing, not detailed table-level access events. Unity Catalog audit logs provide that granularity."
+      },
+      {
+        "texto_opcion": "Delta Sharing recipient logs, which capture all access events for both internal and external table consumers.",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing recipient logs capture external sharing access events, not all internal Unity Catalog access. Unity Catalog audit logs cover all access events comprehensively."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What does the AUTO OPTIMIZE feature do for Delta tables in Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "It automatically compacts small files into larger ones during write operations (optimizeWrite) and opportunistically runs compaction in the background (autoCompact), reducing the need to manually run OPTIMIZE.",
+        "es_correcta": true,
+        "explicacion": "Auto Optimize has two sub-features: Optimized Writes (reorganizes data during the write to produce fewer, larger files) and Auto Compaction (runs background compaction after writes if the table has too many small files)."
+      },
+      {
+        "texto_opcion": "It automatically selects the best clustering columns for a Delta table based on query history.",
+        "es_correcta": false,
+        "explicacion": "Automatic clustering column selection is provided by CLUSTER BY AUTO in Liquid Clustering. Auto Optimize is specifically about file size management during and after writes."
+      },
+      {
+        "texto_opcion": "It automatically runs VACUUM to remove old file versions whenever a table is written to.",
+        "es_correcta": false,
+        "explicacion": "Auto Optimize does not run VACUUM. Predictive Optimization handles VACUUM automation for Unity Catalog managed tables. Auto Optimize is specifically about write-time and post-write file compaction."
+      },
+      {
+        "texto_opcion": "It enables query result caching so that repeated identical queries return instantly without re-scanning data.",
+        "es_correcta": false,
+        "explicacion": "Query result caching is a different feature available in Databricks SQL. Auto Optimize is a write-side optimization focused on managing output file sizes."
+      },
+      {
+        "texto_opcion": "It automatically partitions a Delta table based on high-cardinality columns detected in the data.",
+        "es_correcta": false,
+        "explicacion": "Partitioning must be explicitly defined; Databricks does not automatically partition tables. Auto Optimize manages file sizes within existing partitions or the unpartitioned table."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "A company wants to share Delta tables with an external partner organization that uses Apache Spark on AWS (not Databricks). Which Databricks feature enables this?",
+    "opciones": [
+      {
+        "texto_opcion": "Delta Sharing, which is an open protocol for securely sharing Delta tables with external recipients regardless of their platform or compute engine.",
+        "es_correcta": true,
+        "explicacion": "Delta Sharing is an open sharing protocol built into Unity Catalog. It allows sharing Delta tables with external recipients using a credential URL, without requiring the recipient to use Databricks. Recipients can consume shared data using Spark, pandas, or other Delta Sharing-compatible clients."
+      },
+      {
+        "texto_opcion": "Unity Catalog cross-account table sharing, which creates a shared metastore accessible by other AWS accounts.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog metastores can be shared across Databricks workspaces, but not directly with external AWS accounts using non-Databricks tools. Delta Sharing is the correct protocol for external sharing."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect standard connectors, which push Delta table data to external S3 buckets in real time.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect is an ingestion tool (reading from external sources into Databricks), not an outbound sharing tool. Delta Sharing is the appropriate feature for sharing data outward."
+      },
+      {
+        "texto_opcion": "DBFS mount points that allow external Spark clusters to mount and read Databricks storage directly.",
+        "es_correcta": false,
+        "explicacion": "DBFS mount points are for Databricks workspace internal access. Sharing via mount points with external organizations is insecure and not the recommended approach. Delta Sharing provides governed, auditable external access."
+      },
+      {
+        "texto_opcion": "Cluster single-sign-on (SSO), which allows external users to authenticate to a Databricks cluster and run queries directly.",
+        "es_correcta": false,
+        "explicacion": "SSO controls user authentication to the Databricks workspace, not external data sharing. The partner's non-Databricks Spark cluster cannot authenticate to Databricks clusters via SSO."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What is Change Data Feed (CDF) in Delta Lake, and how is it enabled?",
+    "opciones": [
+      {
+        "texto_opcion": "CDF records row-level changes (inserts, updates, deletes) for a Delta table, enabling downstream consumers to process only changed rows. It is enabled by setting the table property `delta.enableChangeDataFeed = true`.",
+        "es_correcta": true,
+        "explicacion": "When CDF is enabled, Delta Lake records the _change_type (insert, update_preimage, update_postimage, delete) for every row modified. Downstream pipelines can read the CDF to process incremental changes efficiently."
+      },
+      {
+        "texto_opcion": "CDF is a streaming source configuration that automatically subscribes a Delta table to a Kafka topic for real-time updates.",
+        "es_correcta": false,
+        "explicacion": "CDF is an internal Delta Lake feature that logs row-level changes within the table itself. It has no dependency on Kafka or any external messaging system."
+      },
+      {
+        "texto_opcion": "CDF is enabled by running `OPTIMIZE ... WITH CHANGE_FEED` and stores changes in a separate schema.",
+        "es_correcta": false,
+        "explicacion": "CDF is not enabled through OPTIMIZE. It is enabled via the table property `delta.enableChangeDataFeed = true` using `ALTER TABLE` or during `CREATE TABLE`."
+      },
+      {
+        "texto_opcion": "CDF is automatically enabled for all Unity Catalog managed tables and cannot be disabled.",
+        "es_correcta": false,
+        "explicacion": "CDF is not enabled by default — it must be explicitly activated per table. It can be enabled or disabled using ALTER TABLE."
+      },
+      {
+        "texto_opcion": "CDF stores the change log in a separate _cdf_log directory alongside the _delta_log for easier consumption.",
+        "es_correcta": false,
+        "explicacion": "CDF changes are stored within the existing Delta transaction log and data files, not in a separate _cdf_log directory. The changes are accessed via the special `table_changes` function."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "Which of the following is true about the Databricks workspace?",
+    "opciones": [
+      {
+        "texto_opcion": "A workspace is an environment for accessing all Databricks assets — notebooks, clusters, jobs, and data — and is associated with a cloud account in a specific region.",
+        "es_correcta": true,
+        "explicacion": "A Databricks workspace is the primary access and development environment. It is deployed in a specific cloud region and contains all user assets. Multiple workspaces can share a Unity Catalog metastore."
+      },
+      {
+        "texto_opcion": "A workspace is the same as a Unity Catalog metastore; each workspace has exactly one private metastore.",
+        "es_correcta": false,
+        "explicacion": "A workspace and a metastore are separate concepts. One metastore can serve multiple workspaces. A workspace does not contain its own private metastore by default."
+      },
+      {
+        "texto_opcion": "A workspace can span multiple cloud regions for global high availability.",
+        "es_correcta": false,
+        "explicacion": "A Databricks workspace is deployed in a single cloud region. Cross-region deployments require separate workspaces; there is no single-workspace multi-region configuration."
+      },
+      {
+        "texto_opcion": "A workspace is a compute cluster that runs continuously to serve all user requests.",
+        "es_correcta": false,
+        "explicacion": "A workspace is not a compute cluster — it is a management and access environment. Compute clusters within the workspace are separate, configurable resources that can start and stop."
+      },
+      {
+        "texto_opcion": "Each workspace must have its own dedicated cloud storage account that cannot be shared.",
+        "es_correcta": false,
+        "explicacion": "Multiple workspaces can access the same cloud storage locations through Unity Catalog external locations and storage credentials. Workspaces do not require exclusive storage accounts."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to ensure that their Delta table retains enough history to allow time travel queries going back 14 days. Which configuration should they apply?",
+    "opciones": [
+      {
+        "texto_opcion": "Set the table property `delta.logRetentionDuration = 'interval 14 days'` and ensure VACUUM is not run with a retention period shorter than 14 days.",
+        "es_correcta": true,
+        "explicacion": "logRetentionDuration controls how long the transaction log entries are kept. Matching the VACUUM retention period ensures data files referenced by those log entries are also retained. Both settings must align to enable 14-day time travel."
+      },
+      {
+        "texto_opcion": "Run `RESTORE TABLE my_table TO TIMESTAMP AS OF '14 days ago'` to extend the retention period.",
+        "es_correcta": false,
+        "explicacion": "RESTORE rolls back the table to a previous state — it does not configure retention policy. Extending retention requires setting logRetentionDuration and managing VACUUM retention."
+      },
+      {
+        "texto_opcion": "Set `spark.sql.shuffle.partitions = 14` to indicate the number of days of history to retain.",
+        "es_correcta": false,
+        "explicacion": "spark.sql.shuffle.partitions controls the number of partitions after shuffle operations in Spark — it has absolutely no relationship to Delta Lake retention policy."
+      },
+      {
+        "texto_opcion": "Enable Auto Optimize with `delta.autoOptimize.autoCompact = true` to preserve historical versions.",
+        "es_correcta": false,
+        "explicacion": "Auto Optimize manages file sizes, not retention. It has no effect on how long historical versions are kept. Retention is managed by logRetentionDuration and VACUUM settings."
+      },
+      {
+        "texto_opcion": "Create a shallow clone of the table every day to maintain 14 snapshots for time travel.",
+        "es_correcta": false,
+        "explicacion": "Shallow clones would create 14 separate table copies — a wasteful workaround. The correct approach is setting logRetentionDuration and VACUUM retention on the original table."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "In Databricks, what is the primary purpose of Cluster Policies?",
+    "opciones": [
+      {
+        "texto_opcion": "Cluster policies allow administrators to define rules and constraints on cluster configurations (instance types, autoscaling limits, runtime versions, etc.) to control costs and enforce governance for users.",
+        "es_correcta": true,
+        "explicacion": "Cluster policies let admins define allowable cluster configurations. Users can only create clusters that comply with the policy, preventing over-provisioning and ensuring consistent, cost-controlled compute."
+      },
+      {
+        "texto_opcion": "Cluster policies define the data access permissions for each cluster, mapping clusters to Unity Catalog catalogs.",
+        "es_correcta": false,
+        "explicacion": "Data access permissions are managed by Unity Catalog (GRANT/REVOKE on securable objects), not cluster policies. Cluster policies control compute configuration, not data authorization."
+      },
+      {
+        "texto_opcion": "Cluster policies automatically scale clusters up and down based on real-time workload demand.",
+        "es_correcta": false,
+        "explicacion": "Autoscaling is a cluster configuration option (min/max workers). Cluster policies define constraints on those options; they do not perform the actual scaling."
+      },
+      {
+        "texto_opcion": "Cluster policies define network security rules for clusters, such as allowed outbound IP addresses.",
+        "es_correcta": false,
+        "explicacion": "Network security rules for clusters are configured at the cloud provider level (VPC security groups, NSGs). Cluster policies govern compute settings within Databricks."
+      },
+      {
+        "texto_opcion": "Cluster policies determine the order in which jobs are executed when multiple jobs share the same cluster.",
+        "es_correcta": false,
+        "explicacion": "Job scheduling and execution order are managed by Lakeflow Jobs, not cluster policies. Cluster policies constrain configuration options when a cluster is created."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is the significance of the `_delta_log` checkpoint files (Parquet format) that appear every 10 commits in a Delta table?",
+    "opciones": [
+      {
+        "texto_opcion": "Checkpoint files consolidate all previous JSON commit entries into a single Parquet file, enabling Delta Lake to quickly reconstruct the current table state without replaying every individual JSON commit file.",
+        "es_correcta": true,
+        "explicacion": "Every 10 commits, Delta Lake writes a Parquet checkpoint that represents the full table state at that point. This dramatically speeds up table state reconstruction — readers only need the latest checkpoint plus commits since then, not the entire log history."
+      },
+      {
+        "texto_opcion": "Checkpoint files are streaming checkpoints that record the last processed offset for Structured Streaming queries reading the table.",
+        "es_correcta": false,
+        "explicacion": "Streaming checkpoints are separate files stored in a user-specified checkpoint location, not in _delta_log. The _delta_log checkpoints are for transaction log compaction, not streaming state."
+      },
+      {
+        "texto_opcion": "Checkpoint files trigger an automatic OPTIMIZE operation, compacting the underlying Parquet data files.",
+        "es_correcta": false,
+        "explicacion": "Transaction log checkpoints are metadata consolidation events; they do not trigger OPTIMIZE or data file compaction. OPTIMIZE must be run explicitly or via Predictive Optimization."
+      },
+      {
+        "texto_opcion": "Checkpoint files are created by VACUUM and represent a safe restore point for time travel queries.",
+        "es_correcta": false,
+        "explicacion": "VACUUM deletes unreferenced files; it does not create checkpoints. Transaction log checkpoints are created automatically by Delta Lake every 10 commits for performance optimization."
+      },
+      {
+        "texto_opcion": "Checkpoint files contain encrypted copies of sensitive data for regulatory compliance purposes.",
+        "es_correcta": false,
+        "explicacion": "Checkpoint files are standard Delta transaction log metadata in Parquet format. They contain table state metadata (file paths, statistics, schema) — not encrypted copies of user data."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to choose a compute type for a machine learning training workload that requires GPU acceleration and will run for 6 hours. Which is the most appropriate choice?",
+    "opciones": [
+      {
+        "texto_opcion": "A job cluster configured with GPU-enabled instance types (e.g., g4dn or p3 instances on AWS), launched via Lakeflow Jobs for the duration of the training run.",
+        "es_correcta": true,
+        "explicacion": "For a long-running, GPU-requiring ML training job, a job cluster with GPU instances is ideal. It provides the necessary hardware, starts when the job runs, and terminates when done — balancing capability and cost."
+      },
+      {
+        "texto_opcion": "A serverless SQL Warehouse, which automatically provisions GPUs for machine learning workloads.",
+        "es_correcta": false,
+        "explicacion": "SQL Warehouses do not support GPU execution or ML training. They are SQL-only compute resources. ML training with GPU requires a properly configured cluster."
+      },
+      {
+        "texto_opcion": "A shared all-purpose cluster without GPU, as Photon can substitute for GPU acceleration in all ML workloads.",
+        "es_correcta": false,
+        "explicacion": "Photon accelerates SQL and DataFrame operations, not deep learning or GPU-specific ML operations. A cluster without GPU cannot run GPU-accelerated model training."
+      },
+      {
+        "texto_opcion": "Multiple small single-node clusters in parallel, since distributing across many nodes is always faster than one GPU cluster.",
+        "es_correcta": false,
+        "explicacion": "ML training, especially deep learning, typically runs on a single multi-GPU node or a coordinated multi-node GPU cluster. Randomly distributing across many small CPU nodes is not how GPU ML training works."
+      },
+      {
+        "texto_opcion": "A Lakeflow Spark Declarative Pipeline cluster, which automatically provisions the best compute for ML training.",
+        "es_correcta": false,
+        "explicacion": "SDP pipeline clusters are designed for ETL data pipeline workloads, not ML model training. They do not automatically provision GPU compute."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is the function of the `DESCRIBE HISTORY` command on a Delta table?",
+    "opciones": [
+      {
+        "texto_opcion": "It displays the full transaction history of a Delta table, showing each version with its timestamp, operation type (WRITE, MERGE, OPTIMIZE, etc.), user who performed it, and execution metrics.",
+        "es_correcta": true,
+        "explicacion": "DESCRIBE HISTORY returns the commit log of a Delta table — each row represents a version with details about what operation was performed, when, by whom, and how many files were affected. This is essential for auditing and time travel."
+      },
+      {
+        "texto_opcion": "It shows the schema evolution history of a table, displaying all past column additions, renames, and type changes.",
+        "es_correcta": false,
+        "explicacion": "While schema changes appear in DESCRIBE HISTORY as operations, the command is not limited to schema history. It shows the full transaction log including data operations, not just schema changes."
+      },
+      {
+        "texto_opcion": "It computes and displays table statistics (row counts, null counts, min/max per column) used for query optimization.",
+        "es_correcta": false,
+        "explicacion": "Table statistics are computed by ANALYZE TABLE and displayed by DESCRIBE EXTENDED or DESCRIBE DETAIL. DESCRIBE HISTORY shows transaction history, not statistical summaries."
+      },
+      {
+        "texto_opcion": "It shows the cluster configurations used for each past write operation, helping diagnose performance issues.",
+        "es_correcta": false,
+        "explicacion": "DESCRIBE HISTORY records operation-level information (operation type, parameters, metrics) but not the specific cluster configuration used. Cluster details are in Spark Event Logs and cluster UI."
+      },
+      {
+        "texto_opcion": "It lists all users who have read the table, providing a read access audit trail.",
+        "es_correcta": false,
+        "explicacion": "DESCRIBE HISTORY only captures write operations (committed transactions). Read-only SELECT queries are not recorded in the Delta transaction log. Read access auditing requires Unity Catalog audit logs."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "Which of the following statements about Liquid Clustering in Delta Lake is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Liquid Clustering is a flexible data layout optimization that replaces static partitioning and Z-ordering, allowing clustering columns to be changed without rewriting the entire table.",
+        "es_correcta": true,
+        "explicacion": "Unlike static partitioning (which is defined at creation and costly to change) and Z-ordering (which is applied per-run with OPTIMIZE), Liquid Clustering is incremental and flexible. Clustering columns can be updated without a full table rewrite."
+      },
+      {
+        "texto_opcion": "Liquid Clustering requires a fixed partition column to function and cannot be used on unpartitioned tables.",
+        "es_correcta": false,
+        "explicacion": "Liquid Clustering works on both partitioned and unpartitioned tables, and it actually replaces the need for explicit partitioning in most cases. It does not require a pre-existing partition column."
+      },
+      {
+        "texto_opcion": "Liquid Clustering is only available for streaming tables and does not support batch Delta tables.",
+        "es_correcta": false,
+        "explicacion": "Liquid Clustering is available for all Delta tables — batch, streaming, managed, and external. It is not restricted to streaming tables."
+      },
+      {
+        "texto_opcion": "Liquid Clustering physically sorts all data in the table every time a new record is inserted.",
+        "es_correcta": false,
+        "explicacion": "Liquid Clustering is incremental — it organizes newly written data and opportunistically clusters existing data over time via background OPTIMIZE operations, not on every insert."
+      },
+      {
+        "texto_opcion": "Liquid Clustering can only be enabled on tables created with Databricks Runtime 10.4 LTS or earlier.",
+        "es_correcta": false,
+        "explicacion": "Liquid Clustering is a newer feature available in more recent Databricks Runtime versions, not a legacy feature limited to older runtimes."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to allow an ML team to read a specific schema in Unity Catalog but prevent them from creating, modifying, or deleting any tables. What privilege should be granted?",
+    "opciones": [
+      {
+        "texto_opcion": "GRANT USE CATALOG ON CATALOG my_catalog TO ml_team; GRANT USE SCHEMA ON SCHEMA my_schema TO ml_team; GRANT SELECT ON SCHEMA my_schema TO ml_team;",
+        "es_correcta": true,
+        "explicacion": "To read tables in Unity Catalog, a principal needs: USE CATALOG (to navigate to the catalog), USE SCHEMA (to navigate to the schema), and SELECT on the schema (to query tables). Without CREATE, MODIFY, or DELETE privileges, the team is read-only."
+      },
+      {
+        "texto_opcion": "GRANT ALL PRIVILEGES ON SCHEMA my_schema TO ml_team;",
+        "es_correcta": false,
+        "explicacion": "ALL PRIVILEGES grants create, modify, and delete capabilities in addition to read, which violates the read-only requirement. Never grant ALL PRIVILEGES when only SELECT is needed."
+      },
+      {
+        "texto_opcion": "GRANT READ ON SCHEMA my_schema TO ml_team;",
+        "es_correcta": false,
+        "explicacion": "'READ' is not a valid Unity Catalog privilege. The correct privilege for querying tables is SELECT. Additionally, USE CATALOG and USE SCHEMA are also required for navigation."
+      },
+      {
+        "texto_opcion": "GRANT SELECT ON CATALOG my_catalog TO ml_team;",
+        "es_correcta": false,
+        "explicacion": "SELECT cannot be granted at the catalog level in Unity Catalog — it must be granted at the table, view, or schema level. Also, USE CATALOG and USE SCHEMA must be granted separately."
+      },
+      {
+        "texto_opcion": "GRANT VIEW ON DATABASE my_schema TO ml_team;",
+        "es_correcta": false,
+        "explicacion": "'VIEW' and 'DATABASE' are not valid Unity Catalog privilege or object types. The correct terms are SELECT (privilege) and SCHEMA (object type)."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What happens when you run `DROP TABLE` on a Unity Catalog managed Delta table versus a Unity Catalog external Delta table?",
+    "opciones": [
+      {
+        "texto_opcion": "Dropping a managed table deletes both the metadata entry in Unity Catalog and the underlying data files in cloud storage. Dropping an external table only removes the metadata; the data files remain untouched.",
+        "es_correcta": true,
+        "explicacion": "This is the fundamental distinction: managed tables have their full lifecycle (metadata + data) controlled by Unity Catalog, so DROP deletes everything. External tables are registered pointers to user-owned storage, so DROP only removes the registration."
+      },
+      {
+        "texto_opcion": "Dropping either table type only removes the metadata; data files are always preserved for compliance.",
+        "es_correcta": false,
+        "explicacion": "This is only true for external tables. Managed tables have their data files deleted when the table is dropped. If data preservation is required for managed tables, UNDROP must be used immediately or backups maintained."
+      },
+      {
+        "texto_opcion": "Dropping a managed table moves data files to a trash folder for 30 days before permanent deletion.",
+        "es_correcta": false,
+        "explicacion": "There is no automatic trash/recycle bin for managed table data files. Once a managed table is dropped, data files are deleted from cloud storage. Some cloud storage accounts may have soft-delete policies, but that is separate from Delta Lake."
+      },
+      {
+        "texto_opcion": "Dropping an external table also deletes the data files because Unity Catalog manages all storage.",
+        "es_correcta": false,
+        "explicacion": "External tables are specifically designed so that Unity Catalog manages only the metadata, not the data files. The data files remain in the external location after the table is dropped."
+      },
+      {
+        "texto_opcion": "Dropping any Unity Catalog table (managed or external) requires explicit confirmation and cannot be automated.",
+        "es_correcta": false,
+        "explicacion": "DROP TABLE executes without a separate confirmation prompt in SQL. It can be included in automated scripts and jobs. The distinction between managed and external behavior remains as described."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What is a materialized view in Databricks, and how does it differ from a standard view?",
+    "opciones": [
+      {
+        "texto_opcion": "A materialized view precomputes and stores the results of its defining query as a Delta table; a standard view re-executes the query every time it is accessed without storing results.",
+        "es_correcta": true,
+        "explicacion": "Standard views are virtual — they execute the underlying SQL on every access. Materialized views persist query results as Delta tables and update them on refresh. Queries against materialized views are faster because they read pre-computed data."
+      },
+      {
+        "texto_opcion": "A materialized view supports real-time streaming updates, while a standard view only works with batch data.",
+        "es_correcta": false,
+        "explicacion": "In Databricks, streaming tables (not materialized views) are designed for real-time streaming. Materialized views support incremental refresh but are not a pure streaming object."
+      },
+      {
+        "texto_opcion": "A materialized view can only be created in Lakeflow Spark Declarative Pipelines; standard views work everywhere.",
+        "es_correcta": false,
+        "explicacion": "Databricks SQL also supports creating standalone materialized views outside of SDP pipelines. Materialized views are not pipeline-exclusive."
+      },
+      {
+        "texto_opcion": "A materialized view and a standard view are interchangeable terms in Databricks; both cache results identically.",
+        "es_correcta": false,
+        "explicacion": "They are distinct concepts. A standard view never caches results — it always recomputes. A materialized view explicitly stores results. They are not interchangeable."
+      },
+      {
+        "texto_opcion": "A materialized view automatically updates whenever the source table is modified; a standard view requires manual refresh.",
+        "es_correcta": false,
+        "explicacion": "Materialized views in Databricks require an explicit refresh (manual or scheduled), not automatic on every source write. Standard views do not need refreshing because they recompute on access."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What is the recommended way to handle schema evolution when using Auto Loader to ingest files into Delta tables?",
+    "opciones": [
+      {
+        "texto_opcion": "Configure schema evolution with `cloudFiles.schemaEvolutionMode = 'addNewColumns'` so that new columns in incoming files are automatically added to the target Delta table schema.",
+        "es_correcta": true,
+        "explicacion": "Auto Loader's schema evolution mode allows automatic detection of new columns in source files and propagates them to the target Delta table. This enables hands-off schema evolution for evolving data sources."
+      },
+      {
+        "texto_opcion": "Use a static schema definition and fail the job if any new column is detected in incoming files.",
+        "es_correcta": false,
+        "explicacion": "While schema enforcement (failing on new columns) is a valid strategy for strict schema control, it is not the recommended way to handle schema evolution. Auto Loader provides evolution modes for this purpose."
+      },
+      {
+        "texto_opcion": "Delete and recreate the Delta table with the new schema every time a new column is detected.",
+        "es_correcta": false,
+        "explicacion": "Deleting and recreating the table destroys history, streaming state, and existing data. Schema evolution handles this gracefully without destructive operations."
+      },
+      {
+        "texto_opcion": "Set `mergeSchema = false` to prevent any schema changes from affecting the target table.",
+        "es_correcta": false,
+        "explicacion": "Setting mergeSchema = false enforces strict schema matching and will fail if incoming data has new columns, which prevents evolution. This is the opposite of what is needed for schema evolution."
+      },
+      {
+        "texto_opcion": "Use CONVERT TO DELTA after each ingestion to apply schema changes from the new Parquet files.",
+        "es_correcta": false,
+        "explicacion": "CONVERT TO DELTA is a one-time conversion for Parquet tables; it is not part of an ongoing schema evolution strategy and is unrelated to Auto Loader."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "Which statement accurately describes how Delta Lake handles concurrent writes from multiple Spark jobs?",
+    "opciones": [
+      {
+        "texto_opcion": "Delta Lake uses optimistic concurrency control — each writer reads the current table state, writes new files, and then commits to the transaction log only if no conflicting changes occurred since it started.",
+        "es_correcta": true,
+        "explicacion": "Delta Lake's ACID guarantees are implemented via optimistic concurrency control. Writers proceed independently and commit atomically. If a conflict is detected at commit time (another writer changed the same data), one writer must retry."
+      },
+      {
+        "texto_opcion": "Delta Lake uses pessimistic locking — writers must acquire an exclusive lock on the entire table before starting, serializing all writes.",
+        "es_correcta": false,
+        "explicacion": "Pessimistic locking would serialize all writes and eliminate concurrent access. Delta Lake uses optimistic concurrency, allowing multiple writers to proceed simultaneously with conflict detection at commit time."
+      },
+      {
+        "texto_opcion": "Delta Lake does not support concurrent writes; only one Spark job can write to a Delta table at a time.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake explicitly supports concurrent reads and writes from multiple jobs simultaneously. The transaction log coordinates concurrent access without requiring serialization."
+      },
+      {
+        "texto_opcion": "Delta Lake handles concurrent writes by creating a separate copy of the table for each writer and merging them afterward.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake does not create separate table copies per writer. Writers write new Parquet files and attempt to commit to the shared transaction log, with conflict detection at commit time."
+      },
+      {
+        "texto_opcion": "Delta Lake prevents concurrent writes by requiring all jobs to use the same Spark session.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake supports writes from completely independent Spark jobs, clusters, and sessions. There is no requirement for a shared session — the transaction log coordinates concurrent access."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to reduce the cost of running a long-running Lakeflow Jobs pipeline by using spare cloud capacity. Which cluster configuration option should they consider?",
+    "opciones": [
+      {
+        "texto_opcion": "Configure worker nodes to use spot instances (AWS) or spot VMs (Azure) / preemptible VMs (GCP), which are significantly cheaper but may be reclaimed by the cloud provider.",
+        "es_correcta": true,
+        "explicacion": "Spot/preemptible instances use unused cloud capacity at discounts of 60–90%. They can be interrupted, so they are best for fault-tolerant workloads like Spark jobs that can retry failed tasks."
+      },
+      {
+        "texto_opcion": "Use VACUUM with RETAIN 0 HOURS before each job run to free up cluster memory.",
+        "es_correcta": false,
+        "explicacion": "VACUUM removes old data files from storage and has no effect on cluster memory or compute costs. It is unrelated to spot instance cost optimization."
+      },
+      {
+        "texto_opcion": "Set spark.sql.shuffle.partitions to 1 to minimize the number of tasks and reduce compute time.",
+        "es_correcta": false,
+        "explicacion": "Reducing shuffle partitions to 1 would severely bottleneck performance by serializing all shuffle operations. This would increase run time and potentially cost more, not less."
+      },
+      {
+        "texto_opcion": "Use a single-node cluster without autoscaling to minimize the per-node overhead.",
+        "es_correcta": false,
+        "explicacion": "A single-node cluster cannot distribute work across multiple machines, making it far slower for large datasets. Spot instances on a multi-node cluster are the cost-reduction strategy."
+      },
+      {
+        "texto_opcion": "Switch from Databricks Runtime to Databricks Runtime ML to access free GPU capacity.",
+        "es_correcta": false,
+        "explicacion": "Databricks Runtime ML is a variant with ML libraries pre-installed; it does not provide free GPU access. GPU instances cost more, not less."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is the role of the Unity Catalog metastore in the Databricks ecosystem?",
+    "opciones": [
+      {
+        "texto_opcion": "The metastore is the top-level container in Unity Catalog that stores all metadata (table definitions, schemas, access controls, lineage) for data assets across all workspaces in a region.",
+        "es_correcta": true,
+        "explicacion": "The Unity Catalog metastore is a centralized metadata repository. One metastore is created per cloud region, and multiple workspaces attach to it to share governed data assets, lineage, and access policies."
+      },
+      {
+        "texto_opcion": "The metastore is a physical storage bucket where all Delta table data files are stored.",
+        "es_correcta": false,
+        "explicacion": "The metastore stores metadata (schema definitions, access policies, lineage), not actual data files. Data files live in cloud object storage (S3, ADLS, GCS) at the locations specified by storage credentials and external locations."
+      },
+      {
+        "texto_opcion": "The metastore is a Spark component that caches table statistics for query optimization.",
+        "es_correcta": false,
+        "explicacion": "Table statistics caching is part of the Spark SQL optimizer. The Unity Catalog metastore is a governance and metadata service, not a Spark-internal caching component."
+      },
+      {
+        "texto_opcion": "The metastore is created automatically per workspace and cannot be shared across workspaces.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog metastores are designed to be shared across multiple workspaces in the same region. A single metastore provides centralized governance for all attached workspaces."
+      },
+      {
+        "texto_opcion": "The metastore replaces the Spark driver, managing all query execution and resource allocation.",
+        "es_correcta": false,
+        "explicacion": "The metastore is a metadata governance service, not a query execution component. The Spark driver still manages query planning and resource allocation within a cluster."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "Which feature allows a Databricks workspace to query external databases (e.g., PostgreSQL, MySQL, Snowflake) without moving data into Databricks first?",
+    "opciones": [
+      {
+        "texto_opcion": "Lakehouse Federation, which registers external databases as foreign catalogs in Unity Catalog, allowing SQL queries to be pushed down to the external system.",
+        "es_correcta": true,
+        "explicacion": "Lakehouse Federation creates a read-only foreign catalog in Unity Catalog that maps to an external database. Users can query external tables with standard SQL, and Databricks pushes down filters and projections to the source database for efficient execution."
+      },
+      {
+        "texto_opcion": "Delta Sharing, which provides read-only access to external databases by generating a sharing URL.",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing is for sharing Delta tables with external recipients, not for querying external databases. Lakehouse Federation is the correct feature for querying external data sources."
+      },
+      {
+        "texto_opcion": "Auto Loader, which continuously ingests data from external databases into Databricks Delta tables for local querying.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader ingests files from cloud object storage, not directly from databases. While it can be used to load database exports, it moves data into Databricks rather than federating queries externally."
+      },
+      {
+        "texto_opcion": "Databricks Connect, which routes Spark DataFrame operations to execute on the external database's query engine.",
+        "es_correcta": false,
+        "explicacion": "Databricks Connect enables local IDE code to run against a Databricks cluster, not against external databases. Lakehouse Federation is the correct feature for federated external queries."
+      },
+      {
+        "texto_opcion": "SQL Passthrough mode in Databricks SQL, which forwards SQL queries directly to any registered external database.",
+        "es_correcta": false,
+        "explicacion": "'SQL Passthrough mode' is not a Databricks feature. Lakehouse Federation is the supported mechanism for querying external databases via Unity Catalog foreign catalogs."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What type of table does Databricks create by default when you execute `CREATE TABLE my_table USING DELTA AS SELECT ...` in a Unity Catalog-enabled workspace?",
+    "opciones": [
+      {
+        "texto_opcion": "A Unity Catalog managed Delta table, where Databricks controls both the metadata and the data files stored in the Unity Catalog managed storage location.",
+        "es_correcta": true,
+        "explicacion": "In Unity Catalog, the default table type is a managed table. Without specifying LOCATION, the data files are stored in the Unity Catalog-managed storage path, and dropping the table deletes both metadata and data."
+      },
+      {
+        "texto_opcion": "An external Delta table pointing to DBFS root at /user/hive/warehouse.",
+        "es_correcta": false,
+        "explicacion": "With Unity Catalog enabled, new tables use Unity Catalog managed storage, not DBFS root. The /user/hive/warehouse path is the legacy Hive metastore location."
+      },
+      {
+        "texto_opcion": "A temporary table that exists only for the duration of the current Spark session.",
+        "es_correcta": false,
+        "explicacion": "Temporary tables are created with CREATE TEMP VIEW or equivalent. A standard CREATE TABLE statement creates a persistent table in Unity Catalog."
+      },
+      {
+        "texto_opcion": "A Parquet table without transaction log support, since USING DELTA must be explicitly specified.",
+        "es_correcta": false,
+        "explicacion": "The question explicitly includes USING DELTA in the statement, so it is a Delta table. Additionally, in Databricks, Delta is the default format even if USING DELTA is omitted."
+      },
+      {
+        "texto_opcion": "An Apache Iceberg table, since Databricks automatically converts Delta to Iceberg for Unity Catalog compatibility.",
+        "es_correcta": false,
+        "explicacion": "Databricks uses Delta Lake as the native table format. There is no automatic conversion to Iceberg. Iceberg tables can be created explicitly but are not the default."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "In the context of Databricks security, what is the difference between a user, a group, and a service principal in Unity Catalog?",
+    "opciones": [
+      {
+        "texto_opcion": "A user is a human identity; a group is a collection of users and service principals for simplified permission management; a service principal is a machine identity used by automated applications and jobs.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog's access control model supports three principal types. Users are humans with login credentials. Groups bundle multiple principals for bulk permission assignment. Service principals are non-human identities for automated workloads like CI/CD pipelines and scheduled jobs."
+      },
+      {
+        "texto_opcion": "A user is an admin account; a group is a regular user account; a service principal is an external identity provider.",
+        "es_correcta": false,
+        "explicacion": "These definitions are incorrect. All three can have admin or regular privileges based on grants. Service principals are machine identities, not identity providers."
+      },
+      {
+        "texto_opcion": "Users, groups, and service principals all have identical capabilities; the distinction is only for organizational naming conventions.",
+        "es_correcta": false,
+        "explicacion": "There are functional differences: users can log in interactively, service principals authenticate programmatically, and groups aggregate permissions. These are not just naming conventions."
+      },
+      {
+        "texto_opcion": "Service principals are managed by the cloud provider (AWS IAM, Azure AD) and cannot be configured within Databricks.",
+        "es_correcta": false,
+        "explicacion": "Service principals can be created and managed within Databricks, though they can also be synchronized from identity providers. They are a first-class principal type within Unity Catalog."
+      },
+      {
+        "texto_opcion": "Groups in Unity Catalog can only contain users, not other groups or service principals.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog groups support nested groups (groups within groups) and can contain both users and service principals. This enables hierarchical permission management."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has a table with 500 billion rows. They want to query only the rows where `region = 'EMEA'`. Which data layout strategy would most efficiently minimize the amount of data scanned?",
+    "opciones": [
+      {
+        "texto_opcion": "Apply Liquid Clustering with CLUSTER BY (region) or use static partitioning on `region`, so that Delta Lake data skipping can eliminate entire files or partitions that don't match `region = 'EMEA'`.",
+        "es_correcta": true,
+        "explicacion": "By co-locating data with the same region value (via clustering or partitioning), and with Delta Lake's file-level statistics tracking min/max of the region column, the query engine can skip all files that cannot contain 'EMEA', dramatically reducing scan volume."
+      },
+      {
+        "texto_opcion": "Run VACUUM before every query to remove stale files and speed up the scan.",
+        "es_correcta": false,
+        "explicacion": "VACUUM removes old unreferenced files, not currently active data files. Running it before queries has no effect on scan performance for current data."
+      },
+      {
+        "texto_opcion": "Store the table in CSV format to allow line-by-line filtering without loading entire files.",
+        "es_correcta": false,
+        "explicacion": "CSV lacks columnar organization and file-level statistics, making it far worse for selective filtering than Delta Lake's Parquet-based format with data skipping."
+      },
+      {
+        "texto_opcion": "Increase the number of executors to parallelize the full table scan and reduce wall-clock time.",
+        "es_correcta": false,
+        "explicacion": "Adding more executors speeds up a full scan but does not reduce the amount of data scanned. The goal should be to avoid scanning non-matching files, not to scan them faster."
+      },
+      {
+        "texto_opcion": "Enable Structured Streaming on the table to process only new EMEA records as they arrive.",
+        "es_correcta": false,
+        "explicacion": "Structured Streaming is for processing incremental data over time, not for reducing the scan scope of a historical batch query filtering by region."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "What does the `CLONE` command do in Delta Lake, and what is the difference between SHALLOW CLONE and DEEP CLONE?",
+    "opciones": [
+      {
+        "texto_opcion": "CLONE creates a copy of a Delta table. SHALLOW CLONE copies only the transaction log (metadata) and references the original data files without copying them. DEEP CLONE copies both the transaction log and all the underlying data files.",
+        "es_correcta": true,
+        "explicacion": "SHALLOW CLONE creates a lightweight copy that references original files — useful for testing and experimentation without data duplication. DEEP CLONE creates a fully independent copy with its own data files — suitable for backups or migration."
+      },
+      {
+        "texto_opcion": "SHALLOW CLONE encrypts and copies all data files; DEEP CLONE creates a link to the original table without any copying.",
+        "es_correcta": false,
+        "explicacion": "This is the opposite of the correct behavior. SHALLOW CLONE references original files without copying data; DEEP CLONE copies everything."
+      },
+      {
+        "texto_opcion": "CLONE in Delta Lake creates an append-only view of a table; there is no difference between SHALLOW and DEEP.",
+        "es_correcta": false,
+        "explicacion": "CLONE creates an independent copy, not a view. SHALLOW and DEEP differ in whether data files are physically copied or only referenced."
+      },
+      {
+        "texto_opcion": "SHALLOW CLONE and DEEP CLONE both create fully independent copies with their own data files; they differ only in compression.",
+        "es_correcta": false,
+        "explicacion": "Only DEEP CLONE creates a fully independent copy with its own data files. SHALLOW CLONE references original files. Compression is not a differentiator."
+      },
+      {
+        "texto_opcion": "CLONE is used to convert Delta tables to Parquet format; SHALLOW means single-column tables; DEEP means multi-column tables.",
+        "es_correcta": false,
+        "explicacion": "CLONE has nothing to do with format conversion or column count. It creates a copy of a Delta table, with SHALLOW referencing original files and DEEP physically copying them."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "Which of the following best describes an 'All-Purpose' (interactive) cluster in Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "A cluster that remains active and can run multiple notebooks and jobs interactively, billed at the all-purpose compute rate, and does not automatically terminate after a single job completes.",
+        "es_correcta": true,
+        "explicacion": "All-purpose clusters are long-running compute resources designed for interactive development in notebooks, data exploration, and collaborative work. They continue running until manually terminated or after an idle timeout, and are billed at the higher all-purpose DBU rate."
+      },
+      {
+        "texto_opcion": "A cluster that is created per-job, runs a single task, and automatically terminates upon job completion, billed at the job compute rate.",
+        "es_correcta": false,
+        "explicacion": "This describes a Job cluster (also called an automated cluster). All-purpose clusters are long-lived and interactive, while job clusters are ephemeral and task-specific."
+      },
+      {
+        "texto_opcion": "A cluster dedicated exclusively to running Databricks SQL queries with auto-scaling and no idle timeout.",
+        "es_correcta": false,
+        "explicacion": "Databricks SQL queries run on SQL Warehouses, not all-purpose clusters. SQL Warehouses are optimized for BI and SQL workloads with their own pricing and scaling model."
+      },
+      {
+        "texto_opcion": "A serverless cluster managed entirely by Databricks, with no configuration needed from the user.",
+        "es_correcta": false,
+        "explicacion": "Serverless compute is a separate tier where Databricks manages the infrastructure. All-purpose clusters are provisioned in the customer's cloud account and require configuration choices like instance type and autoscaling settings."
+      },
+      {
+        "texto_opcion": "A cluster used exclusively for ML training workflows, separate from data engineering workloads.",
+        "es_correcta": false,
+        "explicacion": "All-purpose clusters can be used for any workload — data engineering, ML, analytics, or exploration. There is no cluster type exclusively reserved for ML training by default."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is a Databricks SQL Warehouse, and how does it differ from an all-purpose cluster?",
+    "opciones": [
+      {
+        "texto_opcion": "A SQL Warehouse is compute optimized for running SQL queries and BI dashboards, billed per SQL compute DBU, and designed for concurrent SQL users; an all-purpose cluster is general-purpose compute used in notebooks and jobs.",
+        "es_correcta": true,
+        "explicacion": "SQL Warehouses provide SQL-specific compute with features like query result caching, serverless startup, and built-in Photon acceleration for BI workloads. All-purpose clusters are multi-language (Python, Scala, R, SQL) and used for interactive development and jobs."
+      },
+      {
+        "texto_opcion": "A SQL Warehouse is a physical database server that stores all query results persistently; an all-purpose cluster discards results after each session.",
+        "es_correcta": false,
+        "explicacion": "A SQL Warehouse is compute, not storage. Query results are stored in Delta tables in cloud storage, not 'in' the warehouse. All-purpose clusters also persist results to Delta tables when explicitly written."
+      },
+      {
+        "texto_opcion": "SQL Warehouses can only run SQL, while all-purpose clusters support Python but not SQL.",
+        "es_correcta": false,
+        "explicacion": "All-purpose clusters fully support SQL (via Spark SQL). The difference is optimization and use case, not language support. SQL Warehouses are optimized for SQL/BI, while all-purpose clusters are general purpose."
+      },
+      {
+        "texto_opcion": "SQL Warehouses are free to use; all-purpose clusters are the only compute type that incurs cost.",
+        "es_correcta": false,
+        "explicacion": "Both SQL Warehouses and all-purpose clusters incur DBU costs. SQL Warehouses have their own pricing tier (SQL compute rate), which differs from the all-purpose compute rate."
+      },
+      {
+        "texto_opcion": "SQL Warehouses cannot access Delta tables; they only connect to external databases via JDBC.",
+        "es_correcta": false,
+        "explicacion": "SQL Warehouses are purpose-built to query Delta tables in Unity Catalog. They can also connect to external sources, but Delta Lake in Databricks is their primary use case."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "In Databricks, what is 'Serverless Compute' and what is its main advantage over classic cluster compute?",
+    "opciones": [
+      {
+        "texto_opcion": "Serverless compute is infrastructure managed entirely by Databricks in its own cloud account, allowing near-instant startup (seconds) without the user needing to provision or manage VMs.",
+        "es_correcta": true,
+        "explicacion": "With serverless, Databricks pre-warms pools of compute so that workloads start in seconds rather than minutes. Users do not manage VM configuration, patching, or scaling — Databricks handles it all. This reduces operational overhead and eliminates cold-start delays."
+      },
+      {
+        "texto_opcion": "Serverless compute runs entirely on the user's local machine, eliminating cloud costs.",
+        "es_correcta": false,
+        "explicacion": "Serverless compute still runs in the cloud, managed by Databricks in its infrastructure. It does not run locally; it simply shifts VM management from the customer's account to Databricks."
+      },
+      {
+        "texto_opcion": "Serverless compute is a mode where Databricks automatically converts all Python code to SQL for faster execution.",
+        "es_correcta": false,
+        "explicacion": "There is no such automatic code conversion. Serverless refers to the infrastructure management model — Databricks manages the underlying compute, not the programming language used."
+      },
+      {
+        "texto_opcion": "Serverless compute means the cluster never scales down, maintaining maximum resources at all times to avoid restarts.",
+        "es_correcta": false,
+        "explicacion": "Serverless compute auto-scales and can scale to zero when idle. It does not maintain maximum resources constantly — it scales dynamically based on workload demand."
+      },
+      {
+        "texto_opcion": "Serverless compute is only available for Databricks SQL and cannot be used for Lakeflow Jobs or notebooks.",
+        "es_correcta": false,
+        "explicacion": "Serverless compute is available for multiple Databricks features including Databricks SQL Warehouses, Lakeflow Jobs (serverless jobs), and Spark notebooks, depending on the workspace configuration."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is the three-level namespace in Unity Catalog, and how are objects referenced within it?",
+    "opciones": [
+      {
+        "texto_opcion": "The three levels are Catalog > Schema (Database) > Table/View/Volume. Objects are referenced with the fully qualified name `catalog_name.schema_name.object_name`.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog introduces a three-level namespace hierarchy. The catalog is the top-level container, schemas (formerly called databases) group related objects, and tables/views/volumes are the leaf objects. The full reference format is `catalog.schema.table`."
+      },
+      {
+        "texto_opcion": "The three levels are Workspace > Database > Table. Objects are referenced as `workspace.database.table`.",
+        "es_correcta": false,
+        "explicacion": "Workspaces are not part of the three-level namespace. The correct hierarchy is Catalog > Schema > Table. Multiple workspaces can share the same catalog/schema hierarchy through a single Unity Catalog metastore."
+      },
+      {
+        "texto_opcion": "The three levels are Account > Catalog > Table. Schemas do not exist in Unity Catalog.",
+        "es_correcta": false,
+        "explicacion": "The account is above the metastore level but is not part of the object namespace. Schemas are a core part of Unity Catalog — the correct hierarchy is Catalog > Schema > Table."
+      },
+      {
+        "texto_opcion": "The three levels are Metastore > Catalog > Table. Schemas are optional and exist only for Hive compatibility.",
+        "es_correcta": false,
+        "explicacion": "The metastore is the governance container but not a namespace level used in object references. The correct three levels are Catalog > Schema > Table. Schemas are required, not optional."
+      },
+      {
+        "texto_opcion": "The three levels are Cloud > Region > Table. Unity Catalog uses cloud provider namespaces directly.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog has its own namespace independent of cloud provider constructs. The correct hierarchy is Catalog > Schema > Table, not tied to cloud regions in the reference format."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "Which compute type is most cost-effective for running a scheduled nightly ETL job in Databricks that does not require interactive development?",
+    "opciones": [
+      {
+        "texto_opcion": "A Job cluster (automated cluster) that is created when the job starts and automatically terminated when the job completes, billed at the lower job compute DBU rate.",
+        "es_correcta": true,
+        "explicacion": "Job clusters are ephemeral — they spin up for the job and shut down after completion. This eliminates idle time and uses the cheaper job compute DBU rate (typically 2–3x cheaper than all-purpose). They are ideal for scheduled, automated workloads."
+      },
+      {
+        "texto_opcion": "An all-purpose cluster kept running 24/7 to avoid startup time and always be ready for the nightly job.",
+        "es_correcta": false,
+        "explicacion": "Keeping an all-purpose cluster running continuously incurs cost even during idle periods, and the all-purpose DBU rate is higher. A job cluster that only runs during the job is far more cost-effective."
+      },
+      {
+        "texto_opcion": "A SQL Warehouse with serverless mode to minimize startup latency for the ETL pipeline.",
+        "es_correcta": false,
+        "explicacion": "SQL Warehouses are optimized for SQL analytics and BI. For a Python/Spark ETL job, a Job cluster (or Serverless Jobs compute) is the appropriate choice."
+      },
+      {
+        "texto_opcion": "A single-node cluster to reduce per-node overhead for nightly batch workloads.",
+        "es_correcta": false,
+        "explicacion": "Single-node clusters cannot distribute Spark work, making them slow for large ETL jobs. Multi-node job clusters with distributed compute are appropriate for production ETL."
+      },
+      {
+        "texto_opcion": "An autoscaling all-purpose cluster shared across all teams to reduce per-team costs.",
+        "es_correcta": false,
+        "explicacion": "Shared all-purpose clusters can cause resource contention and security issues between teams. Dedicated job clusters per workflow are the recommended pattern for scheduled ETL."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is a Delta Lake 'checkpoint' file and why is it important?",
+    "opciones": [
+      {
+        "texto_opcion": "A Parquet file created every 10 transaction log commits (by default) that summarizes the entire table state up to that point, allowing faster reconstruction of the current table state without reading every individual commit file.",
+        "es_correcta": true,
+        "explicacion": "As the transaction log grows, reading every JSON commit file becomes slow. Delta Lake automatically creates Parquet checkpoint files at regular intervals (every 10 commits by default) that snapshot the complete table state, dramatically speeding up metadata loading for large tables."
+      },
+      {
+        "texto_opcion": "A file that saves the Spark driver's memory state so a failed job can resume from where it stopped.",
+        "es_correcta": false,
+        "explicacion": "This describes Structured Streaming checkpoints, not Delta Lake transaction log checkpoints. Delta Lake checkpoints are about table state summarization, not job fault recovery."
+      },
+      {
+        "texto_opcion": "A backup copy of all Parquet data files created before each OPTIMIZE operation.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake does not create backup copies of data files before OPTIMIZE. The transaction log itself provides the history, and old files become unreferenced (eligible for VACUUM) after OPTIMIZE."
+      },
+      {
+        "texto_opcion": "A lock file created during write operations to prevent concurrent writers from corrupting the table.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake uses optimistic concurrency control via the transaction log, not lock files. Checkpoint files summarize table state for faster log reads, not for locking."
+      },
+      {
+        "texto_opcion": "An encryption key file stored alongside Parquet data files for secure access.",
+        "es_correcta": false,
+        "explicacion": "Checkpoint files are Parquet-format summaries of the transaction log state. Encryption in Delta Lake is handled at the cloud storage or cluster level, not via special checkpoint key files."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "What does ACID stand for in the context of Delta Lake, and what does each property guarantee?",
+    "opciones": [
+      {
+        "texto_opcion": "Atomicity (all-or-nothing writes), Consistency (data always meets constraints), Isolation (concurrent operations don't interfere), Durability (committed data survives failures).",
+        "es_correcta": true,
+        "explicacion": "Delta Lake provides full ACID guarantees via its transaction log. Atomicity ensures partial writes don't leave the table in a corrupt state. Consistency enforces schema and constraints. Isolation prevents dirty reads between concurrent operations. Durability guarantees committed data persists even after cluster failure."
+      },
+      {
+        "texto_opcion": "Availability, Consistency, Integrity, Durability — guarantees that data is always accessible and never lost.",
+        "es_correcta": false,
+        "explicacion": "The correct expansion is Atomicity, Consistency, Isolation, Durability. 'Availability' and 'Integrity' are not ACID properties. Availability is from the CAP theorem."
+      },
+      {
+        "texto_opcion": "Atomicity, Compression, Indexing, Distribution — properties of columnar file formats like Parquet.",
+        "es_correcta": false,
+        "explicacion": "These are not the ACID properties. Compression and indexing are Parquet characteristics, not ACID database guarantees. ACID stands for Atomicity, Consistency, Isolation, Durability."
+      },
+      {
+        "texto_opcion": "ACID is a Databricks-specific acronym for Automated Cluster Ingestion and Delivery.",
+        "es_correcta": false,
+        "explicacion": "ACID is a standard database concept predating Databricks by decades. It stands for Atomicity, Consistency, Isolation, Durability — foundational properties for reliable transaction processing."
+      },
+      {
+        "texto_opcion": "Atomicity, Caching, Isolation, Delta — properties specific to Databricks Delta format.",
+        "es_correcta": false,
+        "explicacion": "ACID is a universal database term: Atomicity, Consistency, Isolation, Durability. 'Caching' and 'Delta' are not ACID properties."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "Which Databricks feature enables tracking data lineage — showing which tables were read to produce a given output table?",
+    "opciones": [
+      {
+        "texto_opcion": "Unity Catalog's built-in data lineage tracking, which automatically captures column-level and table-level lineage for queries run in Databricks SQL, notebooks, and Lakeflow pipelines.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog automatically tracks lineage at the table and column level without requiring additional configuration. Users can view upstream and downstream dependencies in the Catalog Explorer UI to understand data provenance and impact analysis."
+      },
+      {
+        "texto_opcion": "Delta Lake's transaction log (_delta_log), which records every write operation and can be queried to trace data sources.",
+        "es_correcta": false,
+        "explicacion": "The transaction log tracks individual table mutations (adds, removes, updates), not cross-table lineage relationships. Lineage across tables is a Unity Catalog feature."
+      },
+      {
+        "texto_opcion": "The Spark Event Log in the cluster's driver node, which records all RDD transformations and their source data.",
+        "es_correcta": false,
+        "explicacion": "The Spark Event Log captures job/stage/task execution metrics for performance debugging, not data lineage at the table or column level. Unity Catalog provides lineage."
+      },
+      {
+        "texto_opcion": "Databricks Repos (Git integration), which tracks which notebook produced which output via commit history.",
+        "es_correcta": false,
+        "explicacion": "Repos tracks code version history, not data lineage. Data lineage tracks which data sources flowed into which outputs, which is a Unity Catalog responsibility."
+      },
+      {
+        "texto_opcion": "DESCRIBE HISTORY on each Delta table, which shows all write operations including source table names.",
+        "es_correcta": false,
+        "explicacion": "DESCRIBE HISTORY shows the operation types (INSERT, MERGE, etc.) and metadata for a single table's history, but does not expose cross-table lineage relationships the way Unity Catalog lineage does."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is the purpose of a 'storage credential' in Unity Catalog?",
+    "opciones": [
+      {
+        "texto_opcion": "A storage credential is a Unity Catalog object that securely stores cloud authentication information (e.g., an IAM role, service principal, or managed identity) used to access cloud storage locations on behalf of Databricks.",
+        "es_correcta": true,
+        "explicacion": "Storage credentials abstract cloud authentication from end users. Administrators configure them once with the appropriate cloud IAM role or service principal, then reference them when creating external locations. Users never need to handle raw credentials."
+      },
+      {
+        "texto_opcion": "A storage credential is the username and password stored inside a Delta table for accessing external APIs.",
+        "es_correcta": false,
+        "explicacion": "Storing credentials inside Delta tables is an anti-pattern. Storage credentials in Unity Catalog are secure objects referencing cloud IAM roles or identities, not plaintext usernames/passwords in tables."
+      },
+      {
+        "texto_opcion": "A storage credential is an encryption key managed by Unity Catalog to encrypt all Delta table data at rest.",
+        "es_correcta": false,
+        "explicacion": "Encryption keys are managed by cloud key management services (AWS KMS, Azure Key Vault). Storage credentials are for authentication/access, not encryption key management."
+      },
+      {
+        "texto_opcion": "A storage credential is a Databricks secret that holds a Git personal access token for cloning repositories.",
+        "es_correcta": false,
+        "explicacion": "Git credentials are stored in Databricks Secrets or workspace Git settings, not as Unity Catalog storage credentials. Storage credentials are specifically for cloud object storage access."
+      },
+      {
+        "texto_opcion": "A storage credential is a network security rule that restricts which IP addresses can write to cloud storage.",
+        "es_correcta": false,
+        "explicacion": "Network security rules are configured at the cloud provider level (security groups, VNet rules). Storage credentials are authentication objects in Unity Catalog, not network policies."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What is an 'external location' in Unity Catalog and how does it relate to a storage credential?",
+    "opciones": [
+      {
+        "texto_opcion": "An external location is a Unity Catalog object that maps a cloud storage path (e.g., s3://my-bucket/path) to a storage credential, creating a governed entry point for accessing that storage within Unity Catalog.",
+        "es_correcta": true,
+        "explicacion": "External locations combine a cloud storage path with a storage credential to create a registered, governed access point. Once created, administrators grant privileges on the external location rather than sharing raw cloud credentials, enabling fine-grained access control."
+      },
+      {
+        "texto_opcion": "An external location is a URL to an on-premises database that Unity Catalog proxies for federated queries.",
+        "es_correcta": false,
+        "explicacion": "External locations refer to cloud object storage paths, not databases. Federated database access is handled by Lakehouse Federation with foreign catalogs, not external locations."
+      },
+      {
+        "texto_opcion": "An external location is an alias for a Delta table stored in a different Unity Catalog metastore.",
+        "es_correcta": false,
+        "explicacion": "Cross-metastore table access uses Delta Sharing or Lakehouse Federation. External locations are for registering cloud object storage paths with associated credentials within a single metastore."
+      },
+      {
+        "texto_opcion": "An external location is a temporary mount point created per-session for accessing DBFS paths.",
+        "es_correcta": false,
+        "explicacion": "DBFS mount points are a legacy feature from before Unity Catalog. External locations are persistent, governed objects in Unity Catalog that replace the need for DBFS mounts."
+      },
+      {
+        "texto_opcion": "An external location is a network firewall rule that limits which clusters can access a storage bucket.",
+        "es_correcta": false,
+        "explicacion": "Network access restrictions are cloud-level policies. External locations are Unity Catalog governance objects that define which paths are accessible and through which credential."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What is the Change Data Feed (CDF) in Delta Lake, and when is it useful?",
+    "opciones": [
+      {
+        "texto_opcion": "CDF is a Delta Lake feature that, when enabled on a table, records row-level changes (inserts, updates, deletes) as a readable stream, allowing downstream consumers to process only what changed between two table versions.",
+        "es_correcta": true,
+        "explicacion": "When `delta.enableChangeDataFeed = true` is set on a table, Delta Lake tracks row-level changes in special _change_data directories. Consumers can read these changes using `spark.readStream.format('delta').option('readChangeFeed', 'true')`, enabling efficient incremental processing without full table scans."
+      },
+      {
+        "texto_opcion": "CDF is a tool for capturing changes from external databases (CDC) and loading them into Databricks via JDBC.",
+        "es_correcta": false,
+        "explicacion": "CDF is an internal Delta Lake feature for tracking changes within a Delta table. Ingesting changes from external databases (CDC) uses tools like Debezium or Lakeflow Connect, not Delta's Change Data Feed."
+      },
+      {
+        "texto_opcion": "CDF is equivalent to DESCRIBE HISTORY and shows which SQL operations were run on a table.",
+        "es_correcta": false,
+        "explicacion": "DESCRIBE HISTORY shows operation metadata (type, timestamp, user) at the commit level. CDF exposes actual row-level data changes (before/after values with change type), which is a different and more granular capability."
+      },
+      {
+        "texto_opcion": "CDF automatically propagates schema changes from a source table to all downstream tables.",
+        "es_correcta": false,
+        "explicacion": "CDF is about data changes (inserts/updates/deletes), not schema evolution. Schema propagation is handled separately through schema evolution configurations in Auto Loader or streaming pipelines."
+      },
+      {
+        "texto_opcion": "CDF is a Databricks SQL feature that creates real-time dashboards showing the latest data changes.",
+        "es_correcta": false,
+        "explicacion": "CDF is a Delta Lake storage feature, not a SQL dashboard feature. It provides a programmatic API for reading row-level changes, not a visualization capability."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "What happens to the data files of a managed Delta table when the parent schema (database) is dropped in Unity Catalog?",
+    "opciones": [
+      {
+        "texto_opcion": "Dropping a schema in Unity Catalog also drops all managed tables within it, deleting both their metadata and underlying data files in cloud storage.",
+        "es_correcta": true,
+        "explicacion": "In Unity Catalog, the lifecycle cascade applies: dropping a schema removes all objects within it. For managed tables, this means their data files are also deleted from the Unity Catalog managed storage location, just as if DROP TABLE had been run individually on each table."
+      },
+      {
+        "texto_opcion": "Dropping a schema only removes the schema metadata; all managed table data files are preserved in cloud storage.",
+        "es_correcta": false,
+        "explicacion": "This behavior applies to external tables. Managed tables have their lifecycle controlled by Unity Catalog, so dropping the parent schema also deletes the managed table data files."
+      },
+      {
+        "texto_opcion": "Dropping a schema is not allowed if it contains any managed tables; the tables must be dropped individually first.",
+        "es_correcta": false,
+        "explicacion": "DROP SCHEMA with the CASCADE option deletes all contained objects and their data. Without CASCADE it may fail if objects exist, but the cascade option is allowed and commonly used."
+      },
+      {
+        "texto_opcion": "Dropping a schema moves all managed table data files to the Unity Catalog recycle bin for 30 days.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog does not have an automatic recycle bin for managed table data files. Once dropped, managed table data is deleted from cloud storage without a grace period within Unity Catalog itself."
+      },
+      {
+        "texto_opcion": "Dropping a schema converts all managed tables to external tables, preserving their data files in place.",
+        "es_correcta": false,
+        "explicacion": "There is no automatic managed-to-external conversion on schema drop. Dropping a schema with CASCADE deletes managed tables and their data permanently."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "What is the 'workspace' in the Databricks architecture, and what does it contain?",
+    "opciones": [
+      {
+        "texto_opcion": "A Databricks workspace is a cloud-based environment associated with a Databricks account that provides a unified interface for notebooks, jobs, clusters, SQL, and ML resources for a team or organization.",
+        "es_correcta": true,
+        "explicacion": "The workspace is the primary organizational unit in Databricks. It contains all user-facing assets (notebooks, dashboards, jobs, pipelines) and connects to compute resources and data governed by Unity Catalog. Organizations typically have separate workspaces for dev/test/prod environments."
+      },
+      {
+        "texto_opcion": "A workspace is the same as a Unity Catalog metastore — one metastore equals one workspace.",
+        "es_correcta": false,
+        "explicacion": "Workspaces and metastores are different objects. A single Unity Catalog metastore can be shared by multiple workspaces in the same region. They are not one-to-one."
+      },
+      {
+        "texto_opcion": "A workspace is a Delta table that stores all Databricks configuration settings for a cluster.",
+        "es_correcta": false,
+        "explicacion": "A workspace is a Databricks environment, not a Delta table. It is the user-facing container for notebooks, jobs, and other assets, not a configuration storage table."
+      },
+      {
+        "texto_opcion": "A workspace is a network security group that controls traffic between clusters and cloud storage.",
+        "es_correcta": false,
+        "explicacion": "Network security groups are cloud infrastructure concepts. A Databricks workspace is a logical environment providing collaborative data and AI capabilities, not a network security construct."
+      },
+      {
+        "texto_opcion": "A workspace is a physical server rack managed by Databricks in a dedicated data center.",
+        "es_correcta": false,
+        "explicacion": "Databricks is a cloud-native platform. Workspaces are logical environments running on cloud infrastructure (AWS, Azure, GCP), not physical server racks in dedicated data centers."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "In Delta Lake, what is 'data skipping' and how does it improve query performance?",
+    "opciones": [
+      {
+        "texto_opcion": "Data skipping is the ability of the Delta Lake query engine to exclude entire Parquet files from being read by using per-file column statistics (min/max values) stored in the transaction log to determine that a file cannot contain rows matching the query filter.",
+        "es_correcta": true,
+        "explicacion": "When Delta Lake writes data, it collects min/max statistics for columns in each file and stores them in the transaction log. When a query has a filter predicate, the engine checks these statistics and skips any file whose min/max range cannot contain matching rows, dramatically reducing I/O."
+      },
+      {
+        "texto_opcion": "Data skipping is a Spark feature that skips failed task retries to speed up job completion.",
+        "es_correcta": false,
+        "explicacion": "Data skipping is a storage-level optimization for reducing file reads during queries, not a task retry mechanism. Spark task retries are a fault-tolerance feature, unrelated to data skipping."
+      },
+      {
+        "texto_opcion": "Data skipping means Delta Lake only reads the first and last row of each Parquet file to answer aggregate queries.",
+        "es_correcta": false,
+        "explicacion": "Data skipping uses per-file min/max statistics to skip entire files. It does not read partial files; it either reads an entire file or skips it entirely based on statistics."
+      },
+      {
+        "texto_opcion": "Data skipping is enabled by the SKIP DATA option in the SELECT statement for faster queries.",
+        "es_correcta": false,
+        "explicacion": "There is no SKIP DATA SQL clause. Data skipping is automatic in Delta Lake — it happens transparently whenever the query engine evaluates file-level statistics during query planning."
+      },
+      {
+        "texto_opcion": "Data skipping requires ZORDER BY to be run first; without Z-ordering, Delta Lake reads all files.",
+        "es_correcta": false,
+        "explicacion": "Data skipping works independently of Z-ordering. Column statistics are collected for every Delta table. Z-ordering improves data co-location to make skipping more effective, but it is not a prerequisite for skipping to work at all."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "What is the Photon engine in Databricks, and on which workloads does it provide the greatest benefit?",
+    "opciones": [
+      {
+        "texto_opcion": "Photon is a native vectorized query execution engine written in C++ that runs alongside Apache Spark on Databricks clusters, providing the greatest benefit for SQL queries, large-scale aggregations, and joins on Delta tables.",
+        "es_correcta": true,
+        "explicacion": "Photon uses vectorized (columnar batch) processing and modern CPU SIMD instructions to dramatically accelerate SQL workloads. It is particularly effective for analytical queries involving scans, joins, aggregations, and window functions on Delta tables."
+      },
+      {
+        "texto_opcion": "Photon is a Python library that replaces PySpark DataFrames with faster native Python execution on Databricks.",
+        "es_correcta": false,
+        "explicacion": "Photon operates at the execution engine layer inside Databricks Runtime, not as a Python library. PySpark DataFrames continue to be used as the API; Photon accelerates the underlying execution transparently."
+      },
+      {
+        "texto_opcion": "Photon is a GPU acceleration framework for training deep learning models faster on Databricks clusters.",
+        "es_correcta": false,
+        "explicacion": "Photon accelerates CPU-based SQL and DataFrame operations, not GPU-based ML training. Deep learning acceleration uses frameworks like CUDA and TensorFlow/PyTorch with GPU instances, not Photon."
+      },
+      {
+        "texto_opcion": "Photon is an autoscaling policy that automatically adds nodes to a cluster based on query load.",
+        "es_correcta": false,
+        "explicacion": "Autoscaling is a cluster configuration feature separate from Photon. Photon is a query execution engine that makes individual queries faster, not a cluster scaling policy."
+      },
+      {
+        "texto_opcion": "Photon is a data compression algorithm used by Delta Lake to reduce Parquet file sizes by up to 50%.",
+        "es_correcta": false,
+        "explicacion": "Photon is an execution engine, not a compression algorithm. Parquet compression in Delta Lake uses codecs like Snappy or ZSTD, which are separate from Photon."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "What is the 'Databricks Lakehouse Platform' intelligence layer, and what features does it include?",
+    "opciones": [
+      {
+        "texto_opcion": "The intelligence layer refers to Databricks' AI/ML capabilities built on top of the Lakehouse — including Unity Catalog for governance, Delta Lake for storage reliability, Databricks SQL for analytics, and ML features like MLflow and Model Serving.",
+        "es_correcta": true,
+        "explicacion": "Databricks markets its platform as a Data + AI platform where the intelligence layer sits above the open Lakehouse storage foundation. This includes governance (Unity Catalog), AI model lifecycle management (MLflow), model serving, and business intelligence (SQL Warehouses)."
+      },
+      {
+        "texto_opcion": "The intelligence layer is a hardware module embedded in cloud datacenters that pre-computes Spark query results using AI.",
+        "es_correcta": false,
+        "explicacion": "There is no such hardware module. The intelligence layer is a conceptual marketing term describing the platform's AI and analytics capabilities layered on top of the open Lakehouse architecture."
+      },
+      {
+        "texto_opcion": "The intelligence layer automatically fixes data quality issues in Delta tables using machine learning without user involvement.",
+        "es_correcta": false,
+        "explicacion": "While Databricks has data quality tools, there is no fully autonomous 'intelligence layer' that auto-fixes data quality. Users define expectations and constraints; the platform enforces them."
+      },
+      {
+        "texto_opcion": "The intelligence layer is a separate product that must be purchased in addition to the Databricks Lakehouse.",
+        "es_correcta": false,
+        "explicacion": "The intelligence layer is part of the unified Databricks platform, not a separate add-on product. The various features (MLflow, SQL, Unity Catalog) are integrated into the Databricks platform."
+      },
+      {
+        "texto_opcion": "The intelligence layer replaces Apache Spark with a proprietary Databricks execution engine exclusive to paid tiers.",
+        "es_correcta": false,
+        "explicacion": "Databricks continues to build on and contribute to Apache Spark. The Photon engine is an addition that accelerates certain workloads, but Spark remains the foundation. The intelligence layer refers to AI/ML and governance capabilities, not a Spark replacement."
+      }
+    ],
+    "tags": [
+      "1.1",
+      "Databricks Data Intelligence Platform architecture"
+    ]
+  },
+  {
+    "pregunta": "What is 'Delta Sharing' in Databricks, and how does it work?",
+    "opciones": [
+      {
+        "texto_opcion": "Delta Sharing is an open protocol that allows sharing live Delta tables and other data assets with external recipients (inside or outside the organization) without copying the data, using a REST API and short-lived presigned URLs for secure access.",
+        "es_correcta": true,
+        "explicacion": "Delta Sharing lets data providers share live, read-only views of Delta tables with recipients who may use different platforms (Pandas, Spark, Power BI, etc.). Shared data is not duplicated; recipients access the provider's cloud storage via presigned URLs generated by the sharing server."
+      },
+      {
+        "texto_opcion": "Delta Sharing is a Databricks feature that replicates Delta tables to all clusters in a workspace automatically.",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing is about cross-organization or cross-platform data sharing, not intra-workspace replication. It enables sharing with external parties using an open REST protocol."
+      },
+      {
+        "texto_opcion": "Delta Sharing is a paid add-on that synchronizes Delta tables with Snowflake tables in real time.",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing is an open standard (not a paid add-on) for sharing data broadly. While Snowflake can be a recipient, Delta Sharing is not specifically a Snowflake sync tool."
+      },
+      {
+        "texto_opcion": "Delta Sharing copies all shared data to the recipient's cloud storage account for independent access.",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing provides access to the provider's data without copying it. Recipients access data via presigned URLs pointing to the provider's storage, not a copy in their own account."
+      },
+      {
+        "texto_opcion": "Delta Sharing is only available within a single Databricks account and cannot share data with external parties.",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing is explicitly designed for sharing data with external recipients — including other organizations, other cloud platforms, and even non-Databricks tools like Pandas or Power BI."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to convert an existing Parquet table in cloud storage to a Delta table without rewriting the data files. Which command achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "`CONVERT TO DELTA parquet.\\`path/to/parquet/table\\`` — this creates a Delta transaction log on top of the existing Parquet files without rewriting or copying the data.",
+        "es_correcta": true,
+        "explicacion": "CONVERT TO DELTA is an in-place operation that generates the _delta_log transaction log by scanning the existing Parquet files and registering them. The data files themselves are not rewritten or moved, making this a fast, zero-copy conversion."
+      },
+      {
+        "texto_opcion": "`ALTER TABLE my_table SET TBLPROPERTIES ('format'='delta')` — changes the table format metadata to Delta.",
+        "es_correcta": false,
+        "explicacion": "Simply changing a table property does not convert the underlying files to Delta format. CONVERT TO DELTA is the correct command that creates the transaction log alongside the existing Parquet files."
+      },
+      {
+        "texto_opcion": "`INSERT INTO delta_table SELECT * FROM parquet_table` — copies all rows from Parquet to a new Delta table.",
+        "es_correcta": false,
+        "explicacion": "This approach rewrites all the data by reading and writing every row, which is expensive for large tables. CONVERT TO DELTA creates the Delta log in-place without rewriting data files."
+      },
+      {
+        "texto_opcion": "`OPTIMIZE parquet_table ZORDER BY id` — reorganizes Parquet files into Delta format during compaction.",
+        "es_correcta": false,
+        "explicacion": "OPTIMIZE compacts Delta table files and optionally applies Z-ordering, but it requires the table to already be a Delta table. It cannot convert Parquet to Delta format."
+      },
+      {
+        "texto_opcion": "`VACUUM parquet_table RETAIN 0 HOURS` — cleans up old Parquet files and replaces them with Delta files.",
+        "es_correcta": false,
+        "explicacion": "VACUUM removes unreferenced files from a Delta table; it is not a conversion operation and cannot convert Parquet tables to Delta format."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "What is the difference between a 'streaming table' and a 'materialized view' in Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "A streaming table uses streaming semantics (processes only new data incrementally); a materialized view uses batch semantics (recomputes results over all data or incrementally refreshes aggregations). Both are Delta tables managed by Unity Catalog.",
+        "es_correcta": true,
+        "explicacion": "Streaming tables are designed for append-and-update workloads with streaming sources, processing new records as they arrive. Materialized views precompute query results (including aggregations) using batch or incremental batch semantics and refresh on schedule or on demand."
+      },
+      {
+        "texto_opcion": "A streaming table stores data only in memory; a materialized view persists results to disk.",
+        "es_correcta": false,
+        "explicacion": "Both streaming tables and materialized views are persisted as Delta tables in cloud storage. Neither is memory-only."
+      },
+      {
+        "texto_opcion": "A materialized view can process streaming data faster than a streaming table because it caches results in RAM.",
+        "es_correcta": false,
+        "explicacion": "Materialized views use batch semantics and do not process data faster by caching in RAM. Streaming tables are specifically designed for low-latency streaming processing."
+      },
+      {
+        "texto_opcion": "Streaming tables can only be created using Python; materialized views can only be created using SQL.",
+        "es_correcta": false,
+        "explicacion": "Both can be created using SQL in Databricks SQL or Lakeflow Spark Declarative Pipelines. The language restriction does not apply — both support SQL and Python."
+      },
+      {
+        "texto_opcion": "A materialized view auto-updates every second; a streaming table requires manual refresh commands.",
+        "es_correcta": false,
+        "explicacion": "This is backward. Streaming tables process data continuously or on trigger. Materialized views are refreshed on demand, on schedule, or as part of a pipeline run — not automatically every second."
+      }
+    ],
+    "tags": [
+      "1.3",
+      "Unity Catalog architecture overview"
+    ]
+  },
+  {
+    "pregunta": "Which of the following correctly describes how Unity Catalog enforces access control to Delta tables?",
+    "opciones": [
+      {
+        "texto_opcion": "Unity Catalog enforces access at the SQL level using GRANT and REVOKE statements on catalogs, schemas, tables, columns, and rows, evaluated at query time regardless of which cluster or tool the user accesses data from.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog's privilege model is centralized and tool-agnostic. Whether users access data via Databricks SQL, a notebook, or an external JDBC connection, the same GRANT/REVOKE access controls are evaluated. This is a major improvement over the legacy Hive metastore, where permissions varied by access method."
+      },
+      {
+        "texto_opcion": "Unity Catalog enforces access by encrypting each table with a unique key, and only authorized users receive the decryption key.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog uses SQL-level privilege grants, not encryption-based access control. Encryption may be present at the cloud storage layer, but access control within Unity Catalog is via GRANT/REVOKE."
+      },
+      {
+        "texto_opcion": "Unity Catalog enforces access by creating separate physical copies of tables for each user group.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog does not copy data per user group. A single table is stored once, and access is controlled at query time by evaluating the user's privileges against the Unity Catalog grant model."
+      },
+      {
+        "texto_opcion": "Unity Catalog enforces access only when queries run on SQL Warehouses; notebook access bypasses all governance controls.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog governance applies to all compute types — notebooks, jobs, SQL warehouses, and even external connectors. It is not limited to SQL Warehouses."
+      },
+      {
+        "texto_opcion": "Unity Catalog requires users to authenticate with a separate password for each catalog they access.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog uses the same workspace identity (user or service principal) for all data access. There are no separate per-catalog passwords. Access is controlled by GRANT statements."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is the purpose of the 'MERGE INTO' command in Delta Lake?",
+    "opciones": [
+      {
+        "texto_opcion": "MERGE INTO allows performing INSERT, UPDATE, and DELETE operations on a Delta target table in a single atomic transaction based on matching conditions from a source dataset, commonly used for upsert patterns and CDC processing.",
+        "es_correcta": true,
+        "explicacion": "MERGE INTO (also called UPSERT) is a powerful SQL command that applies changes from a source to a target table atomically. It matches rows on a join condition, then applies WHEN MATCHED (UPDATE/DELETE) and WHEN NOT MATCHED (INSERT) clauses — the foundation of SCD Type 1 and CDC implementations."
+      },
+      {
+        "texto_opcion": "MERGE INTO combines two Delta tables into a single larger table by physically concatenating their Parquet files.",
+        "es_correcta": false,
+        "explicacion": "Physical file merging is done by OPTIMIZE (compaction). MERGE INTO is a DML command for conditionally applying inserts, updates, and deletes — not for concatenating tables."
+      },
+      {
+        "texto_opcion": "MERGE INTO creates a new Delta table that is the union of two source tables, replacing both originals.",
+        "es_correcta": false,
+        "explicacion": "MERGE INTO modifies a target table based on conditions from a source, not by replacing tables. For union/append operations, INSERT INTO or UNION ALL are appropriate."
+      },
+      {
+        "texto_opcion": "MERGE INTO is a read-only command that merges data from multiple tables for a single query result without modifying any table.",
+        "es_correcta": false,
+        "explicacion": "MERGE INTO is a write operation that modifies the target Delta table. It is not read-only — it applies inserts, updates, and deletes to the target table in a single transaction."
+      },
+      {
+        "texto_opcion": "MERGE INTO can only be used with external tables; managed Delta tables use UPSERT INTO instead.",
+        "es_correcta": false,
+        "explicacion": "MERGE INTO works with both managed and external Delta tables. There is no separate UPSERT INTO command in Delta Lake — MERGE INTO is the standard upsert mechanism."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  },
+  {
+    "pregunta": "What is 'Databricks Runtime' (DBR) and why does its version matter for data engineering workloads?",
+    "opciones": [
+      {
+        "texto_opcion": "Databricks Runtime is the compute environment version that bundles Apache Spark, Delta Lake, Python libraries, and Databricks-specific optimizations. The version determines which Spark features, Delta Lake capabilities, and library versions are available on the cluster.",
+        "es_correcta": true,
+        "explicacion": "DBR versions are tied to specific Spark versions, Delta Lake versions, and pre-installed libraries. Newer DBR versions include performance improvements, new APIs, security patches, and access to features like type widening (DBR 16.4+) or Auto Loader enhancements. LTS versions receive long-term support."
+      },
+      {
+        "texto_opcion": "Databricks Runtime is the billing unit system; higher version numbers mean lower per-DBU costs.",
+        "es_correcta": false,
+        "explicacion": "DBR versioning is about software capabilities, not billing rates. DBU costs depend on cluster type (all-purpose, job, SQL) and cloud instance type, not the DBR version number."
+      },
+      {
+        "texto_opcion": "Databricks Runtime is only relevant for ML workloads; data engineering workloads always use the default version.",
+        "es_correcta": false,
+        "explicacion": "DBR version matters for all workloads. New Delta Lake features, Spark capabilities, and connector improvements are tied to specific DBR versions. Using an outdated DBR may limit access to important features."
+      },
+      {
+        "texto_opcion": "Databricks Runtime is a Python virtual environment that users can customize by installing any Python version they choose.",
+        "es_correcta": false,
+        "explicacion": "DBR is a comprehensive runtime environment — not just a Python virtual environment. It bundles Spark, Delta Lake, and many libraries. Users can install additional libraries but cannot freely swap the core Python or Spark version within a DBR version."
+      },
+      {
+        "texto_opcion": "Databricks Runtime is deprecated and replaced by Databricks Photon Engine in all modern Databricks workspaces.",
+        "es_correcta": false,
+        "explicacion": "DBR is the active runtime environment that underpins all Databricks clusters. Photon is an optional execution engine within DBR, not a replacement for it. Both coexist."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "What is 'autoscaling' in a Databricks cluster, and what is its main benefit?",
+    "opciones": [
+      {
+        "texto_opcion": "Autoscaling dynamically adds or removes worker nodes based on the current workload, ensuring the cluster uses enough compute to process data efficiently while releasing unused nodes to reduce cost when demand is low.",
+        "es_correcta": true,
+        "explicacion": "With autoscaling enabled, Databricks monitors workload metrics and scales workers between the configured min and max boundaries. During peak processing, nodes are added; during idle periods, excess nodes are removed. This balances performance and cost automatically without manual resizing."
+      },
+      {
+        "texto_opcion": "Autoscaling automatically increases the cluster's storage capacity when Delta tables run low on space.",
+        "es_correcta": false,
+        "explicacion": "Storage for Delta tables lives in cloud object storage (S3, ADLS, GCS) which scales independently. Autoscaling in Databricks refers to dynamically resizing compute (worker nodes), not storage."
+      },
+      {
+        "texto_opcion": "Autoscaling is a Databricks SQL feature that distributes concurrent SQL queries across multiple SQL Warehouses automatically.",
+        "es_correcta": false,
+        "explicacion": "SQL Warehouses have their own scaling mechanism (cluster count scaling for concurrency). Autoscaling in a general cluster context refers to worker node count adjustments based on Spark workload demand."
+      },
+      {
+        "texto_opcion": "Autoscaling means the cluster automatically upgrades its Databricks Runtime version when a newer version is released.",
+        "es_correcta": false,
+        "explicacion": "Runtime version upgrades require explicit configuration changes. Autoscaling is exclusively about dynamically adjusting the number of worker nodes based on workload, not software versioning."
+      },
+      {
+        "texto_opcion": "Autoscaling forces all tasks to run on a single node to maximize data locality and minimize shuffle overhead.",
+        "es_correcta": false,
+        "explicacion": "This is the opposite of autoscaling. Autoscaling adds more nodes to distribute work. Forcing work to a single node would eliminate parallelism and severely hurt performance for large datasets."
+      }
+    ],
+    "tags": [
+      "1.4",
+      "Compute services — types, characteristics, cost models"
+    ]
+  },
+  {
+    "pregunta": "A data engineer accidentally ran `DELETE FROM orders WHERE 1=1`, deleting all rows from a production Delta table. What is the fastest way to recover all the deleted data assuming VACUUM has not been run recently?",
+    "opciones": [
+      {
+        "texto_opcion": "Use `RESTORE TABLE orders TO VERSION AS OF <version_before_delete>` to atomically revert the table to its state before the DELETE, recovering all data using Delta Lake's time travel capability.",
+        "es_correcta": true,
+        "explicacion": "Since Delta Lake's transaction log preserves all previous table versions (within the retention window), RESTORE TABLE uses time travel to revert the table to a prior version. This is an atomic, in-place operation — no data copying is needed. Use DESCRIBE HISTORY to find the version number before the DELETE."
+      },
+      {
+        "texto_opcion": "Re-run the original ingestion pipeline from scratch to repopulate all the deleted rows.",
+        "es_correcta": false,
+        "explicacion": "Re-running the full ingestion pipeline is time-consuming and may not reproduce the exact same data state if the source system has changed. RESTORE TABLE using Delta time travel is far faster and more accurate."
+      },
+      {
+        "texto_opcion": "Use VACUUM RETAIN 0 HOURS to recover the deleted files and reattach them to the table.",
+        "es_correcta": false,
+        "explicacion": "VACUUM removes old unreferenced files — it does not recover deleted data. In fact, running VACUUM after a DELETE would permanently remove the ability to time-travel back to the pre-delete state."
+      },
+      {
+        "texto_opcion": "Query the table with `SELECT * FROM orders WHERE deleted = false` to filter out logically deleted rows.",
+        "es_correcta": false,
+        "explicacion": "A `DELETE FROM orders WHERE 1=1` physically removes all rows — there are no logical delete flags left to filter on. The only recovery path is Delta Lake time travel via RESTORE TABLE."
+      },
+      {
+        "texto_opcion": "Run `DESCRIBE HISTORY orders` to restore the table directly from the history output.",
+        "es_correcta": false,
+        "explicacion": "DESCRIBE HISTORY shows the transaction log metadata (version, timestamp, operation type) but does not itself restore any data. The RESTORE TABLE command is needed to actually revert to a prior version."
+      }
+    ],
+    "tags": [
+      "1.2",
+      "Delta Lake core concepts"
+    ]
+  }
+]

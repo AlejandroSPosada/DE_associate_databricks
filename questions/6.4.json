@@ -1,0 +1,772 @@
+[
+  {
+    "pregunta": "A data engineer is designing a new Delta table that will be queried frequently by `customer_id` and `order_date`. They want low-maintenance, incremental file layout optimization. Which approach should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "Define the table with `CLUSTER BY (customer_id, order_date)` — Liquid Clustering provides incremental, low-cost optimization with simple `OPTIMIZE` runs.",
+        "es_correcta": true,
+        "explicacion": "Liquid Clustering is the recommended approach for new tables. It organizes data incrementally, so `OPTIMIZE` only processes new/unclustered files rather than rewriting the entire table."
+      },
+      {
+        "texto_opcion": "Use `PARTITIONED BY (order_date)` and run `OPTIMIZE ... ZORDER BY (customer_id)` periodically.",
+        "es_correcta": false,
+        "explicacion": "This legacy approach requires full partition rewrites on every OPTIMIZE run, is expensive to maintain, and cannot be used on the same table as Liquid Clustering."
+      },
+      {
+        "texto_opcion": "Do nothing — Delta Lake automatically clusters data when files are written.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake does not automatically organize data layout on writes. Clustering requires either explicit `OPTIMIZE` runs or Predictive Optimization."
+      },
+      {
+        "texto_opcion": "Use `PARTITIONED BY (customer_id, order_date)` — partitioning co-locates data by both columns.",
+        "es_correcta": false,
+        "explicacion": "Partitioning by `customer_id` (high cardinality) causes partition explosion — potentially millions of directories. Liquid Clustering handles this without directory-based partitioning."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering"
+    ]
+  },
+  {
+    "pregunta": "A data engineer creates the following table:\n\n```sql\nCREATE TABLE catalog.sales.orders (\n  order_id    BIGINT,\n  customer_id BIGINT,\n  order_date  DATE,\n  region      STRING\n) USING DELTA\nCLUSTER BY (customer_id, order_date);\n```\n\nAfter loading 10 million rows, what additional command must they run to physically organize the data?",
+    "opciones": [
+      {
+        "texto_opcion": "`OPTIMIZE catalog.sales.orders;` — this triggers incremental Liquid Clustering on the newly loaded files.",
+        "es_correcta": true,
+        "explicacion": "`CLUSTER BY` defines the clustering scheme but does not automatically reorganize data on write. An explicit `OPTIMIZE` run is needed to physically cluster the files by the specified keys."
+      },
+      {
+        "texto_opcion": "`CLUSTER catalog.sales.orders BY (customer_id, order_date);` — this is the command that physically applies the clustering.",
+        "es_correcta": false,
+        "explicacion": "There is no separate `CLUSTER` command. Physical clustering is triggered by running `OPTIMIZE` on the table."
+      },
+      {
+        "texto_opcion": "No additional command — `CLUSTER BY` in `CREATE TABLE` automatically clusters data on every write.",
+        "es_correcta": false,
+        "explicacion": "Liquid Clustering is applied by the `OPTIMIZE` command, not during writes. Data is written unclustered and then reorganized incrementally by `OPTIMIZE`."
+      },
+      {
+        "texto_opcion": "`ANALYZE TABLE catalog.sales.orders COMPUTE STATISTICS;` — this collects statistics needed for clustering.",
+        "es_correcta": false,
+        "explicacion": "`ANALYZE` collects statistics for the query optimizer, not for physical data clustering. `OPTIMIZE` is the command that physically reorganizes files for Liquid Clustering."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering",
+      "OPTIMIZE"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs `OPTIMIZE` every day on a Liquid-clustered table after new data is loaded. Which files does `OPTIMIZE` process on each run?",
+    "opciones": [
+      {
+        "texto_opcion": "Only **new or unclustered files** written since the last `OPTIMIZE` — already-clustered files are skipped, making each run inexpensive.",
+        "es_correcta": true,
+        "explicacion": "Liquid Clustering's key advantage is incremental optimization. `OPTIMIZE` tracks which files have already been clustered and skips them, processing only files that need clustering."
+      },
+      {
+        "texto_opcion": "All files in the table — Liquid Clustering rewrites the entire table on every OPTIMIZE run.",
+        "es_correcta": false,
+        "explicacion": "Full table rewrites on every OPTIMIZE run describe the legacy Z-Order approach. Liquid Clustering's main advantage over Z-Order is its incremental nature."
+      },
+      {
+        "texto_opcion": "Only files from the most recent partition — OPTIMIZE is partition-aware.",
+        "es_correcta": false,
+        "explicacion": "Liquid Clustering does not use partitions (it is incompatible with `PARTITIONED BY`). It tracks clustered vs. unclustered files at the file level across the whole table."
+      },
+      {
+        "texto_opcion": "A random sample of 10% of files — Databricks uses sampling to balance cost and quality.",
+        "es_correcta": false,
+        "explicacion": "OPTIMIZE does not sample files. It processes all files that are identified as unclustered or under-clustered based on Delta log metadata."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "OPTIMIZE",
+      "Liquid Clustering"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to change the clustering keys of an existing Liquid-clustered table from `(customer_id)` to `(region, order_date)`. After running `ALTER TABLE orders CLUSTER BY (region, order_date)`, what is the state of the table data?",
+    "opciones": [
+      {
+        "texto_opcion": "Future writes will be clustered by `(region, order_date)`, but existing historical files remain clustered by the old key `(customer_id)` until `OPTIMIZE FULL` is run.",
+        "es_correcta": true,
+        "explicacion": "`ALTER TABLE CLUSTER BY` changes the clustering configuration going forward. It does not automatically rewrite historical data. `OPTIMIZE FULL` is required to apply new keys to all existing files."
+      },
+      {
+        "texto_opcion": "All data is immediately re-clustered by `(region, order_date)` as part of the `ALTER TABLE` operation.",
+        "es_correcta": false,
+        "explicacion": "`ALTER TABLE CLUSTER BY` is a metadata operation — it does not physically rewrite files. A full re-cluster requires `OPTIMIZE FULL`."
+      },
+      {
+        "texto_opcion": "The table is locked in read-only mode until `OPTIMIZE` is run to apply the new keys.",
+        "es_correcta": false,
+        "explicacion": "The table remains fully readable and writable after `ALTER TABLE CLUSTER BY`. The change is non-blocking."
+      },
+      {
+        "texto_opcion": "The `ALTER TABLE` command fails — clustering keys cannot be changed once a table is created.",
+        "es_correcta": false,
+        "explicacion": "Unlike partitioning, Liquid Clustering keys can be changed at any time with `ALTER TABLE CLUSTER BY`. This flexibility is one of Liquid Clustering's key advantages."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering",
+      "ALTER TABLE"
+    ]
+  },
+  {
+    "pregunta": "After changing clustering keys on a large Liquid-clustered table, a data engineer wants all historical data to benefit from the new clustering scheme. What command achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "`OPTIMIZE FULL catalog.schema.orders;` — this re-clusters ALL files in the table using the new clustering keys.",
+        "es_correcta": true,
+        "explicacion": "`OPTIMIZE FULL` processes every file in the table, regardless of whether it was previously clustered, applying the current clustering keys to all data."
+      },
+      {
+        "texto_opcion": "`OPTIMIZE catalog.schema.orders;` — standard OPTIMIZE re-clusters all files.",
+        "es_correcta": false,
+        "explicacion": "Standard `OPTIMIZE` only processes files not yet clustered by the *current* keys. Files clustered by old keys are considered already-processed and skipped. `OPTIMIZE FULL` is needed to re-cluster historical data."
+      },
+      {
+        "texto_opcion": "`REORG TABLE catalog.schema.orders APPLY (PURGE);` — this rewrites all files with the new layout.",
+        "es_correcta": false,
+        "explicacion": "`REORG TABLE APPLY (PURGE)` is used to rewrite files for deletion vector removal, not for applying new clustering keys."
+      },
+      {
+        "texto_opcion": "`REFRESH TABLE catalog.schema.orders;` — this rebuilds the table layout.",
+        "es_correcta": false,
+        "explicacion": "`REFRESH TABLE` updates metadata/cache for external tables — it does not physically rewrite or re-cluster data files."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "OPTIMIZE",
+      "ALTER TABLE"
+    ]
+  },
+  {
+    "pregunta": "What does `CLUSTER BY AUTO` do when used in a `CREATE TABLE` statement?",
+    "opciones": [
+      {
+        "texto_opcion": "Databricks automatically selects and evolves clustering keys based on actual query patterns against the table — no manual key selection required.",
+        "es_correcta": true,
+        "explicacion": "`CLUSTER BY AUTO` delegates key selection to Databricks. The system monitors which columns appear in WHERE clause filters and automatically chooses the most beneficial clustering keys, updating them as query patterns change."
+      },
+      {
+        "texto_opcion": "Databricks randomly selects 2 columns from the table schema as clustering keys.",
+        "es_correcta": false,
+        "explicacion": "`CLUSTER BY AUTO` uses actual query pattern analysis — not random selection. Keys are chosen based on what columns are most frequently used as filters."
+      },
+      {
+        "texto_opcion": "Automatic OPTIMIZE runs are scheduled every hour regardless of whether new data arrived.",
+        "es_correcta": false,
+        "explicacion": "`CLUSTER BY AUTO` controls key selection, not the schedule of OPTIMIZE runs. Scheduling maintenance is handled separately by Predictive Optimization or explicit jobs."
+      },
+      {
+        "texto_opcion": "The table is partitioned automatically by the column with the lowest cardinality.",
+        "es_correcta": false,
+        "explicacion": "`CLUSTER BY AUTO` does not use partitioning — it is incompatible with `PARTITIONED BY`. It applies Liquid Clustering with automatically chosen keys."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "CLUSTER BY AUTO"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs `OPTIMIZE orders ZORDER BY (customer_id);` on a table that was created with `CLUSTER BY (customer_id)`. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "The command fails with an error — Liquid Clustering and Z-Order are incompatible and cannot be used on the same table.",
+        "es_correcta": true,
+        "explicacion": "Liquid Clustering (`CLUSTER BY`) and Z-Ordering (`ZORDER BY`) are mutually exclusive. Running `OPTIMIZE ZORDER BY` on a Liquid-clustered table raises an error."
+      },
+      {
+        "texto_opcion": "The Z-Order operation overrides the Liquid Clustering configuration for that run.",
+        "es_correcta": false,
+        "explicacion": "Z-Order cannot override Liquid Clustering. The two strategies are incompatible and cannot coexist on the same table."
+      },
+      {
+        "texto_opcion": "The command succeeds and adds Z-Ordering on top of the existing Liquid Clustering layout.",
+        "es_correcta": false,
+        "explicacion": "There is no way to layer Z-Ordering on top of Liquid Clustering. They are mutually exclusive strategies."
+      },
+      {
+        "texto_opcion": "The Liquid Clustering is removed and the table switches permanently to Z-Order mode.",
+        "es_correcta": false,
+        "explicacion": "Running `ZORDER BY` on a Liquid-clustered table raises an error — it does not silently switch modes."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering",
+      "Compatibility"
+    ]
+  },
+  {
+    "pregunta": "Which of the following columns is the BEST choice as a Liquid Clustering key for a 10-billion-row transactions table that is always filtered by `WHERE transaction_date = '2024-03-15'`?",
+    "opciones": [
+      {
+        "texto_opcion": "`transaction_date` — date columns with low-to-medium cardinality and frequent filter usage are ideal clustering keys.",
+        "es_correcta": true,
+        "explicacion": "`transaction_date` has medium cardinality (365 unique values per year), is the primary filter column, and enables effective data skipping — exactly the profile for a good clustering key."
+      },
+      {
+        "texto_opcion": "`transaction_id` — a unique ID provides the highest cardinality and best distribution.",
+        "es_correcta": false,
+        "explicacion": "A UUID/unique ID has extremely high cardinality — nearly every file would contain every range of values, providing almost no data skipping benefit."
+      },
+      {
+        "texto_opcion": "`is_refund` (BOOLEAN) — a boolean ensures data is split into exactly two groups.",
+        "es_correcta": false,
+        "explicacion": "A boolean has only 2 distinct values — data skipping would only eliminate ~50% of files at best. This is insufficient for effective clustering at 10 billion rows."
+      },
+      {
+        "texto_opcion": "`description` (free text) — text columns allow rich string-based filtering.",
+        "es_correcta": false,
+        "explicacion": "Free-text columns have extremely high cardinality with no pattern — they provide no meaningful data skipping for range-based or equality filters."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering",
+      "Clustering Keys"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has a table with `CLUSTER BY (order_date, customer_id, region, status, product_category, warehouse_id)`. Why is this configuration problematic?",
+    "opciones": [
+      {
+        "texto_opcion": "Too many clustering keys (6) dilute the data skipping benefit — files must be co-located by all 6 dimensions simultaneously, reducing the effectiveness of any single key filter.",
+        "es_correcta": true,
+        "explicacion": "Liquid Clustering is most effective with 1–4 keys. Adding more keys forces files to be organized by all dimensions, reducing the concentration of any single dimension's data per file and diminishing data skipping."
+      },
+      {
+        "texto_opcion": "The table will fail to create — `CLUSTER BY` supports a maximum of 4 columns.",
+        "es_correcta": false,
+        "explicacion": "There is no hard technical limit at exactly 4 columns, but 1–4 is the **recommended** range for best performance. More is possible but degrades effectiveness."
+      },
+      {
+        "texto_opcion": "All 6 columns will be stored as partition directories, creating partition explosion.",
+        "es_correcta": false,
+        "explicacion": "Liquid Clustering does not create partition directories. The concern is about data skipping effectiveness, not directory count."
+      },
+      {
+        "texto_opcion": "The `OPTIMIZE` command will error when trying to cluster by more than 4 keys.",
+        "es_correcta": false,
+        "explicacion": "`OPTIMIZE` does not impose a key count limit. The problem with many keys is diminishing returns on data skipping effectiveness."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Clustering Keys",
+      "Best Practices"
+    ]
+  },
+  {
+    "pregunta": "**Predictive Optimization (PO)** is enabled for a Unity Catalog managed table. Which three operations does PO automatically manage?",
+    "opciones": [
+      {
+        "texto_opcion": "`OPTIMIZE` (file compaction + Liquid Clustering), `VACUUM` (orphaned file removal), and `ANALYZE` (statistics collection).",
+        "es_correcta": true,
+        "explicacion": "PO automates exactly these three maintenance operations for Unity Catalog managed tables, running them as needed on serverless compute without any manual scheduling."
+      },
+      {
+        "texto_opcion": "`OPTIMIZE`, `ZORDER BY`, and `VACUUM` — PO manages all optimization including Z-Ordering.",
+        "es_correcta": false,
+        "explicacion": "PO explicitly does NOT perform `ZORDER BY`. It applies Liquid Clustering (if enabled) during OPTIMIZE runs, but Z-Order is not automated by PO."
+      },
+      {
+        "texto_opcion": "`COMPACTION`, `PURGE`, and `REINDEX` — PO maps to these internal maintenance commands.",
+        "es_correcta": false,
+        "explicacion": "These are not the operations managed by PO. The correct set is `OPTIMIZE`, `VACUUM`, and `ANALYZE`."
+      },
+      {
+        "texto_opcion": "`OPTIMIZE`, `CHECKPOINT`, and `RESTORE` — PO handles time-travel and recovery.",
+        "es_correcta": false,
+        "explicacion": "`CHECKPOINT` and `RESTORE` are not PO operations. PO manages `OPTIMIZE`, `VACUUM`, and `ANALYZE`."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Predictive Optimization"
+    ]
+  },
+  {
+    "pregunta": "A data engineer's organization uses external tables in the Hive metastore. Can Predictive Optimization automatically maintain these tables?",
+    "opciones": [
+      {
+        "texto_opcion": "No — Predictive Optimization only applies to **Unity Catalog managed tables**. External tables and Hive metastore tables are not supported.",
+        "es_correcta": true,
+        "explicacion": "PO is exclusively for Unity Catalog managed tables. External tables (whether in Unity Catalog or the legacy Hive metastore) are not eligible for PO automated maintenance."
+      },
+      {
+        "texto_opcion": "Yes — PO applies to any Delta table regardless of whether it's in Unity Catalog or the Hive metastore.",
+        "es_correcta": false,
+        "explicacion": "PO requires Unity Catalog managed tables. Hive metastore tables and external tables must be maintained manually."
+      },
+      {
+        "texto_opcion": "Yes, but only for OPTIMIZE — VACUUM must be run manually for external tables.",
+        "es_correcta": false,
+        "explicacion": "PO does not apply to external tables at all — not for OPTIMIZE, VACUUM, or ANALYZE."
+      },
+      {
+        "texto_opcion": "Only if the external table is registered in Unity Catalog with the `USING DELTA` option.",
+        "es_correcta": false,
+        "explicacion": "Even UC-registered external tables are not covered by PO. Only UC *managed* tables qualify."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Predictive Optimization"
+    ]
+  },
+  {
+    "pregunta": "A data engineer enables Predictive Optimization at the **catalog level**. A new schema and new table are subsequently created in that catalog. What is the PO status of the new table?",
+    "opciones": [
+      {
+        "texto_opcion": "PO is **automatically enabled** for the new table — it inherits the catalog-level setting.",
+        "es_correcta": true,
+        "explicacion": "PO follows a hierarchical inheritance model: catalog → schema → table. Enabling at the catalog level means all schemas and tables created within it inherit PO without explicit configuration."
+      },
+      {
+        "texto_opcion": "PO must be explicitly enabled on each new table with `ALTER TABLE ... SET TBLPROPERTIES`.",
+        "es_correcta": false,
+        "explicacion": "Explicit table-level configuration is only needed to override the inherited setting (e.g., to disable PO for a specific table within a PO-enabled catalog)."
+      },
+      {
+        "texto_opcion": "PO only applies to tables that existed at the time of the catalog-level enablement.",
+        "es_correcta": false,
+        "explicacion": "The inheritance model applies to all tables within the catalog — including those created after the catalog-level enablement."
+      },
+      {
+        "texto_opcion": "PO is inherited only if the table's schema explicitly enables it with `ALTER SCHEMA ... ENABLE PREDICTIVE OPTIMIZATION`.",
+        "es_correcta": false,
+        "explicacion": "Schema-level enablement is not required if the catalog already has PO enabled. The catalog setting cascades to all schemas and tables below it."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Predictive Optimization",
+      "Inheritance"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to exclude a single sensitive table from Predictive Optimization while keeping PO enabled for all other tables in the schema. Which command achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "```sql\nALTER TABLE my_catalog.sensitive_schema.sensitive_table\nSET TBLPROPERTIES ('delta.enablePredictiveOptimization' = 'disable');\n```",
+        "es_correcta": true,
+        "explicacion": "Table-level PO configuration overrides the inherited schema/catalog setting. Setting `'disable'` at the table level exempts this specific table while leaving the schema-level PO enabled for all other tables."
+      },
+      {
+        "texto_opcion": "```sql\nALTER SCHEMA my_catalog.sensitive_schema\nDISABLE PREDICTIVE OPTIMIZATION\nEXCLUDING TABLE sensitive_table;\n```",
+        "es_correcta": false,
+        "explicacion": "There is no `EXCLUDING TABLE` clause. Schema-level disable would turn off PO for all tables in the schema. The correct approach is to disable PO at the individual table level."
+      },
+      {
+        "texto_opcion": "```sql\nDROP TABLE my_catalog.sensitive_schema.sensitive_table;\n-- Recreate without PO\nCREATE TABLE ... SET TBLPROPERTIES ('predictive_optimization' = 'off');\n```",
+        "es_correcta": false,
+        "explicacion": "Dropping and recreating the table is unnecessary. PO can be disabled on an existing table with `ALTER TABLE ... SET TBLPROPERTIES` without data loss."
+      },
+      {
+        "texto_opcion": "```sql\nALTER TABLE my_catalog.sensitive_schema.sensitive_table\nDISABLE PREDICTIVE OPTIMIZATION;\n```",
+        "es_correcta": false,
+        "explicacion": "The correct syntax uses `SET TBLPROPERTIES ('delta.enablePredictiveOptimization' = 'disable')`, not a direct `DISABLE PREDICTIVE OPTIMIZATION` clause."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Predictive Optimization",
+      "Inheritance"
+    ]
+  },
+  {
+    "pregunta": "What compute does Predictive Optimization use to run `OPTIMIZE`, `VACUUM`, and `ANALYZE` operations?",
+    "opciones": [
+      {
+        "texto_opcion": "**Serverless compute** (billed under the serverless jobs SKU) — these operations do not use or charge for your existing job clusters.",
+        "es_correcta": true,
+        "explicacion": "PO runs all maintenance operations on Databricks-managed serverless compute. This means they don't compete with other workloads for cluster resources and are billed under the serverless jobs SKU."
+      },
+      {
+        "texto_opcion": "The user's all-purpose cluster — PO uses whatever cluster is currently running.",
+        "es_correcta": false,
+        "explicacion": "PO runs on its own serverless compute, independent of any user clusters. It does not use or require an active user cluster."
+      },
+      {
+        "texto_opcion": "A dedicated PO cluster that must be provisioned by an admin before PO can run.",
+        "es_correcta": false,
+        "explicacion": "PO is fully managed by Databricks — no cluster provisioning by admins is required. It uses serverless compute automatically."
+      },
+      {
+        "texto_opcion": "Free Databricks infrastructure — PO operations are not billed to the customer.",
+        "es_correcta": false,
+        "explicacion": "PO operations are billed under the serverless jobs SKU. They are not free, though they typically provide cost savings by reducing storage waste and manual maintenance overhead."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Predictive Optimization"
+    ]
+  },
+  {
+    "pregunta": "A data engineer verifies that Predictive Optimization is enabled for their table. They then run `OPTIMIZE ZORDER BY (customer_id)` manually. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "The manual `OPTIMIZE ZORDER BY` command runs, but PO **ignores and does not manage Z-Order** — PO only performs OPTIMIZE with Liquid Clustering (not Z-Ordering) when it runs automatically.",
+        "es_correcta": true,
+        "explicacion": "A user can still run manual `OPTIMIZE ZORDER BY` commands. However, PO's automated OPTIMIZE only applies Liquid Clustering — it never runs Z-Order. The two are independent."
+      },
+      {
+        "texto_opcion": "The command is blocked — Predictive Optimization prevents manual OPTIMIZE commands from running.",
+        "es_correcta": false,
+        "explicacion": "PO does not prevent manual commands. Users can still run `OPTIMIZE`, `VACUUM`, or `ANALYZE` manually even when PO is enabled."
+      },
+      {
+        "texto_opcion": "PO converts the Z-Order command to a Liquid Clustering operation automatically.",
+        "es_correcta": false,
+        "explicacion": "PO does not intercept or transform manual SQL commands. If the user explicitly runs `OPTIMIZE ZORDER BY`, that Z-Order operation executes as-is."
+      },
+      {
+        "texto_opcion": "The command fails because PO has already clustered the table and ZORDER is redundant.",
+        "es_correcta": false,
+        "explicacion": "The command would fail only if the table uses `CLUSTER BY` (incompatible with ZORDER BY). If no CLUSTER BY is set, `OPTIMIZE ZORDER BY` succeeds — PO being enabled does not prevent this."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Predictive Optimization",
+      "Z-Order"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```sql\nDESCRIBE TABLE EXTENDED my_catalog.my_schema.my_table;\n```\n\nIn the output, they see `Clusteringcolumns: customer_id, order_date`. What does this confirm?",
+    "opciones": [
+      {
+        "texto_opcion": "The table has **Liquid Clustering configured** with clustering keys `customer_id` and `order_date`. Running `OPTIMIZE` will use these columns to organize data layout.",
+        "es_correcta": true,
+        "explicacion": "`DESCRIBE TABLE EXTENDED` shows the table's configuration including clustering columns. `Clusteringcolumns` confirms Liquid Clustering is active with those specific keys."
+      },
+      {
+        "texto_opcion": "The table is partitioned by `customer_id` and `order_date` using Hive-style partitioning.",
+        "es_correcta": false,
+        "explicacion": "Partition columns appear as `Partition Provider` and `Partition Columns` in `DESCRIBE EXTENDED`. `Clusteringcolumns` specifically refers to Liquid Clustering keys."
+      },
+      {
+        "texto_opcion": "The table has been Z-Ordered by `customer_id` and `order_date` in the most recent OPTIMIZE run.",
+        "es_correcta": false,
+        "explicacion": "Z-Order columns are not stored as table metadata — they must be specified in each `OPTIMIZE ZORDER BY` command. `Clusteringcolumns` refers to Liquid Clustering configuration."
+      },
+      {
+        "texto_opcion": "The table's primary keys are `customer_id` and `order_date`.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake does not enforce primary keys natively. `Clusteringcolumns` is specifically the Liquid Clustering key configuration."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is comparing Liquid Clustering vs. Z-Order for an existing large Delta table. Which statement correctly describes the **maintenance cost difference**?",
+    "opciones": [
+      {
+        "texto_opcion": "Z-Order requires rewriting **all files** in the target scope (table or partition) on every OPTIMIZE run; Liquid Clustering only rewrites **unclustered/new files** incrementally.",
+        "es_correcta": true,
+        "explicacion": "This is the core maintenance cost difference. Z-Order's full rewrites make frequent runs expensive at scale. Liquid Clustering's incremental approach keeps each OPTIMIZE run cheap — only new data is processed."
+      },
+      {
+        "texto_opcion": "Liquid Clustering is more expensive because it must maintain a cluster index alongside the data files.",
+        "es_correcta": false,
+        "explicacion": "Liquid Clustering does not maintain a separate index. It organizes file layout so Delta's existing per-file min/max statistics enable data skipping — no additional index overhead."
+      },
+      {
+        "texto_opcion": "Both approaches have identical maintenance costs — the only difference is where clustering keys are defined.",
+        "es_correcta": false,
+        "explicacion": "The maintenance cost difference is significant. Z-Order performs full rewrites; Liquid Clustering is incremental. At scale (TB+), this difference is substantial."
+      },
+      {
+        "texto_opcion": "Z-Order is cheaper because it only re-sorts changed rows, while Liquid Clustering rewrites entire files.",
+        "es_correcta": false,
+        "explicacion": "Z-Order rewrites entire files (or partitions). Liquid Clustering is the incremental approach that only processes unclustered data."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering vs Z-Order"
+    ]
+  },
+  {
+    "pregunta": "A data engineering team has a streaming table that was created with `CLUSTER BY (user_id)`. The team now wants to change the clustering key to `(event_date)`. Which approach is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Update the pipeline definition to use `CREATE STREAMING TABLE ... CLUSTER BY (event_date)` and refresh the pipeline — `ALTER TABLE` cannot change clustering keys for streaming tables.",
+        "es_correcta": true,
+        "explicacion": "Streaming tables and materialized views are managed by their pipeline definitions. Clustering keys for pipeline-managed objects must be changed in the pipeline definition itself, not with `ALTER TABLE`."
+      },
+      {
+        "texto_opcion": "`ALTER TABLE streaming_table CLUSTER BY (event_date);` — this works for all Delta tables including streaming tables.",
+        "es_correcta": false,
+        "explicacion": "`ALTER TABLE CLUSTER BY` does not work for pipeline-managed objects like streaming tables. The pipeline definition controls the table schema and clustering."
+      },
+      {
+        "texto_opcion": "Stop the streaming pipeline, run `ALTER TABLE CLUSTER BY (event_date)`, then restart the pipeline.",
+        "es_correcta": false,
+        "explicacion": "Even when stopped, `ALTER TABLE CLUSTER BY` cannot change clustering for streaming table-managed objects. The pipeline definition must be updated."
+      },
+      {
+        "texto_opcion": "Delete all files in the streaming table's storage location, then run `OPTIMIZE` with the new key.",
+        "es_correcta": false,
+        "explicacion": "Deleting storage files would corrupt the Delta table. The correct approach is to update the pipeline definition."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering",
+      "Streaming Tables"
+    ]
+  },
+  {
+    "pregunta": "What does `CLUSTER BY NONE` do to an existing Liquid-clustered table?",
+    "opciones": [
+      {
+        "texto_opcion": "It **removes the Liquid Clustering configuration** — future OPTIMIZE runs will only compact files without applying any clustering layout.",
+        "es_correcta": true,
+        "explicacion": "`CLUSTER BY NONE` removes the clustering key definition. Future `OPTIMIZE` runs will compact files but won't apply any clustering strategy."
+      },
+      {
+        "texto_opcion": "It immediately deletes all clustered files and forces a full table rebuild.",
+        "es_correcta": false,
+        "explicacion": "`CLUSTER BY NONE` is a metadata operation that removes the clustering configuration. It does not delete files or trigger immediate data rewrites."
+      },
+      {
+        "texto_opcion": "It converts the table to Hive-style partitioning with no partition columns.",
+        "es_correcta": false,
+        "explicacion": "`CLUSTER BY NONE` removes Liquid Clustering — it does not add any partitioning. Partitioning is a separate, incompatible concept."
+      },
+      {
+        "texto_opcion": "It enables Predictive Optimization to choose clustering keys automatically, equivalent to `CLUSTER BY AUTO`.",
+        "es_correcta": false,
+        "explicacion": "`CLUSTER BY NONE` removes clustering entirely. `CLUSTER BY AUTO` enables automatic key selection — these are different commands with different effects."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering"
+    ]
+  },
+  {
+    "pregunta": "A data engineer checks Predictive Optimization history using system tables:\n\n```sql\nSELECT operation_type, status, bytes_compacted, files_compacted\nFROM system.storage.predictive_optimization_operations_history\nWHERE table_name = 'events'\nORDER BY operation_start DESC;\n```\n\nThe result shows `operation_type = 'VACUUM', status = 'SUCCEEDED', bytes_compacted = 0`. What does this mean?",
+    "opciones": [
+      {
+        "texto_opcion": "PO ran a VACUUM operation that succeeded — `bytes_compacted = 0` is expected for VACUUM because VACUUM removes orphaned files (reducing storage), not compact files together.",
+        "es_correcta": true,
+        "explicacion": "`bytes_compacted` measures file compaction (OPTIMIZE's job), not storage freed. VACUUM removes orphaned/expired files — a successful VACUUM shows 0 `bytes_compacted` since it's a deletion operation, not a compaction."
+      },
+      {
+        "texto_opcion": "The VACUUM operation was a no-op — there were no orphaned files to delete.",
+        "es_correcta": false,
+        "explicacion": "While a no-op VACUUM is possible, `bytes_compacted = 0` for a VACUUM is always expected regardless of how many orphaned files were deleted — because `bytes_compacted` is an OPTIMIZE metric, not a VACUUM metric."
+      },
+      {
+        "texto_opcion": "The VACUUM failed silently — `bytes_compacted = 0` indicates no data was processed.",
+        "es_correcta": false,
+        "explicacion": "The `status = 'SUCCEEDED'` confirms success. `bytes_compacted = 0` is the expected value for VACUUM since compaction is OPTIMIZE's purpose, not VACUUM's."
+      },
+      {
+        "texto_opcion": "The VACUUM operation skipped all files because they were written within the 7-day retention window.",
+        "es_correcta": false,
+        "explicacion": "While VACUUM does respect the 7-day default retention window, the reason `bytes_compacted = 0` is that `bytes_compacted` measures file compaction, not file deletion. VACUUM's impact would be shown in a bytes_deleted or files_deleted column."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Predictive Optimization",
+      "Monitoring"
+    ]
+  },
+  {
+    "pregunta": "Which of the following scenarios is the **BEST use case** for `CLUSTER BY AUTO` instead of manually specifying clustering keys?",
+    "opciones": [
+      {
+        "texto_opcion": "A new table whose query patterns are not yet known and are expected to evolve over time as different teams use it for various analyses.",
+        "es_correcta": true,
+        "explicacion": "`CLUSTER BY AUTO` is ideal when query patterns are unknown or variable. Databricks monitors actual query usage and adapts clustering keys dynamically — eliminating the need to predict and manually update keys."
+      },
+      {
+        "texto_opcion": "A table that is always queried with exactly `WHERE transaction_date = :date AND region = 'US'` — the patterns are fixed and well-known.",
+        "es_correcta": false,
+        "explicacion": "When filter columns are well-known and stable, manually specifying `CLUSTER BY (transaction_date, region)` is more direct. `CLUSTER BY AUTO` adds value when patterns are unknown or changing."
+      },
+      {
+        "texto_opcion": "An external table that needs automatic file organization without any human intervention.",
+        "es_correcta": false,
+        "explicacion": "`CLUSTER BY AUTO` requires Unity Catalog managed tables — it is not available for external tables."
+      },
+      {
+        "texto_opcion": "A Hive metastore table that needs to be migrated from Z-Order to Liquid Clustering.",
+        "es_correcta": false,
+        "explicacion": "`CLUSTER BY AUTO` requires Unity Catalog managed tables. Hive metastore tables are not eligible."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "CLUSTER BY AUTO"
+    ]
+  },
+  {
+    "pregunta": "How does Liquid Clustering enable **data skipping** during query execution?",
+    "opciones": [
+      {
+        "texto_opcion": "After clustering, related rows are co-located in the same files, so **per-file min/max statistics** (stored in the Delta log) allow the reader to skip files where the clustering key range cannot match the query filter.",
+        "es_correcta": true,
+        "explicacion": "Delta Lake stores min/max statistics for each file in the Delta log. After Liquid Clustering, files contain data within narrow ranges of the clustering key. A query filter like `WHERE customer_id = 12345` can skip all files where `min(customer_id) > 12345` or `max(customer_id) < 12345`."
+      },
+      {
+        "texto_opcion": "Clustering creates a secondary B-tree index on the clustering columns that Spark queries use for lookups.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake does not create B-tree indexes. Data skipping is achieved through per-file min/max statistics in the Delta log — no separate index structure is maintained."
+      },
+      {
+        "texto_opcion": "Clustering stores data in partition directories named by key ranges — files in non-matching directories are skipped.",
+        "es_correcta": false,
+        "explicacion": "Liquid Clustering is incompatible with Hive-style directory partitioning. Skipping is based on per-file statistics in the Delta log, not directory names."
+      },
+      {
+        "texto_opcion": "Spark caches the last 1000 query results — if the same filter is reused, Spark returns the cached result without reading files.",
+        "es_correcta": false,
+        "explicacion": "Data skipping is not result caching. It is a file-level predicate pushdown mechanism based on per-file min/max statistics recorded in the Delta transaction log."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering",
+      "Data Skipping"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```sql\nALTER CATALOG prod_catalog ENABLE PREDICTIVE OPTIMIZATION;\n```\n\nLater, they create a new schema and table in `prod_catalog`. Then they run:\n\n```sql\nALTER TABLE prod_catalog.new_schema.important_table\nSET TBLPROPERTIES ('delta.enablePredictiveOptimization' = 'disable');\n```\n\nWhat is the final PO status of `important_table`?",
+    "opciones": [
+      {
+        "texto_opcion": "PO is **disabled** for `important_table` — the table-level `disable` override takes precedence over the catalog-level `ENABLE`.",
+        "es_correcta": true,
+        "explicacion": "PO inheritance is hierarchical but allows individual tables to override. A table-level `disable` setting takes precedence over any parent-level `ENABLE`, allowing fine-grained exemptions."
+      },
+      {
+        "texto_opcion": "PO is enabled — the catalog-level setting always wins and cannot be overridden at the table level.",
+        "es_correcta": false,
+        "explicacion": "Table-level settings can override inherited settings. The hierarchy allows child-level overrides to exempt specific objects."
+      },
+      {
+        "texto_opcion": "PO is in an undefined state — conflicting settings at catalog and table level cause an error.",
+        "es_correcta": false,
+        "explicacion": "Conflicting PO settings do not cause errors. The table-level setting takes precedence — the system resolves the conflict by applying the most specific scope."
+      },
+      {
+        "texto_opcion": "PO runs but only for VACUUM — OPTIMIZE and ANALYZE are disabled at the table level.",
+        "es_correcta": false,
+        "explicacion": "PO's table-level disable is an all-or-nothing setting — it disables all PO operations (OPTIMIZE, VACUUM, ANALYZE) for that table."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Predictive Optimization",
+      "Inheritance"
+    ]
+  },
+  {
+    "pregunta": "A data engineer migrates a legacy table from `PARTITIONED BY (year, month)` + `OPTIMIZE ZORDER BY (customer_id)` to Liquid Clustering. Which SQL sequence is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "```sql\n-- Step 1: Create a new table with Liquid Clustering\nCREATE TABLE new_orders\nCLUSTER BY (customer_id, order_date)\nAS SELECT * FROM old_orders;\n\n-- Step 2: Cluster the new table\nOPTIMIZE new_orders;\n```",
+        "es_correcta": true,
+        "explicacion": "The cleanest migration path is to create a new table with `CLUSTER BY` (incompatible with the old `PARTITIONED BY`), populate it with a CTAS, then run `OPTIMIZE`. The old table's partitioning and Z-Order configuration cannot be converted in-place."
+      },
+      {
+        "texto_opcion": "```sql\n-- In-place migration\nALTER TABLE old_orders CLUSTER BY (customer_id, order_date);\nDROP TABLE PARTITIONED BY (year, month);\n```",
+        "es_correcta": false,
+        "explicacion": "`ALTER TABLE CLUSTER BY` cannot be applied to a table that already uses `PARTITIONED BY`. The strategies are mutually exclusive — migration requires creating a new table."
+      },
+      {
+        "texto_opcion": "```sql\nOPTIMIZE old_orders CLUSTER BY (customer_id, order_date);\n```",
+        "es_correcta": false,
+        "explicacion": "`OPTIMIZE ... CLUSTER BY` is not valid SQL. Liquid Clustering is defined at the table level with `CREATE TABLE ... CLUSTER BY`, not as a per-OPTIMIZE option."
+      },
+      {
+        "texto_opcion": "```sql\nALTER TABLE old_orders SET TBLPROPERTIES ('clustering' = 'customer_id,order_date');\n```",
+        "es_correcta": false,
+        "explicacion": "Liquid Clustering is not enabled through a `TBLPROPERTIES` key. It uses the `CLUSTER BY` clause in `CREATE TABLE` or `ALTER TABLE CLUSTER BY`."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering",
+      "Migration"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants a fully automated table management setup with no manual maintenance. They have a Unity Catalog managed table. What is the recommended configuration?",
+    "opciones": [
+      {
+        "texto_opcion": "Create the table with `CLUSTER BY AUTO` and enable **Predictive Optimization** at the catalog or schema level — PO will run OPTIMIZE, VACUUM, and ANALYZE automatically using serverless compute.",
+        "es_correcta": true,
+        "explicacion": "`CLUSTER BY AUTO` handles adaptive key selection; PO handles scheduling and running all maintenance operations. Together, they provide fully automated, zero-maintenance table management."
+      },
+      {
+        "texto_opcion": "Create the table with `CLUSTER BY (col1)` and schedule a daily Lakeflow Job that runs `OPTIMIZE`, `VACUUM`, and `ANALYZE`.",
+        "es_correcta": false,
+        "explicacion": "This is a valid semi-automated approach, but it requires manual scheduling and monitoring. The fully automated approach uses `CLUSTER BY AUTO` + Predictive Optimization."
+      },
+      {
+        "texto_opcion": "Use `PARTITIONED BY (date)` — partitioning automatically organizes files by date without any maintenance.",
+        "es_correcta": false,
+        "explicacion": "Partitioning organizes files into directories but still requires `OPTIMIZE` for file compaction. Partitioning alone does not provide automated maintenance."
+      },
+      {
+        "texto_opcion": "Enable Delta Lake auto-compaction — it automatically runs OPTIMIZE after every write operation.",
+        "es_correcta": false,
+        "explicacion": "While Delta Lake has auto-compaction features for small file handling, the fully recommended automated approach for Unity Catalog tables is `CLUSTER BY AUTO` + Predictive Optimization."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Liquid Clustering",
+      "Predictive Optimization"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to verify whether Predictive Optimization is enabled for a specific table. Which command is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`DESCRIBE TABLE EXTENDED my_catalog.my_schema.my_table;` — look for the `Predictive optimization` row in the output.",
+        "es_correcta": true,
+        "explicacion": "`DESCRIBE TABLE EXTENDED` (or `DESCRIBE CATALOG EXTENDED` / `DESCRIBE SCHEMA EXTENDED`) shows the PO configuration for that object. This is the documented way to verify PO status."
+      },
+      {
+        "texto_opcion": "`SHOW PREDICTIVE OPTIMIZATION STATUS FOR TABLE my_table;`",
+        "es_correcta": false,
+        "explicacion": "There is no `SHOW PREDICTIVE OPTIMIZATION STATUS` command. Use `DESCRIBE TABLE EXTENDED` to see PO configuration."
+      },
+      {
+        "texto_opcion": "`SELECT * FROM system.storage.predictive_optimization_config WHERE table_name = 'my_table';`",
+        "es_correcta": false,
+        "explicacion": "There is no `predictive_optimization_config` system table for checking enablement status. Configuration is visible through `DESCRIBE TABLE EXTENDED`."
+      },
+      {
+        "texto_opcion": "`EXPLAIN TABLE EXTENDED my_table WITH PREDICTIVE OPTIMIZATION;`",
+        "es_correcta": false,
+        "explicacion": "`EXPLAIN` is for showing query execution plans, not table configuration. `DESCRIBE TABLE EXTENDED` is the correct command."
+      }
+    ],
+    "tags": [
+      "6.4",
+      "Predictive Optimization"
+    ]
+  }
+]

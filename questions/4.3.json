@@ -1,0 +1,872 @@
+[
+  {
+    "pregunta": "A data engineer wants a task to retry up to 3 times if it fails, waiting at least 5 minutes between attempts.\n\nWhich configuration is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`max_retries: 3`, `min_retry_interval_millis: 300000`",
+        "es_correcta": true,
+        "explicacion": "`max_retries` sets the retry count and `min_retry_interval_millis` sets the minimum wait between the failed run's start and the next attempt; 300000 ms = 5 minutes."
+      },
+      {
+        "texto_opcion": "`max_retries: 3`, `min_retry_interval_millis: 5`",
+        "es_correcta": false,
+        "explicacion": "`min_retry_interval_millis` is in milliseconds, so `5` would mean 5 milliseconds, far less than 5 minutes."
+      },
+      {
+        "texto_opcion": "`retry_on_timeout: true`, `timeout_seconds: 300`",
+        "es_correcta": false,
+        "explicacion": "`timeout_seconds` caps how long a single run is allowed to take; it does not control retry count or the wait between retries."
+      },
+      {
+        "texto_opcion": "`max_retries: -1`, `min_retry_interval_millis: 300000`",
+        "es_correcta": false,
+        "explicacion": "`-1` means unlimited (legacy) retries, not exactly 3 retries as required by the scenario."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Retries"
+    ]
+  },
+  {
+    "pregunta": "A task has both `timeout_seconds: 600` and `max_retries: 2` configured.\n\nHow does the timeout apply across retry attempts?",
+    "opciones": [
+      {
+        "texto_opcion": "The 600-second timeout applies separately to each individual retry attempt.",
+        "es_correcta": true,
+        "explicacion": "When both timeout and retries are set, the timeout applies to each retry, not to the total wall-clock time across all attempts."
+      },
+      {
+        "texto_opcion": "The 600-second timeout is divided evenly across the 2 retries (300 seconds each).",
+        "es_correcta": false,
+        "explicacion": "Databricks does not divide the timeout across retries; the full timeout applies to each individual attempt."
+      },
+      {
+        "texto_opcion": "The 600-second timeout applies once to the total time across the initial run plus all retries.",
+        "es_correcta": false,
+        "explicacion": "This describes total wall-clock timeout behavior, which is explicitly not how `timeout_seconds` works when combined with retries."
+      },
+      {
+        "texto_opcion": "Setting both fields together is invalid and causes a validation error.",
+        "es_correcta": false,
+        "explicacion": "Combining `timeout_seconds` and `max_retries` is valid and documented; it is simply important to understand the per-retry timeout behavior."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Retries"
+    ]
+  },
+  {
+    "pregunta": "A job runs in **Continuous** mode. A data engineer tries to set `max_retries: 3` on one of its tasks via the REST API.\n\nWhat is true about retry behavior for this job?",
+    "opciones": [
+      {
+        "texto_opcion": "Continuous jobs cannot use manual retry policies; the job instead automatically retries using exponential backoff.",
+        "es_correcta": true,
+        "explicacion": "Continuous mode does not support manual retry policies like `max_retries`; failures are retried automatically with an exponential backoff algorithm at the job level."
+      },
+      {
+        "texto_opcion": "The `max_retries: 3` setting works exactly as it would on a scheduled job.",
+        "es_correcta": false,
+        "explicacion": "Manual retry policies are not used in continuous mode; the platform manages retries via exponential backoff instead."
+      },
+      {
+        "texto_opcion": "Retries are disabled entirely for continuous jobs, with no automatic recovery from failures.",
+        "es_correcta": false,
+        "explicacion": "Continuous jobs do retry automatically, just not via a manually configured retry policy — they use exponential backoff."
+      },
+      {
+        "texto_opcion": "The job switches to standard scheduled mode automatically when retries are configured.",
+        "es_correcta": false,
+        "explicacion": "Configuring retries does not change a job's trigger mode; continuous jobs simply ignore manual retry policies in favor of backoff."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Retries"
+    ]
+  },
+  {
+    "pregunta": "In a Continuous job with Task retry mode set to **On failure**, a single-task job fails repeatedly.\n\nWhat happens after the maximum allowed retries (three) for that task are reached?",
+    "opciones": [
+      {
+        "texto_opcion": "The run is canceled, and a new run is triggered.",
+        "es_correcta": true,
+        "explicacion": "Once the maximum task-level retries are reached for a single-task job, the run is canceled and a new run is triggered, continuing the job-level exponential backoff cycle."
+      },
+      {
+        "texto_opcion": "The job stops permanently and must be manually resumed.",
+        "es_correcta": false,
+        "explicacion": "Continuous jobs do not stop permanently after exhausting task retries — a new run is triggered instead."
+      },
+      {
+        "texto_opcion": "The task retries indefinitely with no cap, since it's a continuous job.",
+        "es_correcta": false,
+        "explicacion": "Task-level retries with On failure mode are capped (three for a single-task job); only the job-level retry has no overall limit."
+      },
+      {
+        "texto_opcion": "The job reverts to manual trigger mode.",
+        "es_correcta": false,
+        "explicacion": "Exhausting task retries does not change the job's trigger configuration."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Retries"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is running a serverless notebook task that is not idempotent — re-running it could duplicate rows in a downstream table.\n\nWhich field should be set to prevent unwanted automatic retries?",
+    "opciones": [
+      {
+        "texto_opcion": "`disable_auto_optimization: true`",
+        "es_correcta": true,
+        "explicacion": "Serverless compute auto-optimizes and retries tasks by default; `disable_auto_optimization: true` opts a specific task out of that automatic retry behavior."
+      },
+      {
+        "texto_opcion": "`retry_on_timeout: false`",
+        "es_correcta": false,
+        "explicacion": "`retry_on_timeout` only controls whether timeouts (not general failures) trigger a retry; it does not disable serverless auto-optimization retries."
+      },
+      {
+        "texto_opcion": "`max_retries: 0`",
+        "es_correcta": false,
+        "explicacion": "`max_retries` controls the manually configured retry policy; it does not override the serverless platform's built-in auto-optimization retries."
+      },
+      {
+        "texto_opcion": "`run_if: NONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`run_if` controls whether a downstream task runs based on upstream outcomes; it has no effect on serverless auto-retry behavior."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Retries"
+    ]
+  },
+  {
+    "pregunta": "Two upstream tasks, `ingest_a` and `ingest_b`, feed into a `cleanup_temp_tables` task that must always run, whether the upstream tasks succeeded or failed.\n\nWhich `run_if` condition should be used on `cleanup_temp_tables`?",
+    "opciones": [
+      {
+        "texto_opcion": "`ALL_DONE`",
+        "es_correcta": true,
+        "explicacion": "`ALL_DONE` runs the task regardless of upstream outcome — it is never skipped, making it ideal for cleanup or notification tasks."
+      },
+      {
+        "texto_opcion": "`ALL_SUCCESS` (the default)",
+        "es_correcta": false,
+        "explicacion": "`ALL_SUCCESS` skips the task (marks it `Upstream failed`) if any upstream task fails — the opposite of always running."
+      },
+      {
+        "texto_opcion": "`AT_LEAST_ONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "This condition only runs the task when at least one upstream failed; it is excluded if both upstream tasks succeed."
+      },
+      {
+        "texto_opcion": "`NONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`NONE_FAILED` is marked `Upstream failed` if any upstream task fails, so the cleanup task would not always run."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Run If"
+    ]
+  },
+  {
+    "pregunta": "Review this REST API task definition:\n\n```json\n{\n  \"task_key\": \"send_failure_alert\",\n  \"depends_on\": [\n    { \"task_key\": \"ingest_data\" },\n    { \"task_key\": \"transform_data\" }\n  ],\n  \"run_if\": \"AT_LEAST_ONE_FAILED\",\n  \"notebook_task\": { \"notebook_path\": \"/Workspace/Shared/alert_on_failure\" }\n}\n```\n\nWhat happens to `send_failure_alert` if both `ingest_data` and `transform_data` succeed?",
+    "opciones": [
+      {
+        "texto_opcion": "It is marked `Excluded` and does not run.",
+        "es_correcta": true,
+        "explicacion": "`AT_LEAST_ONE_FAILED` is unmet when no upstream task failed, so the task is marked `Excluded` (skipped, treated as successful)."
+      },
+      {
+        "texto_opcion": "It runs anyway because `Excluded` tasks are forced to execute.",
+        "es_correcta": false,
+        "explicacion": "`Excluded` means the task is skipped, not forced to run."
+      },
+      {
+        "texto_opcion": "It is marked `Upstream failed` and does not run.",
+        "es_correcta": false,
+        "explicacion": "`Upstream failed` applies to success-based gate conditions (like `ALL_SUCCESS`) when unmet; failure-based conditions like `AT_LEAST_ONE_FAILED` use `Excluded` when unmet."
+      },
+      {
+        "texto_opcion": "The entire job fails because the condition was never satisfied.",
+        "es_correcta": false,
+        "explicacion": "An unmet `run_if` condition skips that individual task; it does not fail the whole job."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Run If"
+    ]
+  },
+  {
+    "pregunta": "A data engineer cancels a running task mid-execution. The job also includes a cleanup task downstream with `run_if: ALL_DONE`.\n\nWhat happens to the cleanup task?",
+    "opciones": [
+      {
+        "texto_opcion": "It still runs, because tasks with a `Run if` condition that handles failure are run even when cancellation propagates downstream.",
+        "es_correcta": true,
+        "explicacion": "Cancellation propagates through downstream tasks, but tasks with a `Run if` condition that handles failure (like `ALL_DONE`) are still run — e.g., cleanup tasks."
+      },
+      {
+        "texto_opcion": "It is automatically canceled along with everything else in the job.",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` is specifically designed to still execute cleanup/notification logic even when an upstream run is canceled."
+      },
+      {
+        "texto_opcion": "It is marked `Upstream failed` and skipped.",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` never marks a task `Upstream failed`; it always runs regardless of upstream outcome, including cancellation."
+      },
+      {
+        "texto_opcion": "It pauses indefinitely until manually resumed.",
+        "es_correcta": false,
+        "explicacion": "There is no pause-and-wait behavior; the task either runs or is skipped based on its `run_if` evaluation."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Run If"
+    ]
+  },
+  {
+    "pregunta": "A task `B` depends on task `A`, which is skipped (`Excluded`) due to its own `run_if` condition. Task `B` uses the default `run_if` value.\n\nHow is the skipped upstream task `A` treated when evaluating `B`'s condition?",
+    "opciones": [
+      {
+        "texto_opcion": "As successful — skipped (`Excluded`) upstream tasks are treated as successful for `Run if` evaluation purposes.",
+        "es_correcta": true,
+        "explicacion": "Skipped (`Excluded`) upstream tasks are treated as successful when evaluating `Run if` conditions, so `B`'s default `ALL_SUCCESS` condition can still be satisfied."
+      },
+      {
+        "texto_opcion": "As failed — skipped tasks always count as failures for downstream conditions.",
+        "es_correcta": false,
+        "explicacion": "This is the opposite of the documented behavior; skipped upstream tasks count as successful, not failed."
+      },
+      {
+        "texto_opcion": "As undefined — the downstream task is also automatically skipped.",
+        "es_correcta": false,
+        "explicacion": "There is no undefined state; skipped tasks have a well-defined successful treatment for downstream `Run if` evaluation."
+      },
+      {
+        "texto_opcion": "It depends on whether the skipped task previously had any run history.",
+        "es_correcta": false,
+        "explicacion": "Run history does not factor into how a current run's skipped task status is treated by downstream conditions."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Run If"
+    ]
+  },
+  {
+    "pregunta": "What fundamentally distinguishes an `If/else condition` task from the `Run if` field on a regular task?",
+    "opciones": [
+      {
+        "texto_opcion": "`Run if` reacts to the pass/fail/done outcome of upstream tasks, while `If/else` evaluates a value-based boolean expression at runtime.",
+        "es_correcta": true,
+        "explicacion": "This is the documented distinction: `Run if` is outcome-based branching, whereas `If/else` is value-based branching using operators like `>`, `==`, etc."
+      },
+      {
+        "texto_opcion": "`Run if` requires a dedicated task node in the DAG, while `If/else` is just a field on any task.",
+        "es_correcta": false,
+        "explicacion": "This reverses the facts — `If/else` is a separate `condition_task` node, while `Run if` is a field configured on any existing task."
+      },
+      {
+        "texto_opcion": "`Run if` can only be used with notebook tasks, while `If/else` works with any task type.",
+        "es_correcta": false,
+        "explicacion": "`run_if` can be configured on any task type, not just notebook tasks."
+      },
+      {
+        "texto_opcion": "They are functionally identical; `If/else` is just the UI name for `Run if`.",
+        "es_correcta": false,
+        "explicacion": "They are distinct mechanisms serving different purposes — outcome-based vs. value-based branching."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "If/Else"
+    ]
+  },
+  {
+    "pregunta": "Examine this `condition_task` configuration:\n\n```json\n{\n  \"op\": \"EQUAL_TO\",\n  \"left\": \"12.0\",\n  \"right\": \"12\"\n}\n```\n\nWhat is the evaluated result?",
+    "opciones": [
+      {
+        "texto_opcion": "`false`, because `==` performs a string comparison and `\"12.0\"` does not equal `\"12\"` as strings.",
+        "es_correcta": true,
+        "explicacion": "The `==` and `!=` operators perform string comparison in `condition_task`; `\"12.0\" == \"12\"` is false as strings even though they're numerically equal."
+      },
+      {
+        "texto_opcion": "`true`, because `==` performs a numeric comparison and 12.0 equals 12 numerically.",
+        "es_correcta": false,
+        "explicacion": "`==` is documented as a string comparison in `condition_task`, not numeric, so this evaluates to false."
+      },
+      {
+        "texto_opcion": "The task fails with a type error since one operand has a decimal.",
+        "es_correcta": false,
+        "explicacion": "No type error occurs; the comparison simply evaluates as a string comparison, yielding `false`."
+      },
+      {
+        "texto_opcion": "`true`, because all condition task operators always normalize numeric strings before comparing.",
+        "es_correcta": false,
+        "explicacion": "Only `>`, `>=`, `<`, `<=` perform numeric comparison; `==` and `!=` are explicitly string-based."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "If/Else"
+    ]
+  },
+  {
+    "pregunta": "A `process_records` notebook task sets a task value:\n\n```python\nbad_count = df.filter(col(\"is_invalid\") == True).count()\ndbutils.jobs.taskValues.set(key=\"bad_records\", value=bad_count)\n```\n\nA downstream `condition_task` should branch into a data-fix path only when `bad_records` is greater than zero.\n\nWhich configuration is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`{ \"op\": \"GREATER_THAN\", \"left\": \"{{tasks.process_records.values.bad_records}}\", \"right\": \"0\" }`",
+        "es_correcta": true,
+        "explicacion": "The left operand references the upstream task value with `{{tasks.<task_key>.values.<value_name>}}`, and `GREATER_THAN` performs the numeric comparison against `0`."
+      },
+      {
+        "texto_opcion": "`{ \"op\": \"GREATER_THAN\", \"left\": \"{{job.parameters.bad_records}}\", \"right\": \"0\" }`",
+        "es_correcta": false,
+        "explicacion": "`bad_records` is a runtime task value set via `taskValues.set`, not a job parameter, so `{{job.parameters...}}` would not resolve it."
+      },
+      {
+        "texto_opcion": "`{ \"op\": \"EQUAL_TO\", \"left\": \"{{tasks.process_records.values.bad_records}}\", \"right\": \"0\" }`",
+        "es_correcta": false,
+        "explicacion": "`EQUAL_TO` checks for exact equality to zero, not \"greater than zero\" as the scenario requires."
+      },
+      {
+        "texto_opcion": "`{ \"op\": \"GREATER_THAN\", \"left\": \"bad_records\", \"right\": \"0\" }`",
+        "es_correcta": false,
+        "explicacion": "A bare string `\"bad_records\"` is a literal value, not a dynamic reference; the `{{tasks...}}` syntax is required to pull the actual runtime value."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "If/Else"
+    ]
+  },
+  {
+    "pregunta": "In a DAB YAML job, a downstream task must run only on the **true** branch of an `If/else condition` task named `check_bad_records`.\n\nWhich `depends_on` entry is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`depends_on: [{ task_key: check_bad_records, outcome: 'true' }]`",
+        "es_correcta": true,
+        "explicacion": "Branch selection uses `outcome: 'true'` or `outcome: 'false'` on the `depends_on` entry referencing the condition task's `task_key`."
+      },
+      {
+        "texto_opcion": "`depends_on: [{ task_key: check_bad_records, run_if: 'true' }]`",
+        "es_correcta": false,
+        "explicacion": "`run_if` is a separate field for outcome-based branching (success/failure/done), not for selecting If/else true/false branches."
+      },
+      {
+        "texto_opcion": "`depends_on: [{ task_key: check_bad_records.true }]`",
+        "es_correcta": false,
+        "explicacion": "Dot-notation on `task_key` is not valid syntax; the branch is specified via a separate `outcome` field."
+      },
+      {
+        "texto_opcion": "`condition_task: { outcome: 'true', task_key: check_bad_records }`",
+        "es_correcta": false,
+        "explicacion": "`condition_task` defines the condition itself on the condition task node; branch selection on downstream tasks happens via `depends_on[].outcome`, not inside `condition_task`."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "If/Else"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs a `For each` task that runs the nested task once per item in a list generated by an upstream notebook task named `generate_table_list`, which sets a task value `tables`.\n\nWhich `for_each_task.inputs` value is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`'{{tasks.generate_table_list.values.tables}}'`",
+        "es_correcta": true,
+        "explicacion": "Dynamic lists generated at runtime are referenced using `{{tasks.<task_name>.values.<value_name>}}`, pulling the `tables` task value set by the upstream task."
+      },
+      {
+        "texto_opcion": "`'[\"orders\", \"customers\", \"products\"]'`",
+        "es_correcta": false,
+        "explicacion": "This is a static literal array; it does not reflect the dynamic list generated at runtime by `generate_table_list`."
+      },
+      {
+        "texto_opcion": "`'{{job.parameters.tables}}'`",
+        "es_correcta": false,
+        "explicacion": "`tables` was set via `taskValues.set` inside a task, not configured as a job parameter, so the job parameter reference would not resolve it."
+      },
+      {
+        "texto_opcion": "`'{{input.tables}}'`",
+        "es_correcta": false,
+        "explicacion": "`{{input}}` / `{{input.<key>}}` is used *inside the nested task* to access the current loop element, not in the `inputs` field that defines the list itself."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "For Each"
+    ]
+  },
+  {
+    "pregunta": "Inside a `For each` task's nested notebook task, the inputs are an array of objects like `{\"name\": \"orders\", \"schema\": \"sales\"}`.\n\nHow should the nested task reference the `schema` field of the current iteration's object?",
+    "opciones": [
+      {
+        "texto_opcion": "`{{input.schema}}`",
+        "es_correcta": true,
+        "explicacion": "For an array of objects, `{{input.<key>}}` accesses the value of a specific key in the current iteration's object."
+      },
+      {
+        "texto_opcion": "`{{input}}`",
+        "es_correcta": false,
+        "explicacion": "`{{input}}` alone returns the entire current array element; it does not isolate the `schema` field from an object."
+      },
+      {
+        "texto_opcion": "`{{tasks.input.values.schema}}`",
+        "es_correcta": false,
+        "explicacion": "This conflates the For each `{{input}}` syntax with the unrelated task value reference syntax `{{tasks.<task_key>.values.<key>}}`."
+      },
+      {
+        "texto_opcion": "`{{loop.current.schema}}`",
+        "es_correcta": false,
+        "explicacion": "`{{loop.current...}}` is not valid Lakeflow Jobs For each syntax; the documented syntax is `{{input}}` or `{{input.<key>}}`."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "For Each"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants 5 iterations of a `For each` task to run in parallel, instead of one at a time.\n\nWhich setting controls this?",
+    "opciones": [
+      {
+        "texto_opcion": "`concurrency: 5` on the `for_each_task`",
+        "es_correcta": true,
+        "explicacion": "`concurrency` sets the number of iterations that can run in parallel; the default is `1` (sequential)."
+      },
+      {
+        "texto_opcion": "`max_retries: 5` on the nested task",
+        "es_correcta": false,
+        "explicacion": "`max_retries` controls retry attempts on failure, not how many iterations run in parallel."
+      },
+      {
+        "texto_opcion": "`max_concurrent_runs: 5` at the job level",
+        "es_correcta": false,
+        "explicacion": "`max_concurrent_runs` controls how many runs of the whole job can be active simultaneously, not iterations within a single For each task."
+      },
+      {
+        "texto_opcion": "`parallelism: 5` on the `inputs` field",
+        "es_correcta": false,
+        "explicacion": "There is no `parallelism` field on `inputs`; iteration concurrency is controlled by the `concurrency` field on `for_each_task`."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "For Each"
+    ]
+  },
+  {
+    "pregunta": "A data engineer hardcodes the For each `Inputs` field directly in the UI as a literal JSON array, but the array of region codes keeps growing and approaching the character limit.\n\nWhat is the documented limit for a literal array typed directly into the Inputs box, and what is the recommended alternative?",
+    "opciones": [
+      {
+        "texto_opcion": "5,000 characters; use a task value reference instead, which supports up to 48 KB.",
+        "es_correcta": true,
+        "explicacion": "Literal JSON arrays in the Inputs box are limited to 5,000 characters, while task value references support up to 48 KB for the referenced value."
+      },
+      {
+        "texto_opcion": "48 KB; use a job parameter reference instead, which supports up to 5,000 characters.",
+        "es_correcta": false,
+        "explicacion": "This reverses the actual limits — literal inputs are capped at 5,000 chars, and task value references go up to 48 KB."
+      },
+      {
+        "texto_opcion": "There is no limit on literal arrays in the Inputs box.",
+        "es_correcta": false,
+        "explicacion": "A documented 5,000-character limit applies to literal arrays typed directly into the Inputs box."
+      },
+      {
+        "texto_opcion": "10 KB; use `{{job.run_id}}` to dynamically expand the array.",
+        "es_correcta": false,
+        "explicacion": "10 KB is the job parameter limit, not the literal Inputs limit, and `{{job.run_id}}` has nothing to do with array expansion."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "For Each"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to add retry logic to each individual iteration of a `For each` task's nested task.\n\nWhere should `max_retries` be configured?",
+    "opciones": [
+      {
+        "texto_opcion": "On the nested task definition inside `for_each_task.task`.",
+        "es_correcta": true,
+        "explicacion": "Nested tasks inherit retry settings configured on the nested task definition itself, enabling per-iteration retries."
+      },
+      {
+        "texto_opcion": "On the `for_each_task` object itself, as a sibling of `inputs` and `concurrency`.",
+        "es_correcta": false,
+        "explicacion": "Retry fields belong on the nested task definition, not as top-level siblings of `inputs`/`concurrency` on `for_each_task`."
+      },
+      {
+        "texto_opcion": "At the job level, applying to every task in the job.",
+        "es_correcta": false,
+        "explicacion": "There's no job-wide retry setting that cascades to all tasks; retries must be configured per task, including the nested task for per-iteration behavior."
+      },
+      {
+        "texto_opcion": "Retries cannot be configured for nested tasks inside a For each loop.",
+        "es_correcta": false,
+        "explicacion": "Nested tasks do support `max_retries`, configured directly on the nested task definition."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "For Each"
+    ]
+  },
+  {
+    "pregunta": "Can a `For each` task's nested task itself be another `For each` task?",
+    "opciones": [
+      {
+        "texto_opcion": "No — you cannot add another `For each` task as the nested task.",
+        "es_correcta": true,
+        "explicacion": "Nesting is explicitly not supported: the nested task must be one of the standard Lakeflow Jobs task types, and another `For each` task cannot be used as the nested task."
+      },
+      {
+        "texto_opcion": "Yes, this is the documented way to build nested loops.",
+        "es_correcta": false,
+        "explicacion": "Nested `For each` tasks are explicitly disallowed; only standard task types can be the nested task."
+      },
+      {
+        "texto_opcion": "Yes, but only with `concurrency: 1` on the inner loop.",
+        "es_correcta": false,
+        "explicacion": "There is no concurrency-based workaround; nesting a `For each` inside another `For each` is not supported regardless of concurrency setting."
+      },
+      {
+        "texto_opcion": "Yes, but only when using the REST API directly instead of the UI.",
+        "es_correcta": false,
+        "explicacion": "The restriction is not UI-specific; it applies to the `for_each_task` structure itself across the UI, REST API, SDK, and DABs."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "For Each"
+    ]
+  },
+  {
+    "pregunta": "A downstream task needs to depend on the overall completion of a `For each` task that processes a list of tables.\n\nWhat should the downstream task's `depends_on` reference?",
+    "opciones": [
+      {
+        "texto_opcion": "The `task_key` of the outer `For each` task itself.",
+        "es_correcta": true,
+        "explicacion": "Downstream tasks can depend on the `For each` task (the outer wrapper), not on the nested task directly."
+      },
+      {
+        "texto_opcion": "The `task_key` of the nested task inside the `For each` task.",
+        "es_correcta": false,
+        "explicacion": "Downstream tasks cannot depend directly on the nested task; dependencies must target the outer `For each` task."
+      },
+      {
+        "texto_opcion": "Each individual iteration's generated `task_key`.",
+        "es_correcta": false,
+        "explicacion": "Iterations are not individually addressable as separate `depends_on` targets; the wrapper task represents the loop as a whole."
+      },
+      {
+        "texto_opcion": "It's not possible to depend on a `For each` task at all.",
+        "es_correcta": false,
+        "explicacion": "Downstream tasks can and do depend on the outer `For each` task — this is a standard, supported pattern."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "For Each"
+    ]
+  },
+  {
+    "pregunta": "A data engineer disables a task in the middle of a job's DAG while debugging an issue.\n\nWhat happens to the disabled task's configuration and run history?",
+    "opciones": [
+      {
+        "texto_opcion": "Both are preserved — the task is skipped at run time but keeps its configuration and history so it can be re-enabled later.",
+        "es_correcta": true,
+        "explicacion": "Disabling a task skips it at run time without removing it from the job; it keeps its configuration and run history for later re-enabling."
+      },
+      {
+        "texto_opcion": "Both are permanently deleted as soon as the task is disabled.",
+        "es_correcta": false,
+        "explicacion": "Disabling does not delete anything; that's the whole benefit over manually removing the task from the DAG."
+      },
+      {
+        "texto_opcion": "The configuration is kept, but all prior run history is wiped.",
+        "es_correcta": false,
+        "explicacion": "Run history is preserved, not wiped, when a task is disabled."
+      },
+      {
+        "texto_opcion": "The task is removed from the DAG entirely until manually re-added.",
+        "es_correcta": false,
+        "explicacion": "The task remains visible in the DAG; it is simply skipped during execution rather than removed."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Disabled Tasks"
+    ]
+  },
+  {
+    "pregunta": "An `If/else condition` task's left operand references a task value produced by an upstream task. That upstream task is then **disabled**.\n\nWhat happens to the `If/else condition` task on the next run?",
+    "opciones": [
+      {
+        "texto_opcion": "It fails, because an `If/else condition` task fails if the upstream task providing its condition value is disabled.",
+        "es_correcta": true,
+        "explicacion": "This is documented explicitly: disabling the task that supplies an `If/else` condition's value causes the condition task to fail, since it has no value to evaluate."
+      },
+      {
+        "texto_opcion": "It silently evaluates to `false` and proceeds down the false branch.",
+        "es_correcta": false,
+        "explicacion": "The condition task does not default to `false`; it fails outright when its source value is unavailable due to a disabled upstream task."
+      },
+      {
+        "texto_opcion": "It is automatically skipped (`Excluded`) along with the disabled upstream task.",
+        "es_correcta": false,
+        "explicacion": "The behavior is documented as a failure, not an automatic skip."
+      },
+      {
+        "texto_opcion": "It uses the last successfully cached value from a prior run.",
+        "es_correcta": false,
+        "explicacion": "There is no caching fallback mechanism described for disabled upstream tasks feeding If/else conditions."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Disabled Tasks"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to skip a known-broken task for just **one specific run** without modifying the job's saved definition.\n\nWhich approach is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Use **Run now with different settings** rather than permanently disabling the task.",
+        "es_correcta": true,
+        "explicacion": "Skipping a task for a single run only, without modifying the job, is done via **Run now with different settings**, distinct from the persistent Disable toggle."
+      },
+      {
+        "texto_opcion": "Permanently disable the task using the circle-off icon, then re-enable it immediately after the run.",
+        "es_correcta": false,
+        "explicacion": "While this could technically work, it modifies the saved job definition (even temporarily) rather than using the purpose-built single-run override."
+      },
+      {
+        "texto_opcion": "Set `max_retries: 0` on the task for that run.",
+        "es_correcta": false,
+        "explicacion": "`max_retries: 0` disables retries, not whether the task executes at all."
+      },
+      {
+        "texto_opcion": "Delete and immediately recreate the task after the run completes.",
+        "es_correcta": false,
+        "explicacion": "Deleting the task loses its configuration and history — exactly what the Disable mechanism and single-run override are designed to avoid."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Disabled Tasks"
+    ]
+  },
+  {
+    "pregunta": "Review this DAB snippet implementing a retry safeguard against infinite manual repairs:\n\n```yaml\n- task_key: check_repair_limit\n  condition_task:\n    op: LESS_THAN\n    left: '{{job.repair_count}}'\n    right: '5'\n```\n\nWhat does `{{job.repair_count}}` represent?",
+    "opciones": [
+      {
+        "texto_opcion": "The number of times the current job run has been manually repaired.",
+        "es_correcta": true,
+        "explicacion": "`{{job.repair_count}}` is a dynamic value reference that exposes how many times the run has been repaired, useful as a guard against unbounded manual repair loops."
+      },
+      {
+        "texto_opcion": "The number of automatic retries configured on the task.",
+        "es_correcta": false,
+        "explicacion": "That would be reflected in `max_retries`, a static configuration value, not `{{job.repair_count}}`, which is a runtime counter of manual repairs."
+      },
+      {
+        "texto_opcion": "The total number of tasks in the job that failed.",
+        "es_correcta": false,
+        "explicacion": "`{{job.repair_count}}` tracks repair attempts on the run, not a count of failed tasks."
+      },
+      {
+        "texto_opcion": "The job's `max_concurrent_runs` setting.",
+        "es_correcta": false,
+        "explicacion": "Concurrency settings are unrelated to the repair count dynamic reference."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "If/Else"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs an error-handling task to run **only when every single upstream branch failed**, not just one of several.\n\nWhich `run_if` value should be used?",
+    "opciones": [
+      {
+        "texto_opcion": "`ALL_FAILED`",
+        "es_correcta": true,
+        "explicacion": "`ALL_FAILED` runs the task only when every upstream branch failed; if unmet, the task is marked `Excluded`."
+      },
+      {
+        "texto_opcion": "`AT_LEAST_ONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "This condition is met when even a single upstream task fails, not requiring all of them to fail."
+      },
+      {
+        "texto_opcion": "`NONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`NONE_FAILED` is the inverse use case — it allows the task to run as long as nothing failed (skipped upstreams are still allowed)."
+      },
+      {
+        "texto_opcion": "`ALL_SUCCESS`",
+        "es_correcta": false,
+        "explicacion": "`ALL_SUCCESS` requires every upstream task to succeed, which is the opposite of an all-failed error-handling scenario."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Run If"
+    ]
+  },
+  {
+    "pregunta": "A fan-in task should continue running as long as **at least one** of several parallel upstream branches succeeded, even if the others failed.\n\nWhich `run_if` condition fits this scenario?",
+    "opciones": [
+      {
+        "texto_opcion": "`AT_LEAST_ONE_SUCCEEDED`",
+        "es_correcta": true,
+        "explicacion": "`AT_LEAST_ONE_SUCCEEDED` is documented as the fan-in pattern: continue if any branch succeeded, marking the task `Upstream failed` only if none did."
+      },
+      {
+        "texto_opcion": "`ALL_SUCCESS`",
+        "es_correcta": false,
+        "explicacion": "`ALL_SUCCESS` requires every upstream branch to succeed, which would block the fan-in task if even one branch failed."
+      },
+      {
+        "texto_opcion": "`ALL_DONE`",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` always runs regardless of any success at all, which doesn't enforce the \"at least one succeeded\" requirement."
+      },
+      {
+        "texto_opcion": "`ALL_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`ALL_FAILED` is the opposite case — it requires every branch to have failed, not at least one to have succeeded."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Run If"
+    ]
+  },
+  {
+    "pregunta": "Examine this Python SDK task definition:\n\n```python\njobs.Task(\n    task_key=\"check_row_count\",\n    depends_on=[jobs.TaskDependency(task_key=\"ingest\")],\n    run_if=jobs.RunIf.ALL_SUCCESS,\n    condition_task=jobs.ConditionTask(\n        op=jobs.ConditionTaskOp.GREATER_THAN,\n        left=\"{{tasks.ingest.values.row_count}}\",\n        right=\"0\",\n    ),\n)\n```\n\nWhat must be true for this `condition_task` to even be evaluated?",
+    "opciones": [
+      {
+        "texto_opcion": "The `ingest` task must have succeeded, satisfying the `ALL_SUCCESS` `run_if` condition on `check_row_count`.",
+        "es_correcta": true,
+        "explicacion": "`run_if=ALL_SUCCESS` is itself a dependency gate; `check_row_count` only runs (and thus its `condition_task` is only evaluated) once `ingest` has succeeded."
+      },
+      {
+        "texto_opcion": "The `ingest` task must set a task value named `row_count` greater than zero.",
+        "es_correcta": false,
+        "explicacion": "Whether `row_count` is greater than zero is what the `condition_task` itself evaluates; it's not a precondition for the task to run at all — only `ingest`'s success status (via `run_if`) gates execution."
+      },
+      {
+        "texto_opcion": "The job must be running in continuous mode.",
+        "es_correcta": false,
+        "explicacion": "Condition tasks work in standard scheduled/manual jobs and are not restricted to continuous mode."
+      },
+      {
+        "texto_opcion": "Nothing — condition tasks run unconditionally regardless of `depends_on` or `run_if`.",
+        "es_correcta": false,
+        "explicacion": "Condition tasks are still subject to their own `depends_on`/`run_if` gating like any other task."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Python SDK"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to know how the run history of a `For each` task is displayed after a job run completes.\n\nWhat does the job run detail UI show?",
+    "opciones": [
+      {
+        "texto_opcion": "A table of task iterations, showing the status and duration of each individual loop iteration.",
+        "es_correcta": true,
+        "explicacion": "Running a job with a `For each` task is identical to any other job run, but the For each task's history is presented as a table of iterations with per-iteration status and duration."
+      },
+      {
+        "texto_opcion": "A single aggregated status for the entire loop with no per-iteration detail.",
+        "es_correcta": false,
+        "explicacion": "Per-iteration detail is shown, not just an aggregated single status."
+      },
+      {
+        "texto_opcion": "A separate job entry is created in the Jobs list for every iteration.",
+        "es_correcta": false,
+        "explicacion": "Iterations are shown within the For each task's own run history, not as separate jobs in the Jobs list."
+      },
+      {
+        "texto_opcion": "Iteration history is only available via the REST API, not the UI.",
+        "es_correcta": false,
+        "explicacion": "The iteration table is available directly in the job run detail UI, not exclusively through the API."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "For Each"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to choose between **Run if** and an **If/else condition** task to decide whether a downstream notebook should run a data-quality fix.\n\nThe decision must be based on whether a computed row count (a runtime value, not a task outcome) exceeds a threshold.\n\nWhich mechanism is correct, and why?",
+    "opciones": [
+      {
+        "texto_opcion": "`If/else condition` task, because the decision depends on a value produced at runtime, not merely on whether an upstream task succeeded or failed.",
+        "es_correcta": true,
+        "explicacion": "Best practice: use `If/else` when the decision depends on a value (record counts, flags, thresholds); use `Run if` when the decision is purely about upstream success/failure."
+      },
+      {
+        "texto_opcion": "`Run if`, because it is simpler and should always be preferred over `If/else`.",
+        "es_correcta": false,
+        "explicacion": "`Run if` is preferred only when the decision is about upstream task outcome, not when it depends on a computed value like a row count threshold."
+      },
+      {
+        "texto_opcion": "Either mechanism works identically for value-based decisions.",
+        "es_correcta": false,
+        "explicacion": "`Run if` cannot evaluate a value-based threshold; it only reacts to upstream success/failure/done outcomes."
+      },
+      {
+        "texto_opcion": "Neither; value-based branching requires a `for_each_task`.",
+        "es_correcta": false,
+        "explicacion": "`for_each_task` is for looping over a list, not for evaluating a single boolean threshold condition."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "Control Flow Decision"
+    ]
+  },
+  {
+    "pregunta": "A control-table-driven pipeline reads a list of entities from a SQL task (`read_control_table`) that returns the list as a task value, then loops over each entity with a `For each` task.\n\nWhich `depends_on` and `inputs` configuration correctly wires these two tasks together?",
+    "opciones": [
+      {
+        "texto_opcion": "`depends_on: [{task_key: read_control_table}]` and `inputs: '{{tasks.read_control_table.values.entities}}'`",
+        "es_correcta": true,
+        "explicacion": "The For each task must depend on the SQL task that produces the list, and its `inputs` must reference that task's value via `{{tasks.<task_key>.values.<value_name>}}`."
+      },
+      {
+        "texto_opcion": "`depends_on: [{task_key: read_control_table, outcome: 'true'}]` and `inputs: '{{input.entities}}'`",
+        "es_correcta": false,
+        "explicacion": "`outcome: 'true'/'false'` only applies to If/else branches, not a SQL task; and `{{input.entities}}` is the *nested-task-internal* reference syntax, not valid for the `inputs` field itself."
+      },
+      {
+        "texto_opcion": "No `depends_on` is needed, and `inputs: '[\"entity1\", \"entity2\"]'`",
+        "es_correcta": false,
+        "explicacion": "Without `depends_on`, there is no guarantee `read_control_table` runs before the loop, and a hardcoded array ignores the dynamically generated entity list."
+      },
+      {
+        "texto_opcion": "`depends_on: [{task_key: read_control_table}]` and `inputs: '{{job.parameters.entities}}'`",
+        "es_correcta": false,
+        "explicacion": "The entity list comes from a task value set by the SQL task's query result, not a job parameter, so `{{job.parameters...}}` would not retrieve it."
+      }
+    ],
+    "tags": [
+      "4.3",
+      "For Each"
+    ]
+  }
+]

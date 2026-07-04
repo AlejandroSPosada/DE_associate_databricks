@@ -1,0 +1,582 @@
+[
+  {
+    "pregunta": "A data engineer wants to read a PostgreSQL table `orders` into a Spark DataFrame. Which code correctly loads the table using JDBC?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", \"jdbc:postgresql://host:5432/mydb\") \\\n    .option(\"dbtable\", \"orders\") \\\n    .option(\"user\", \"admin\").option(\"password\", \"secret\") \\\n    .load()\n```",
+        "es_correcta": true,
+        "explicacion": "This is the correct JDBC read pattern: `format(\"jdbc\")`, a valid JDBC URL, `dbtable` for the table name, and credentials passed via `.option()`."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", \"postgresql://host:5432/mydb\") \\\n    .option(\"table\", \"orders\") \\\n    .load()\n```",
+        "es_correcta": false,
+        "explicacion": "The URL must start with `jdbc:postgresql://`, not `postgresql://`. Also, the correct option key is `dbtable`, not `table`."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.jdbc(\"jdbc:postgresql://host:5432/mydb\", \"orders\")\n```",
+        "es_correcta": false,
+        "explicacion": "`spark.read.jdbc()` is a valid shorthand but requires credentials passed separately and is less explicit; however it would work — but this answer omits credentials entirely and would fail authentication."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"postgresql\") \\\n    .option(\"url\", \"jdbc:postgresql://host:5432/mydb\") \\\n    .option(\"dbtable\", \"orders\").load()\n```",
+        "es_correcta": false,
+        "explicacion": "The format string must always be `\"jdbc\"` regardless of the database vendor. `\"postgresql\"` is not a valid Spark format."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "JDBC basics"
+    ]
+  },
+  {
+    "pregunta": "Which statement correctly describes the difference between JDBC and ODBC connectivity in Databricks notebooks?",
+    "opciones": [
+      {
+        "texto_opcion": "JDBC is Java-based and used natively by Spark; ODBC is typically used by BI tools connecting to Databricks as a data source.",
+        "es_correcta": true,
+        "explicacion": "Spark's built-in connector uses JDBC to read from external databases. ODBC is the protocol BI tools (Tableau, Power BI) use to connect TO Databricks via the Simba driver."
+      },
+      {
+        "texto_opcion": "ODBC is faster than JDBC because it uses binary serialization.",
+        "es_correcta": false,
+        "explicacion": "Performance depends on driver implementation and network, not the protocol acronym. JDBC is the standard for JVM-based data ingestion in Spark."
+      },
+      {
+        "texto_opcion": "JDBC and ODBC are interchangeable in `spark.read.format()`.",
+        "es_correcta": false,
+        "explicacion": "`spark.read.format()` only accepts `\"jdbc\"`. There is no built-in `\"odbc\"` format in open-source Spark."
+      },
+      {
+        "texto_opcion": "ODBC requires a JAR driver on the cluster just like JDBC.",
+        "es_correcta": false,
+        "explicacion": "JDBC requires a JAR driver. ODBC clients (like Tableau) use the Simba ODBC driver on their own machine, not on the Databricks cluster."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "JDBC vs ODBC"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following code but gets a `java.lang.ClassNotFoundException` error for the driver class:\n\n```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", \"jdbc:mysql://host:3306/mydb\") \\\n    .option(\"dbtable\", \"sales\") \\\n    .option(\"driver\", \"com.mysql.cj.jdbc.Driver\") \\\n    .load()\n```\n\nWhat is the most likely cause?",
+    "opciones": [
+      {
+        "texto_opcion": "The MySQL JDBC JAR file has not been installed on the cluster.",
+        "es_correcta": true,
+        "explicacion": "Specifying the driver class name is correct, but the JAR containing that class must also be attached to the cluster (via Libraries or `--jars`). Without it, the JVM cannot find the class."
+      },
+      {
+        "texto_opcion": "The `driver` option is not a valid JDBC option in Spark.",
+        "es_correcta": false,
+        "explicacion": "`driver` is a valid and often required option that tells Spark which JDBC driver class to use."
+      },
+      {
+        "texto_opcion": "The URL format is wrong; it should be `mysql://` without the `jdbc:` prefix.",
+        "es_correcta": false,
+        "explicacion": "JDBC URLs always include the `jdbc:` prefix. `jdbc:mysql://host:3306/mydb` is the correct MySQL format."
+      },
+      {
+        "texto_opcion": "MySQL is not supported by Spark's JDBC connector.",
+        "es_correcta": false,
+        "explicacion": "Spark's JDBC connector is vendor-agnostic and supports MySQL, PostgreSQL, SQL Server, and others as long as the appropriate JAR is available."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Driver classpath"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to read only orders placed after 2024-01-01 from a remote SQL Server table. Which approach pushes the filter down to the database server rather than filtering in Spark?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\",\n        \"(SELECT * FROM orders WHERE order_date > '2024-01-01') AS t\") \\\n    .load()\n```",
+        "es_correcta": true,
+        "explicacion": "Wrapping a subquery as `dbtable` causes the WHERE clause to execute on the database server before data is transferred to Spark — this is the standard pushdown pattern."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"orders\").load() \\\n    .filter(\"order_date > '2024-01-01'\")\n```",
+        "es_correcta": false,
+        "explicacion": "Calling `.filter()` after `.load()` filters in Spark after all rows have been transferred from the database, defeating the purpose of pushdown."
+      },
+      {
+        "texto_opcion": "Use `.option(\"predicates\", \"order_date > '2024-01-01'\")` in the JDBC options.",
+        "es_correcta": false,
+        "explicacion": "`predicates` in Spark JDBC is used for specifying partition split conditions, not for row filtering. It does not push WHERE clauses to the source."
+      },
+      {
+        "texto_opcion": "Add `.option(\"pushdown\", \"true\")` to enable automatic filter pushdown.",
+        "es_correcta": false,
+        "explicacion": "There is no `pushdown` option in Spark's JDBC connector. Pushdown is achieved via a subquery in `dbtable` or Spark's internal catalyst optimization."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Pushdown predicates"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs this code to read a large MySQL table in parallel:\n\n```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url) \\\n    .option(\"dbtable\", \"transactions\") \\\n    .option(\"numPartitions\", 8) \\\n    .load()\n```\n\nThe read completes but uses only 1 partition. What is missing?",
+    "opciones": [
+      {
+        "texto_opcion": "`partitionColumn`, `lowerBound`, and `upperBound` are required alongside `numPartitions` for parallel reads.",
+        "es_correcta": true,
+        "explicacion": "Spark needs a numeric or date column to split on (`partitionColumn`) and the range bounds to divide work across partitions. Without them, `numPartitions` is ignored and a single partition is used."
+      },
+      {
+        "texto_opcion": "The `fetchsize` option must also be set to enable parallelism.",
+        "es_correcta": false,
+        "explicacion": "`fetchsize` controls how many rows are fetched per JDBC batch call; it does not affect the number of Spark partitions."
+      },
+      {
+        "texto_opcion": "`numPartitions` only works with the `spark.read.jdbc()` shorthand, not `format(\"jdbc\")`.",
+        "es_correcta": false,
+        "explicacion": "`numPartitions` works the same way with both APIs. The missing piece is the partition column and bounds."
+      },
+      {
+        "texto_opcion": "The cluster must have at least 8 worker nodes to read 8 partitions.",
+        "es_correcta": false,
+        "explicacion": "Spark can create more partitions than nodes; partitions are distributed across available tasks, not tied 1-to-1 to nodes."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Parallel reads"
+    ]
+  },
+  {
+    "pregunta": "Which of the following correctly configures a parallel JDBC read on a `transaction_id` column ranging from 1 to 1,000,000?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"transactions\") \\\n    .option(\"partitionColumn\", \"transaction_id\") \\\n    .option(\"lowerBound\", 1).option(\"upperBound\", 1000000) \\\n    .option(\"numPartitions\", 10).load()\n```",
+        "es_correcta": true,
+        "explicacion": "All four required options are provided: `partitionColumn`, `lowerBound`, `upperBound`, and `numPartitions`. Spark will split the id range into 10 equal slices."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"transactions\") \\\n    .option(\"splitBy\", \"transaction_id\") \\\n    .option(\"partitions\", 10).load()\n```",
+        "es_correcta": false,
+        "explicacion": "`splitBy` and `partitions` are not valid Spark JDBC options. The correct keys are `partitionColumn` and `numPartitions`."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"transactions\") \\\n    .option(\"partitionColumn\", \"transaction_id\") \\\n    .option(\"numPartitions\", 10).load()\n```",
+        "es_correcta": false,
+        "explicacion": "`partitionColumn` requires both `lowerBound` and `upperBound` to be set. Without bounds, Spark cannot define the partition ranges."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"transactions\") \\\n    .option(\"lowerBound\", 1).option(\"upperBound\", 1000000) \\\n    .option(\"numPartitions\", 10).load()\n```",
+        "es_correcta": false,
+        "explicacion": "`partitionColumn` is missing. All four options (`partitionColumn`, `lowerBound`, `upperBound`, `numPartitions`) are required together."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Parallel reads"
+    ]
+  },
+  {
+    "pregunta": "A data engineer stores database credentials using Databricks Secrets and reads them in a notebook. Which code correctly avoids exposing plaintext passwords?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\npwd = dbutils.secrets.get(scope=\"my-scope\", key=\"db-password\")\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"sales\") \\\n    .option(\"password\", pwd).load()\n```",
+        "es_correcta": true,
+        "explicacion": "`dbutils.secrets.get()` retrieves the secret at runtime and never displays it in notebook output. This is the Databricks-recommended pattern for credential management."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"sales\") \\\n    .option(\"password\", \"{{secrets/my-scope/db-password}}\").load()\n```",
+        "es_correcta": false,
+        "explicacion": "The `{{secrets/...}}` syntax is for Databricks cluster configuration (init scripts, environment variables), not for Python code in notebooks."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"sales\") \\\n    .option(\"password\", os.environ[\"DB_PASSWORD\"]).load()\n```",
+        "es_correcta": false,
+        "explicacion": "While environment variables are better than hardcoding, they are not the Databricks-native secret management approach and require separate secure injection into the cluster environment."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", \"jdbc:postgresql://host/db?password=secret\") \\\n    .option(\"dbtable\", \"sales\").load()\n```",
+        "es_correcta": false,
+        "explicacion": "Embedding credentials in the URL string exposes them in logs, notebook outputs, and audit trails. This is explicitly discouraged."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Secure credentials"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to write a Spark DataFrame back to a PostgreSQL table named `summary`. The table already exists and should be completely replaced. Which code achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\ndf.write.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"summary\") \\\n    .option(\"user\", user).option(\"password\", pwd) \\\n    .mode(\"overwrite\").save()\n```",
+        "es_correcta": true,
+        "explicacion": "`mode(\"overwrite\")` with JDBC drops and recreates the target table before inserting the new rows, fully replacing the existing content."
+      },
+      {
+        "texto_opcion": "```python\ndf.write.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"summary\") \\\n    .option(\"user\", user).option(\"password\", pwd) \\\n    .mode(\"replace\").save()\n```",
+        "es_correcta": false,
+        "explicacion": "`replace` is not a valid Spark write mode. Valid modes are `overwrite`, `append`, `ignore`, and `error`."
+      },
+      {
+        "texto_opcion": "```python\ndf.write.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"dbtable\", \"summary\") \\\n    .option(\"user\", user).option(\"password\", pwd) \\\n    .mode(\"append\").save()\n```",
+        "es_correcta": false,
+        "explicacion": "`append` inserts new rows without removing existing ones. The table would contain old and new data combined, not a replacement."
+      },
+      {
+        "texto_opcion": "```python\ndf.write.format(\"jdbc\") \\\n    .option(\"url\", url).option(\"table\", \"summary\") \\\n    .mode(\"overwrite\").save()\n```",
+        "es_correcta": false,
+        "explicacion": "The option key must be `dbtable`, not `table`. Using the wrong key causes the write to fail or behave unexpectedly."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "JDBC write"
+    ]
+  },
+  {
+    "pregunta": "What is the effect of setting `.mode(\"append\")` vs `.mode(\"overwrite\")` when writing via JDBC to an existing external database table?",
+    "opciones": [
+      {
+        "texto_opcion": "`append` inserts new rows alongside existing ones; `overwrite` drops the table and recreates it with the new data.",
+        "es_correcta": true,
+        "explicacion": "With JDBC, `overwrite` issues a DROP TABLE then CREATE TABLE + INSERT. `append` only issues INSERTs into the existing table structure."
+      },
+      {
+        "texto_opcion": "`append` and `overwrite` are equivalent for JDBC because the remote table is always re-created.",
+        "es_correcta": false,
+        "explicacion": "They behave differently. `overwrite` destroys and recreates the table; `append` preserves existing rows."
+      },
+      {
+        "texto_opcion": "`overwrite` performs an UPDATE on existing rows and inserts new ones (upsert).",
+        "es_correcta": false,
+        "explicacion": "`overwrite` does not perform upserts. It issues DROP TABLE + CREATE TABLE + INSERT, replacing all data."
+      },
+      {
+        "texto_opcion": "`append` mode is not supported for JDBC writes in Spark.",
+        "es_correcta": false,
+        "explicacion": "`append` is fully supported for JDBC writes and is commonly used to incrementally load new data into an existing table."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Write modes"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses the following connection properties pattern instead of chaining `.option()` calls:\n\n```python\nprops = {\"user\": \"admin\", \"password\": pwd, \"driver\": \"org.postgresql.Driver\"}\ndf = spark.read.jdbc(url=jdbc_url, table=\"customers\", properties=props)\n```\n\nWhich statement about this approach is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "This is equivalent to chaining `.option()` calls and is a valid alternative syntax for JDBC reads.",
+        "es_correcta": true,
+        "explicacion": "`spark.read.jdbc()` accepts a `properties` dict that maps to the same JDBC options. Both patterns produce identical behavior."
+      },
+      {
+        "texto_opcion": "The `properties` dict cannot include the `driver` key; driver must be set with `.option()`.",
+        "es_correcta": false,
+        "explicacion": "The `properties` dict accepts any JDBC option, including `driver`. There is no restriction on which keys it can contain."
+      },
+      {
+        "texto_opcion": "`spark.read.jdbc()` does not support parallel reads; use `spark.read.format(\"jdbc\")` instead.",
+        "es_correcta": false,
+        "explicacion": "`spark.read.jdbc()` also accepts `numPartitions`, `partitionColumn`, `lowerBound`, and `upperBound` as parameters for parallel reads."
+      },
+      {
+        "texto_opcion": "The `properties` dict requires all keys to be uppercase to match JDBC standards.",
+        "es_correcta": false,
+        "explicacion": "Spark JDBC option keys are case-insensitive and conventionally lowercase. No uppercase requirement exists."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "connectionProperties"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to read data from a remote table using a custom SQL query instead of a full table name. Which code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url) \\\n    .option(\"dbtable\", \"(SELECT id, name FROM customers WHERE active=1) AS t\") \\\n    .load()\n```",
+        "es_correcta": true,
+        "explicacion": "Wrapping the query in parentheses and giving it an alias makes it a valid subquery that Spark treats as a virtual table. This is the standard pattern for custom SQL in JDBC reads."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url) \\\n    .option(\"query\", \"SELECT id, name FROM customers WHERE active=1\") \\\n    .load()\n```",
+        "es_correcta": false,
+        "explicacion": "Spark's JDBC connector does not have a `query` option key. Custom SQL must be passed as a subquery via the `dbtable` option."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url) \\\n    .option(\"sql\", \"SELECT id, name FROM customers WHERE active=1\") \\\n    .load()\n```",
+        "es_correcta": false,
+        "explicacion": "`sql` is not a valid JDBC option in Spark. Custom queries must be embedded as a subquery in the `dbtable` option."
+      },
+      {
+        "texto_opcion": "```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url) \\\n    .option(\"dbtable\", \"SELECT id, name FROM customers WHERE active=1\") \\\n    .load()\n```",
+        "es_correcta": false,
+        "explicacion": "A raw SELECT without parentheses and an alias is not a valid SQL identifier. The database will reject it. A subquery alias (`AS t`) is required."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Custom query"
+    ]
+  },
+  {
+    "pregunta": "Which JDBC URL format is correct for connecting to a SQL Server database named `SalesDB` on port 1433?",
+    "opciones": [
+      {
+        "texto_opcion": "`jdbc:sqlserver://host:1433;databaseName=SalesDB`",
+        "es_correcta": true,
+        "explicacion": "SQL Server JDBC URLs use the `sqlserver` subprotocol and semicolons to separate properties like `databaseName`. This is the Microsoft JDBC driver format."
+      },
+      {
+        "texto_opcion": "`jdbc:mssql://host:1433/SalesDB`",
+        "es_correcta": false,
+        "explicacion": "`mssql` is not the correct JDBC subprotocol for SQL Server. The correct subprotocol is `sqlserver`."
+      },
+      {
+        "texto_opcion": "`jdbc:sqlserver://host:1433/SalesDB`",
+        "es_correcta": false,
+        "explicacion": "SQL Server JDBC URLs use semicolons for properties (`databaseName=SalesDB`), not a slash-separated database path like PostgreSQL."
+      },
+      {
+        "texto_opcion": "`jdbc:mssqlserver://host:1433;database=SalesDB`",
+        "es_correcta": false,
+        "explicacion": "Both the subprotocol (`mssqlserver`) and the property key (`database` instead of `databaseName`) are incorrect for Microsoft's JDBC driver."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "URL formats"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is ingesting a large table via JDBC and notices that the read is slow. The DBA says each executor is opening thousands of small roundtrips. Which option should the engineer increase to reduce network roundtrips?",
+    "opciones": [
+      {
+        "texto_opcion": "`.option(\"fetchsize\", 10000)`",
+        "es_correcta": true,
+        "explicacion": "`fetchsize` controls how many rows are fetched per JDBC network roundtrip. Increasing it (e.g., from the default 0/10 to 10000) significantly reduces the number of database calls."
+      },
+      {
+        "texto_opcion": "`.option(\"batchsize\", 10000)`",
+        "es_correcta": false,
+        "explicacion": "`batchsize` applies to JDBC **writes** (how many rows per INSERT batch), not reads. For reads, the relevant option is `fetchsize`."
+      },
+      {
+        "texto_opcion": "`.option(\"numPartitions\", 10000)`",
+        "es_correcta": false,
+        "explicacion": "`numPartitions` splits data across Spark tasks but does not affect how many rows each roundtrip fetches from the DB. Using 10000 partitions would also overload the database with parallel connections."
+      },
+      {
+        "texto_opcion": "`.option(\"chunksize\", 10000)`",
+        "es_correcta": false,
+        "explicacion": "`chunksize` is not a valid Spark JDBC option. The correct key for controlling row fetch batch size is `fetchsize`."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "fetchsize"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to write a DataFrame to a remote MySQL table and control the number of rows per INSERT batch to improve write throughput. Which option should be set?",
+    "opciones": [
+      {
+        "texto_opcion": "`.option(\"batchsize\", 5000)`",
+        "es_correcta": true,
+        "explicacion": "`batchsize` controls how many rows are batched into a single INSERT statement during a JDBC write. Larger values reduce the number of roundtrips to the database."
+      },
+      {
+        "texto_opcion": "`.option(\"fetchsize\", 5000)`",
+        "es_correcta": false,
+        "explicacion": "`fetchsize` applies to reads, not writes. For write performance, `batchsize` is the correct option."
+      },
+      {
+        "texto_opcion": "`.option(\"insertbatch\", 5000)`",
+        "es_correcta": false,
+        "explicacion": "`insertbatch` is not a valid Spark JDBC option. The correct key is `batchsize`."
+      },
+      {
+        "texto_opcion": "`.option(\"writeParallelism\", 5000)`",
+        "es_correcta": false,
+        "explicacion": "`writeParallelism` is not a valid Spark JDBC option. Parallelism on writes is controlled by the number of DataFrame partitions."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Write performance"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs this JDBC ingestion code:\n\n```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", url) \\\n    .option(\"dbtable\", \"orders\") \\\n    .option(\"partitionColumn\", \"order_id\") \\\n    .option(\"lowerBound\", \"1\") \\\n    .option(\"upperBound\", \"1000\") \\\n    .option(\"numPartitions\", \"4\") \\\n    .load()\n```\n\nHow many database connections will Spark open?",
+    "opciones": [
+      {
+        "texto_opcion": "4 — one per partition, each querying a different range of `order_id`.",
+        "es_correcta": true,
+        "explicacion": "With `numPartitions=4`, Spark splits the range [1, 1000] into 4 slices and opens one JDBC connection per partition to execute parallel queries."
+      },
+      {
+        "texto_opcion": "1 — Spark always uses a single JDBC connection for reliability.",
+        "es_correcta": false,
+        "explicacion": "Without `partitionColumn` and bounds a single connection is used. With all four options set, Spark creates `numPartitions` connections."
+      },
+      {
+        "texto_opcion": "1000 — one connection per row in the range.",
+        "es_correcta": false,
+        "explicacion": "Spark creates one connection per partition, not per row. 4 partitions = 4 connections."
+      },
+      {
+        "texto_opcion": "The number of connections equals the number of executor cores.",
+        "es_correcta": false,
+        "explicacion": "The number of JDBC connections equals `numPartitions`, not the number of executor cores."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Parallel reads"
+    ]
+  },
+  {
+    "pregunta": "Which scenario is best suited for using a JDBC ingestion approach in a Databricks notebook rather than mounting cloud storage?",
+    "opciones": [
+      {
+        "texto_opcion": "Reading current transactional data from an operational RDBMS (e.g., PostgreSQL) that is not available in cloud storage.",
+        "es_correcta": true,
+        "explicacion": "JDBC is the appropriate tool when the source is a live RDBMS. Cloud storage mounting (DBFS, ADLS) is for file-based sources. JDBC bridges Spark to relational databases."
+      },
+      {
+        "texto_opcion": "Reading Parquet files stored in Azure Data Lake Storage Gen2.",
+        "es_correcta": false,
+        "explicacion": "ADLS Gen2 Parquet files are read natively by Spark using `spark.read.parquet()` or mount paths, not JDBC."
+      },
+      {
+        "texto_opcion": "Streaming events from a Kafka topic into a Delta table.",
+        "es_correcta": false,
+        "explicacion": "Kafka ingestion uses `spark.readStream.format(\"kafka\")`, not JDBC. JDBC is for batch reads from relational databases."
+      },
+      {
+        "texto_opcion": "Ingesting JSON files dropped into an S3 bucket every hour.",
+        "es_correcta": false,
+        "explicacion": "S3 JSON files are read with `spark.read.json()` or Auto Loader, not JDBC."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "When to use JDBC"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes the following code to ingest from an Oracle database:\n\n```python\ndf = spark.read.format(\"jdbc\") \\\n    .option(\"url\", \"jdbc:oracle:thin:@host:1521:ORCL\") \\\n    .option(\"dbtable\", \"HR.EMPLOYEES\") \\\n    .option(\"user\", \"hr\") \\\n    .option(\"password\", \"hr123\") \\\n    .load()\n```\n\nWhat is the primary security concern with this code?",
+    "opciones": [
+      {
+        "texto_opcion": "The password is hardcoded as plaintext in the notebook, which will be visible in notebook history and version control.",
+        "es_correcta": true,
+        "explicacion": "Hardcoded credentials in notebooks are exposed in revision history, shared dashboards, and logs. Databricks Secrets (`dbutils.secrets.get()`) should be used instead."
+      },
+      {
+        "texto_opcion": "Oracle JDBC is not supported by Spark's JDBC connector.",
+        "es_correcta": false,
+        "explicacion": "Oracle JDBC is supported. The `jdbc:oracle:thin:@` URL format is the standard Oracle thin driver format."
+      },
+      {
+        "texto_opcion": "The `HR.EMPLOYEES` schema-qualified table name is not valid in `dbtable`.",
+        "es_correcta": false,
+        "explicacion": "Schema-qualified names like `HR.EMPLOYEES` are valid in `dbtable` and are commonly used for Oracle."
+      },
+      {
+        "texto_opcion": "The port 1521 is not the default Oracle JDBC port.",
+        "es_correcta": false,
+        "explicacion": "1521 is the default Oracle listener port and is correct here."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Secure credentials"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to ingest from a JDBC source where the source table has no numeric or date column suitable for partitioning. What is the expected behavior when only `numPartitions` is specified without `partitionColumn`?",
+    "opciones": [
+      {
+        "texto_opcion": "Spark will use a single partition and read all data through one JDBC connection, ignoring `numPartitions`.",
+        "es_correcta": true,
+        "explicacion": "Without `partitionColumn`, `lowerBound`, and `upperBound`, Spark falls back to a single-partition read regardless of `numPartitions`. All three options must be set together."
+      },
+      {
+        "texto_opcion": "Spark will automatically choose a partition column based on the table's primary key.",
+        "es_correcta": false,
+        "explicacion": "Spark does not introspect the remote schema to automatically select a partition column. The engineer must specify it explicitly."
+      },
+      {
+        "texto_opcion": "Spark will throw an error requiring `partitionColumn` to be set when `numPartitions` is provided.",
+        "es_correcta": false,
+        "explicacion": "Spark does not throw an error; it silently falls back to a single partition read, which can be a subtle performance issue."
+      },
+      {
+        "texto_opcion": "Spark will use `rowid` or the internal row number as the default partition column.",
+        "es_correcta": false,
+        "explicacion": "Spark has no default partition column fallback. Without explicit configuration, a single partition is used."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Single partition fallback"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is designing a solution where an external BI tool (Power BI) will query Databricks SQL directly. Which connectivity protocol should the BI tool use to connect to Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "ODBC using the Databricks ODBC driver (Simba), configured with the SQL warehouse HTTP path and personal access token.",
+        "es_correcta": true,
+        "explicacion": "BI tools like Power BI connect TO Databricks as a data source using the Simba ODBC driver. This is the standard pattern for external BI tool connectivity to Databricks SQL warehouses."
+      },
+      {
+        "texto_opcion": "JDBC, by configuring a `spark.read.format(\"jdbc\")` connection in a Databricks notebook.",
+        "es_correcta": false,
+        "explicacion": "`spark.read.format(\"jdbc\")` is used within Databricks notebooks to pull data FROM external databases, not to expose Databricks to external BI tools."
+      },
+      {
+        "texto_opcion": "The BI tool should mount the Delta Lake storage path directly using DBFS.",
+        "es_correcta": false,
+        "explicacion": "BI tools do not read DBFS paths directly. They connect via ODBC/JDBC to a Databricks SQL endpoint."
+      },
+      {
+        "texto_opcion": "REST API calls to the Databricks SQL Execution API.",
+        "es_correcta": false,
+        "explicacion": "While possible, using the REST API directly is not the standard approach for BI tools. ODBC/JDBC drivers provide the standard integration layer."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "ODBC for BI tools"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes the following code to write data to a remote database:\n\n```python\ndf.repartition(1).write.format(\"jdbc\") \\\n    .option(\"url\", url) \\\n    .option(\"dbtable\", \"target_table\") \\\n    .option(\"user\", user).option(\"password\", pwd) \\\n    .mode(\"append\").save()\n```\n\nWhat is the trade-off of calling `.repartition(1)` before the JDBC write?",
+    "opciones": [
+      {
+        "texto_opcion": "It reduces parallelism: only one executor writes to the database, lowering throughput but also reducing concurrent connections.",
+        "es_correcta": true,
+        "explicacion": "`.repartition(1)` collapses data into a single partition, meaning one executor opens one JDBC connection. This avoids overwhelming the target DB with connections but is a bottleneck for large datasets."
+      },
+      {
+        "texto_opcion": "It improves write performance because fewer Spark shuffle operations are needed.",
+        "es_correcta": false,
+        "explicacion": "`.repartition(1)` actually causes a full shuffle to collect all data into a single partition, which adds overhead. It does not improve write throughput."
+      },
+      {
+        "texto_opcion": "It has no effect on JDBC writes; Spark always uses a single connection regardless of partitions.",
+        "es_correcta": false,
+        "explicacion": "Spark opens one JDBC connection per partition during a write. The number of partitions directly controls write parallelism."
+      },
+      {
+        "texto_opcion": "It enables upsert behavior, replacing duplicate rows in the target table.",
+        "es_correcta": false,
+        "explicacion": "`repartition(1)` has nothing to do with upsert logic. Upserts require custom SQL or MERGE statements at the database level."
+      }
+    ],
+    "tags": [
+      "2.5",
+      "Write parallelism"
+    ]
+  }
+]

@@ -1,0 +1,747 @@
+[
+  {
+    "pregunta": "A data engineer wants to hide the `ssn` column value from users who are not in the `pii-authorized` group. Users NOT in the group should see `'***-**-****'`. Which approach is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Create a SQL UDF that returns the real value for `pii-authorized` members and `'***-**-****'` for others, then apply it with `ALTER TABLE ... ALTER COLUMN ssn SET MASK`.",
+        "es_correcta": true,
+        "explicacion": "Column masking requires: (1) a scalar SQL UDF returning the same type as the column, using `is_account_group_member()` to branch; and (2) applying it via `ALTER TABLE ... ALTER COLUMN ... SET MASK`."
+      },
+      {
+        "texto_opcion": "Revoke `SELECT` on the `ssn` column for users not in `pii-authorized`.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog does not support column-level SELECT revocations. Column visibility is managed through column masks, not through column-level privilege revocations."
+      },
+      {
+        "texto_opcion": "Create a view that uses a `CASE` statement to mask the `ssn` column and grant `SELECT` on the view only.",
+        "es_correcta": false,
+        "explicacion": "Dynamic views were the legacy approach. Native column masks (via `SET MASK`) are the recommended UC approach — they are transparent, policy-based, and applied at the engine level."
+      },
+      {
+        "texto_opcion": "Use `ALTER TABLE users ALTER COLUMN ssn SET DEFAULT '***-**-****'` for non-admin users.",
+        "es_correcta": false,
+        "explicacion": "`SET DEFAULT` sets a default value for new rows on INSERT — it does not control what existing data users see at query time. Column masking is the correct mechanism."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Column Masking",
+      "UDF"
+    ]
+  },
+  {
+    "pregunta": "A data engineer creates the following column mask UDF:\n\n```sql\nCREATE OR REPLACE FUNCTION catalog.schema.ssn_mask(ssn STRING)\nRETURNS STRING\nRETURN CASE\n  WHEN is_account_group_member('pii-authorized') THEN ssn\n  ELSE '***-**-****'\nEND;\n```\n\nHow should they attach this mask to the `users.ssn` column?",
+    "opciones": [
+      {
+        "texto_opcion": "```sql\nALTER TABLE catalog.schema.users\nALTER COLUMN ssn\nSET MASK catalog.schema.ssn_mask;\n```",
+        "es_correcta": true,
+        "explicacion": "`ALTER TABLE ... ALTER COLUMN ... SET MASK <function_name>` is the correct syntax for attaching a column mask to a specific column. The function must already exist before the ALTER is run."
+      },
+      {
+        "texto_opcion": "```sql\nALTER TABLE catalog.schema.users\nSET MASK ssn = catalog.schema.ssn_mask;\n```",
+        "es_correcta": false,
+        "explicacion": "The correct syntax requires `ALTER COLUMN <col_name> SET MASK`, not a direct `SET MASK col = function` on the table. The `ALTER COLUMN` clause is required."
+      },
+      {
+        "texto_opcion": "```sql\nCREATE MASK POLICY ssn_policy\nUSING catalog.schema.ssn_mask ON TABLE catalog.schema.users COLUMN ssn;\n```",
+        "es_correcta": false,
+        "explicacion": "`CREATE MASK POLICY` is not standard Databricks SQL for table-level masking. The correct command is `ALTER TABLE ... ALTER COLUMN ... SET MASK`."
+      },
+      {
+        "texto_opcion": "```sql\nGRANT MASK ON COLUMN catalog.schema.users.ssn\nUSING FUNCTION catalog.schema.ssn_mask;\n```",
+        "es_correcta": false,
+        "explicacion": "`GRANT MASK` is not a valid Databricks SQL command. Column masks are applied with `ALTER TABLE ... ALTER COLUMN ... SET MASK`."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Column Masking",
+      "ALTER TABLE"
+    ]
+  },
+  {
+    "pregunta": "A data engineer applies a column mask to `orders.credit_card`. A user with `SELECT` on the table runs `SELECT credit_card FROM orders`. What does the user see?",
+    "opciones": [
+      {
+        "texto_opcion": "The **masked value** — the mask function evaluates for that user and returns the masked result. The user has no indication a mask is applied.",
+        "es_correcta": true,
+        "explicacion": "Column masks are transparent — the query looks normal but the mask UDF runs per-row at query time, returning either the real value or the masked value depending on the user's group membership."
+      },
+      {
+        "texto_opcion": "An error — `COLUMN_ACCESS_DENIED` — because the column has a mask applied.",
+        "es_correcta": false,
+        "explicacion": "Column masks do not raise errors — they return the masked value. Users can still query the column; they just see the transformed result."
+      },
+      {
+        "texto_opcion": "The column is hidden from the schema — the user doesn't see the column at all.",
+        "es_correcta": false,
+        "explicacion": "Column masks do NOT hide the column from the schema. The column is still visible; its value is just replaced with the mask output for unauthorized users."
+      },
+      {
+        "texto_opcion": "NULL — masked columns always return NULL for unauthorized users.",
+        "es_correcta": false,
+        "explicacion": "The masked value depends entirely on what the UDF returns. It could be `NULL`, `'***'`, a partial value, or any other transformation — not automatically NULL."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Column Masking"
+    ]
+  },
+  {
+    "pregunta": "A data engineer creates the following row filter:\n\n```sql\nCREATE OR REPLACE FUNCTION catalog.sales.region_filter(region STRING)\nRETURNS BOOLEAN\nRETURN is_account_group_member('admin')\n    OR is_account_group_member(CONCAT(region, '-team'));\n```\n\nThis filter is applied to the `orders` table on the `region` column. An EU analyst (in `EU-team` but NOT `admin`) queries `SELECT COUNT(*) FROM orders`. What does the count reflect?",
+    "opciones": [
+      {
+        "texto_opcion": "Only the count of rows where `region = 'EU'` — the row filter restricts visibility to rows where `is_account_group_member(CONCAT('EU', '-team'))` returns `TRUE`.",
+        "es_correcta": true,
+        "explicacion": "The filter evaluates per-row. For each row with `region = 'EU'`, `is_account_group_member('EU-team')` returns TRUE (analyst is in EU-team), so the row is included. Rows where the function returns FALSE (other regions) are excluded."
+      },
+      {
+        "texto_opcion": "The total count of all rows — row filters only apply to `SELECT *`, not to aggregate functions.",
+        "es_correcta": false,
+        "explicacion": "Row filters apply to all queries on the table, including aggregate functions. `COUNT(*)` reflects only visible rows."
+      },
+      {
+        "texto_opcion": "0 — the analyst cannot see any rows because they don't have EXECUTE on the filter function.",
+        "es_correcta": false,
+        "explicacion": "Users querying a table with a row filter do NOT need EXECUTE on the filter function — they only need SELECT on the table. The filter runs transparently."
+      },
+      {
+        "texto_opcion": "An error because the filter function uses `is_account_group_member()` inside a `COUNT(*)` query.",
+        "es_correcta": false,
+        "explicacion": "`is_account_group_member()` is valid inside row filter UDFs. There is no restriction on aggregate queries — the filter simply limits which rows are counted."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter"
+    ]
+  },
+  {
+    "pregunta": "What is the return type requirement for a **row filter** UDF?",
+    "opciones": [
+      {
+        "texto_opcion": "The function must return **BOOLEAN** — rows where the function returns `TRUE` are visible; rows where it returns `FALSE` or `NULL` are excluded.",
+        "es_correcta": true,
+        "explicacion": "Row filter UDFs must return BOOLEAN. TRUE = include row, FALSE or NULL = exclude row. This is the core requirement distinguishing row filters from column masks."
+      },
+      {
+        "texto_opcion": "The function must return **INTEGER** — 1 means include, 0 means exclude.",
+        "es_correcta": false,
+        "explicacion": "Row filters return BOOLEAN, not INTEGER. 1 and 0 are INTEGER values; the function must explicitly return TRUE/FALSE."
+      },
+      {
+        "texto_opcion": "The function must return **STRING** — the returned string is used as the filter condition.",
+        "es_correcta": false,
+        "explicacion": "Row filters return BOOLEAN. STRING is the return type for column mask functions (when the masked column is STRING type)."
+      },
+      {
+        "texto_opcion": "The return type must match the column type passed to the function via the `ON` clause.",
+        "es_correcta": false,
+        "explicacion": "Row filters always return BOOLEAN regardless of the column types passed in the `ON` clause. The column values in `ON` are inputs; the output is always BOOLEAN."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter",
+      "UDF"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```sql\nALTER TABLE catalog.sales.orders\nSET ROW FILTER catalog.sales.region_filter\nON (region);\n```\n\nWhat happens to rows where `region_filter(region)` returns `NULL`?",
+    "opciones": [
+      {
+        "texto_opcion": "Rows where the filter returns `NULL` are **excluded** — only rows where the filter returns `TRUE` are visible.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog row filters exclude rows where the function returns FALSE **or NULL**. Null returns are treated as false (deny), which is the secure default."
+      },
+      {
+        "texto_opcion": "Rows where the filter returns `NULL` are **included** — NULL is treated as an unknown/unfiltered result.",
+        "es_correcta": false,
+        "explicacion": "The secure default is NULL = exclude. This prevents accidental data exposure when the filter function returns NULL (e.g., for unexpected group values)."
+      },
+      {
+        "texto_opcion": "An error is raised for any row where the filter function returns NULL.",
+        "es_correcta": false,
+        "explicacion": "No error is raised. NULL returns are silently treated as FALSE, excluding those rows."
+      },
+      {
+        "texto_opcion": "The behavior depends on the NULL handling configuration in the cluster settings.",
+        "es_correcta": false,
+        "explicacion": "NULL handling for row filters is fixed by Unity Catalog: NULL = exclude. There is no cluster-level configuration for this."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter"
+    ]
+  },
+  {
+    "pregunta": "Which identity function should be used in Unity Catalog mask/filter UDFs to check group membership — `is_member()` or `is_account_group_member()`?",
+    "opciones": [
+      {
+        "texto_opcion": "`is_account_group_member()` — this checks **account-level** groups and is preferred for Unity Catalog, avoiding scope issues with workspace-local groups.",
+        "es_correcta": true,
+        "explicacion": "`is_account_group_member()` works with account-level groups, which are the correct scope for Unity Catalog. `is_member()` uses workspace-local groups, which may not align with UC's cross-workspace group model."
+      },
+      {
+        "texto_opcion": "`is_member()` — this is the standard group membership function for Databricks SQL UDFs.",
+        "es_correcta": false,
+        "explicacion": "`is_member()` uses workspace-local groups, which can cause inconsistencies in Unity Catalog (which uses account-level groups). `is_account_group_member()` is preferred."
+      },
+      {
+        "texto_opcion": "Both functions are equivalent in Unity Catalog — use either one.",
+        "es_correcta": false,
+        "explicacion": "They are not equivalent. `is_account_group_member()` uses account-level groups (correct for UC); `is_member()` uses workspace-local groups (may cause inconsistencies)."
+      },
+      {
+        "texto_opcion": "`GROUP_MEMBER(group, user)` — this is the standard Unity Catalog group membership function.",
+        "es_correcta": false,
+        "explicacion": "`GROUP_MEMBER()` is not a Databricks SQL function. Use `is_account_group_member('group-name')` for Unity Catalog row filter/column mask UDFs."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Identity Functions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to remove the column mask from the `ssn` column on the `users` table. Which command achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "```sql\nALTER TABLE catalog.schema.users\nALTER COLUMN ssn\nDROP MASK;\n```",
+        "es_correcta": true,
+        "explicacion": "`ALTER TABLE ... ALTER COLUMN ... DROP MASK` removes the column mask from the specified column. After this, all users with SELECT see the real column value."
+      },
+      {
+        "texto_opcion": "```sql\nALTER TABLE catalog.schema.users\nALTER COLUMN ssn\nUNSET MASK;\n```",
+        "es_correcta": false,
+        "explicacion": "`UNSET MASK` is not the correct syntax. The correct command is `DROP MASK`."
+      },
+      {
+        "texto_opcion": "```sql\nDROP FUNCTION catalog.schema.ssn_mask;\n```",
+        "es_correcta": false,
+        "explicacion": "Dropping the function does NOT remove the mask from the table column — it would break queries on the masked column. First remove the mask with `DROP MASK`, then optionally drop the function."
+      },
+      {
+        "texto_opcion": "```sql\nREVOKE MASK catalog.schema.ssn_mask FROM TABLE catalog.schema.users;\n```",
+        "es_correcta": false,
+        "explicacion": "`REVOKE MASK` is not a valid Databricks SQL command. Use `ALTER TABLE ... ALTER COLUMN ... DROP MASK`."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Column Masking",
+      "Removal"
+    ]
+  },
+  {
+    "pregunta": "A column mask function needs to use another column's value to decide how to mask the target column. For example, mask `salary` differently based on the row's `department` column. How is this configured?",
+    "opciones": [
+      {
+        "texto_opcion": "The function signature includes the additional column as a parameter, and the mask is applied with `USING COLUMNS (department)`:\n```sql\nALTER TABLE employees\nALTER COLUMN salary\nSET MASK dept_salary_mask\nUSING COLUMNS (department);\n```",
+        "es_correcta": true,
+        "explicacion": "`USING COLUMNS` passes additional column values to the mask function as extra arguments. The function takes `(salary, department)` — `salary` is the primary masked column, `department` is the context column passed via `USING COLUMNS`."
+      },
+      {
+        "texto_opcion": "Use a subquery inside the UDF to look up the department for each row:\n```sql\nRETURN CASE WHEN (SELECT dept FROM employees WHERE ...) = 'HR' THEN salary ...\n```",
+        "es_correcta": false,
+        "explicacion": "Subqueries inside column mask UDFs are supported but strongly discouraged for performance — they execute per-row. `USING COLUMNS` is the correct pattern for passing row context to the mask function."
+      },
+      {
+        "texto_opcion": "Apply two separate masks: one for salary and one for department.",
+        "es_correcta": false,
+        "explicacion": "The salary mask needs the department value from the same row as context. Two separate masks don't solve this — `USING COLUMNS` is the correct mechanism."
+      },
+      {
+        "texto_opcion": "Create a composite column `salary_dept` and apply one mask to it.",
+        "es_correcta": false,
+        "explicacion": "Creating composite columns just to work around masking limitations is not a recommended pattern. `USING COLUMNS` passes existing column values as context to the mask function."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Column Masking",
+      "USING COLUMNS"
+    ]
+  },
+  {
+    "pregunta": "Which privileges does a user need to **apply** a column mask or row filter to a table?",
+    "opciones": [
+      {
+        "texto_opcion": "`EXECUTE` on the UDF function, plus table **ownership** or `MANAGE` privilege on the table.",
+        "es_correcta": true,
+        "explicacion": "Applying a mask/filter requires: (1) EXECUTE on the mask/filter UDF function (to reference it), and (2) being the table owner or having MANAGE on the table (to alter its policy configuration)."
+      },
+      {
+        "texto_opcion": "`SELECT` on the table and `MODIFY` on the table.",
+        "es_correcta": false,
+        "explicacion": "`SELECT` and `MODIFY` are data access privileges. Applying a mask is a policy management operation requiring table ownership or MANAGE, plus EXECUTE on the function."
+      },
+      {
+        "texto_opcion": "Metastore admin privilege only — only admins can configure column masks and row filters.",
+        "es_correcta": false,
+        "explicacion": "Metastore admins can apply masks, but so can table owners and users with MANAGE privilege on the table. It is not restricted to metastore admins."
+      },
+      {
+        "texto_opcion": "`ALL PRIVILEGES` on the table and `CREATE FUNCTION` on the schema.",
+        "es_correcta": false,
+        "explicacion": "`ALL PRIVILEGES` does not include MANAGE. The specific requirement is table ownership or MANAGE, plus EXECUTE on the function."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Privileges",
+      "Column Masking"
+    ]
+  },
+  {
+    "pregunta": "A user with `SELECT` on a table with a row filter queries it. Do they need `EXECUTE` on the row filter UDF function?",
+    "opciones": [
+      {
+        "texto_opcion": "No — users querying a protected table only need `SELECT` on the table. The row filter runs transparently; users don't need to know about or have access to the UDF.",
+        "es_correcta": true,
+        "explicacion": "Row filters (and column masks) are transparent to end users. The UDF executes with elevated privileges on behalf of the engine. End users only need SELECT on the table."
+      },
+      {
+        "texto_opcion": "Yes — users must have EXECUTE on the row filter function to execute the filter logic on their behalf.",
+        "es_correcta": false,
+        "explicacion": "EXECUTE is needed only by the person APPLYING the filter to the table (the admin). End users querying the table only need SELECT."
+      },
+      {
+        "texto_opcion": "Yes, but only if they are not in the authorized group — unauthorized users need EXECUTE to see that the filter exists.",
+        "es_correcta": false,
+        "explicacion": "No user querying the table needs EXECUTE on the filter function. The filter is completely transparent regardless of whether the user sees filtered or unfiltered results."
+      },
+      {
+        "texto_opcion": "Only if the user also needs to DROP the filter later — DROP MASK requires EXECUTE on the function.",
+        "es_correcta": false,
+        "explicacion": "Dropping a mask/filter requires table ownership or MANAGE — not EXECUTE on the function. And regular end users don't need EXECUTE to query the table."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter",
+      "Privileges"
+    ]
+  },
+  {
+    "pregunta": "Which SQL command applies a row filter at table creation time?",
+    "opciones": [
+      {
+        "texto_opcion": "```sql\nCREATE TABLE catalog.schema.orders (\n  order_id BIGINT,\n  region STRING,\n  amount DECIMAL(10,2)\n)\nWITH ROW FILTER catalog.schema.region_filter ON (region);\n```",
+        "es_correcta": true,
+        "explicacion": "Row filters can be applied at table creation using the `WITH ROW FILTER ... ON (...)` clause in the `CREATE TABLE` statement. This ensures the policy is active from the first data insertion."
+      },
+      {
+        "texto_opcion": "```sql\nCREATE TABLE catalog.schema.orders (...)\nROW FILTER = catalog.schema.region_filter ON region;\n```",
+        "es_correcta": false,
+        "explicacion": "The correct syntax uses `WITH ROW FILTER ... ON (...)` — not `ROW FILTER =`."
+      },
+      {
+        "texto_opcion": "```sql\nCREATE TABLE catalog.schema.orders (...)\nSET ROW FILTER catalog.schema.region_filter (region);\n```",
+        "es_correcta": false,
+        "explicacion": "`SET ROW FILTER` is used in `ALTER TABLE`, not in `CREATE TABLE`. The CREATE TABLE syntax uses `WITH ROW FILTER ... ON (...)`."
+      },
+      {
+        "texto_opcion": "Row filters cannot be set at table creation — they must be added with `ALTER TABLE` after creation.",
+        "es_correcta": false,
+        "explicacion": "Row filters CAN be specified at table creation using `WITH ROW FILTER ... ON (...)` in the `CREATE TABLE` statement."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter",
+      "CREATE TABLE"
+    ]
+  },
+  {
+    "pregunta": "A data engineer removes the row filter from a table:\n\n```sql\nALTER TABLE catalog.sales.orders DROP ROW FILTER;\n```\n\nWhat is the effect?",
+    "opciones": [
+      {
+        "texto_opcion": "All rows become visible to all users with SELECT on the table — the filter is removed and no row-level restriction remains.",
+        "es_correcta": true,
+        "explicacion": "`DROP ROW FILTER` removes the filter policy from the table. After this, all users with SELECT see all rows. The underlying UDF function is NOT deleted — it remains in the schema."
+      },
+      {
+        "texto_opcion": "All rows previously hidden are permanently deleted from the table.",
+        "es_correcta": false,
+        "explicacion": "Row filters never delete data — they only restrict visibility at query time. Dropping the filter restores visibility to all rows; no data is deleted."
+      },
+      {
+        "texto_opcion": "The table is dropped along with the filter — `DROP ROW FILTER` is equivalent to `DROP TABLE`.",
+        "es_correcta": false,
+        "explicacion": "`DROP ROW FILTER` removes only the row filter policy from the table. The table and all its data remain intact."
+      },
+      {
+        "texto_opcion": "The UDF function is deleted from the catalog when the row filter is dropped.",
+        "es_correcta": false,
+        "explicacion": "`DROP ROW FILTER` removes the filter attachment from the table — it does NOT delete the UDF function. The function must be dropped separately with `DROP FUNCTION` if no longer needed."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter",
+      "Removal"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to use `current_user()` in a row filter to allow each user to see only their own records. The `created_by` column stores the user's email. Which UDF correctly implements this?",
+    "opciones": [
+      {
+        "texto_opcion": "```sql\nCREATE FUNCTION catalog.schema.owner_filter(created_by STRING)\nRETURNS BOOLEAN\nRETURN is_account_group_member('admin')\n    OR current_user() = created_by;\n```",
+        "es_correcta": true,
+        "explicacion": "This correctly uses `current_user()` to compare the querying user's identity against the `created_by` column. Admins bypass the filter. The function returns BOOLEAN as required for row filters."
+      },
+      {
+        "texto_opcion": "```sql\nCREATE FUNCTION catalog.schema.owner_filter(created_by STRING)\nRETURNS STRING\nRETURN CASE WHEN current_user() = created_by THEN created_by ELSE NULL END;\n```",
+        "es_correcta": false,
+        "explicacion": "Row filter UDFs must return BOOLEAN, not STRING. A STRING return type is for column masks, not row filters."
+      },
+      {
+        "texto_opcion": "```sql\nCREATE FUNCTION catalog.schema.owner_filter()\nRETURNS BOOLEAN\nRETURN SELECT * FROM catalog.schema.user_tasks WHERE created_by = current_user();\n```",
+        "es_correcta": false,
+        "explicacion": "Row filter UDFs cannot contain SELECT subqueries that read from tables — this would cause circular dependencies and performance issues. Use simple CASE expressions with identity functions."
+      },
+      {
+        "texto_opcion": "```sql\nCREATE FUNCTION catalog.schema.owner_filter(created_by STRING)\nRETURNS BOOLEAN\nDETERMINISTIC\nRETURN current_user() = created_by;\n```",
+        "es_correcta": false,
+        "explicacion": "Marking a UDF `DETERMINISTIC` that uses `current_user()` is incorrect — `current_user()` returns different values for different sessions. UDFs using identity functions must NOT be marked `DETERMINISTIC`."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter",
+      "current_user()"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to use `DETERMINISTIC` when creating a column mask UDF that uses `is_account_group_member()`. Is this appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "No — UDFs using `is_account_group_member()` or `current_user()` must **not** be marked `DETERMINISTIC`. These functions are session-stable but return different values for different users.",
+        "es_correcta": true,
+        "explicacion": "Deterministic functions return the same output for the same input regardless of who calls them or when. `is_account_group_member()` depends on the current user's group membership, making it non-deterministic. Marking it DETERMINISTIC could cause incorrect caching behavior."
+      },
+      {
+        "texto_opcion": "Yes — `is_account_group_member()` evaluates once per session and is effectively deterministic within a session.",
+        "es_correcta": false,
+        "explicacion": "While the result may be stable within a session, `DETERMINISTIC` in SQL means \"same input → same output for any user at any time,\" which is violated by user-dependent functions."
+      },
+      {
+        "texto_opcion": "Only if the mask function is applied to a table with fewer than 1 million rows.",
+        "es_correcta": false,
+        "explicacion": "Table size has no bearing on whether a UDF should be marked DETERMINISTIC. The issue is the user-dependent nature of `is_account_group_member()`."
+      },
+      {
+        "texto_opcion": "Yes, `DETERMINISTIC` improves performance and is safe because Databricks re-evaluates group membership on every query anyway.",
+        "es_correcta": false,
+        "explicacion": "Even if re-evaluated, marking a function `DETERMINISTIC` that returns user-dependent values violates the semantic contract and can cause incorrect optimization behaviors."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "UDF",
+      "Identity Functions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer queries a Delta table with an active row filter using **Time Travel**:\n\n```sql\nSELECT * FROM catalog.schema.orders VERSION AS OF 5;\n```\n\nIs time travel supported with row filters?",
+    "opciones": [
+      {
+        "texto_opcion": "Generally **not supported** — time travel on tables with active row filters or column masks is a known limitation. The query may fail or produce unexpected results.",
+        "es_correcta": true,
+        "explicacion": "Time travel (`VERSION AS OF`, `TIMESTAMP AS OF`) is generally not supported on tables with active row filters or column masks. This is a documented limitation of Unity Catalog fine-grained access control."
+      },
+      {
+        "texto_opcion": "Fully supported — time travel reads historical data and the row filter applies to historical rows.",
+        "es_correcta": false,
+        "explicacion": "Time travel with row filters is a documented limitation. It is generally not supported."
+      },
+      {
+        "texto_opcion": "Supported only if the row filter function existed at the time of version 5.",
+        "es_correcta": false,
+        "explicacion": "Function existence at a historical version is not the issue. Time travel itself is the limitation — it is generally not compatible with active row filter policies."
+      },
+      {
+        "texto_opcion": "Supported for read-only SELECT but not for RESTORE operations.",
+        "es_correcta": false,
+        "explicacion": "The limitation applies to time travel reads (`VERSION AS OF`, `TIMESTAMP AS OF`) — not just RESTORE. Both are generally unsupported with active row filters."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter",
+      "Limitations"
+    ]
+  },
+  {
+    "pregunta": "Can a column mask and a row filter be applied to the **same table simultaneously**?",
+    "opciones": [
+      {
+        "texto_opcion": "Yes — column masks (on specific columns) and a row filter (on the table) can coexist. They work independently: the row filter excludes rows, and the column mask transforms values in visible rows.",
+        "es_correcta": true,
+        "explicacion": "Column masks and row filters are independent mechanisms. A table can have: (1) a row filter that hides some rows, and (2) column masks on specific columns that transform values in the visible rows."
+      },
+      {
+        "texto_opcion": "No — only one policy type can be active per table at a time.",
+        "es_correcta": false,
+        "explicacion": "Both policy types can coexist. Unity Catalog applies them independently: first the row filter determines which rows are visible, then the column mask transforms values in those visible rows."
+      },
+      {
+        "texto_opcion": "Only if both the row filter and column mask use the same UDF function.",
+        "es_correcta": false,
+        "explicacion": "There is no such requirement. Column masks and row filters use separate UDFs — they can coexist on the same table independently."
+      },
+      {
+        "texto_opcion": "Yes, but only if the table uses Delta format — Parquet external tables cannot have both.",
+        "es_correcta": false,
+        "explicacion": "While Delta format is recommended for Unity Catalog, the coexistence of masks and filters is not a format-dependent constraint."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Column Masking",
+      "Row Filter"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to use **ABAC policies** for column masking across all tables in a catalog tagged with `sensitivity=PII`. What is the minimum DBR version required?",
+    "opciones": [
+      {
+        "texto_opcion": "**DBR 16.4+** — ABAC policies require a more recent runtime than table-level masks/filters (which require DBR 15.4 LTS).",
+        "es_correcta": true,
+        "explicacion": "ABAC policies (catalog/schema-scoped policies using governed tags) require DBR 16.4 or above. Table-level `SET MASK` / `SET ROW FILTER` require DBR 15.4 LTS."
+      },
+      {
+        "texto_opcion": "**DBR 12.2 LTS** — column masking has been available since early Databricks Runtime versions.",
+        "es_correcta": false,
+        "explicacion": "ABAC policies are a newer feature requiring DBR 16.4+. Older runtimes do not support them."
+      },
+      {
+        "texto_opcion": "**DBR 14.3 LTS** — ABAC policies were introduced alongside Unity Catalog v2.0.",
+        "es_correcta": false,
+        "explicacion": "ABAC policies require DBR 16.4+, not DBR 14.3."
+      },
+      {
+        "texto_opcion": "Any DBR version — ABAC is a metadata feature that doesn't depend on the runtime.",
+        "es_correcta": false,
+        "explicacion": "ABAC policies are enforced at query execution time by the Databricks runtime. Older runtimes will fail to access tables protected by ABAC policies."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "ABAC Policies",
+      "Limitations"
+    ]
+  },
+  {
+    "pregunta": "A table `orders` has column `customer_email` with this mask:\n\n```sql\nCREATE FUNCTION catalog.schema.email_mask(email STRING)\nRETURNS STRING\nRETURN CASE\n  WHEN is_account_group_member('admins') THEN email\n  ELSE CONCAT('****@', SPLIT(email, '@')[1])\nEND;\n```\n\nA non-admin user sees `****@gmail.com` for an email of `frank@gmail.com`. Is this the expected behavior?",
+    "opciones": [
+      {
+        "texto_opcion": "Yes — the function preserves the email domain (`gmail.com`) while masking the local part (`frank`) with `****`. This is a partial masking pattern that hides PII while retaining some context.",
+        "es_correcta": true,
+        "explicacion": "`SPLIT(email, '@')[1]` extracts the domain part, and `CONCAT('****@', domain)` combines a fixed mask with the real domain. The result `****@gmail.com` for a non-admin is exactly what the function produces."
+      },
+      {
+        "texto_opcion": "No — the function should return the full email unchanged because `SPLIT` returns an array.",
+        "es_correcta": false,
+        "explicacion": "`SPLIT(email, '@')` returns an array; `[1]` (1-indexed in Databricks SQL) retrieves the second element — the domain. This is a valid partial masking pattern."
+      },
+      {
+        "texto_opcion": "No — the function fails because `CONCAT` cannot combine a constant string with `SPLIT` output.",
+        "es_correcta": false,
+        "explicacion": "`SPLIT` returns a string array element when indexed. `CONCAT('****@', string)` is valid SQL. The function works correctly."
+      },
+      {
+        "texto_opcion": "No — for non-admins, the function returns NULL because `else` clauses in CASE return NULL by default.",
+        "es_correcta": false,
+        "explicacion": "The `ELSE` clause explicitly returns `CONCAT('****@', SPLIT(email, '@')[1])` — not NULL. NULL would only be returned if the ELSE clause were missing from the CASE."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Column Masking",
+      "UDF"
+    ]
+  },
+  {
+    "pregunta": "A data engineer creates a row filter that is applied to `orders` table. An analyst tries to run `CREATE TABLE orders_copy DEEP CLONE catalog.schema.orders`. What is the expected outcome?",
+    "opciones": [
+      {
+        "texto_opcion": "The operation **fails** — `DEEP CLONE` is not supported on tables with active row filters or column masks.",
+        "es_correcta": true,
+        "explicacion": "DEEP CLONE and SHALLOW CLONE are documented as unsupported operations on tables with active row-level security or column masks. This is a key limitation to know."
+      },
+      {
+        "texto_opcion": "The clone succeeds but the row filter is not copied to the cloned table.",
+        "es_correcta": false,
+        "explicacion": "DEEP CLONE is not supported on masked/filtered tables — the operation fails, not succeeds without the filter."
+      },
+      {
+        "texto_opcion": "The clone succeeds and the row filter is automatically applied to the cloned table.",
+        "es_correcta": false,
+        "explicacion": "DEEP CLONE is not supported on masked/filtered tables. The described outcome assumes the operation succeeds, which it does not."
+      },
+      {
+        "texto_opcion": "The clone only copies rows visible to the analyst (filtered rows are excluded from the clone).",
+        "es_correcta": false,
+        "explicacion": "DEEP CLONE on a filtered table is not supported — the operation fails entirely. There is no partial copy behavior."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter",
+      "Limitations"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to verify which column masks and row filters are applied to `catalog.schema.users`. Which command shows this information?",
+    "opciones": [
+      {
+        "texto_opcion": "`DESCRIBE TABLE EXTENDED catalog.schema.users;` — the output includes applied column masks and row filters.",
+        "es_correcta": true,
+        "explicacion": "`DESCRIBE TABLE EXTENDED` shows detailed table metadata including any active column masks (per column) and row filter policies applied to the table."
+      },
+      {
+        "texto_opcion": "`SHOW POLICIES ON TABLE catalog.schema.users;`",
+        "es_correcta": false,
+        "explicacion": "`SHOW POLICIES` is not a standard Databricks SQL command. `DESCRIBE TABLE EXTENDED` is the correct command for viewing applied masks and filters."
+      },
+      {
+        "texto_opcion": "`SELECT * FROM system.access.column_masks WHERE table_name = 'users';`",
+        "es_correcta": false,
+        "explicacion": "While system tables may provide audit data, the primary SQL command for checking applied masks and filters on a specific table is `DESCRIBE TABLE EXTENDED`."
+      },
+      {
+        "texto_opcion": "`SHOW GRANTS ON TABLE catalog.schema.users;`",
+        "es_correcta": false,
+        "explicacion": "`SHOW GRANTS` shows privilege grants (SELECT, MODIFY, etc.) — not applied column masks or row filter policies."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Column Masking",
+      "Row Filter"
+    ]
+  },
+  {
+    "pregunta": "What is the key advantage of **ABAC policies** over **table-level** row filters and column masks when managing security across hundreds of tables?",
+    "opciones": [
+      {
+        "texto_opcion": "ABAC policies are applied at the **catalog or schema level** using governed tags — new tables with the matching tag automatically inherit the policy without any `ALTER TABLE` command.",
+        "es_correcta": true,
+        "explicacion": "ABAC policies eliminate the \"per-table ALTER TABLE\" burden. Once a policy is created at the catalog/schema level, any table tagged with the matching tag automatically inherits the masking/filtering behavior."
+      },
+      {
+        "texto_opcion": "ABAC policies run faster than table-level masks because they use native Spark optimizations.",
+        "es_correcta": false,
+        "explicacion": "Performance characteristics between ABAC and table-level policies may differ by use case, but the primary advantage of ABAC is scalability/maintenance, not performance."
+      },
+      {
+        "texto_opcion": "ABAC policies work on external tables while table-level masks only work on managed tables.",
+        "es_correcta": false,
+        "explicacion": "The advantage of ABAC is scalable management via tags, not a table type restriction. Both approaches work with Delta tables."
+      },
+      {
+        "texto_opcion": "ABAC policies can apply column masks to computed/virtual columns that don't exist in the table schema.",
+        "es_correcta": false,
+        "explicacion": "ABAC policies work with existing table columns. They cannot mask virtual columns that don't exist in the schema."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "ABAC Policies"
+    ]
+  },
+  {
+    "pregunta": "A data engineer applies the following row filter:\n\n```sql\nCREATE FUNCTION catalog.schema.admin_only()\nRETURNS BOOLEAN\nRETURN is_account_group_member('admins');\n\nALTER TABLE catalog.schema.sensitive_table\nSET ROW FILTER catalog.schema.admin_only ON ();\n```\n\nWhat does a non-admin user see when they query `SELECT COUNT(*) FROM catalog.schema.sensitive_table`?",
+    "opciones": [
+      {
+        "texto_opcion": "`0` — for non-admins, `admin_only()` returns `FALSE`, so all rows are excluded. The count returns 0.",
+        "es_correcta": true,
+        "explicacion": "`admin_only()` returns FALSE for non-admins. Since ALL rows return FALSE from the filter, no rows are visible to non-admins. COUNT(*) on zero visible rows returns 0."
+      },
+      {
+        "texto_opcion": "An error — non-admins cannot execute queries on tables with row filters.",
+        "es_correcta": false,
+        "explicacion": "Non-admins can execute queries on filtered tables — they simply see the filtered (empty) result set. No error is raised."
+      },
+      {
+        "texto_opcion": "The total row count — the filter only applies to SELECT * queries, not to COUNT(*).",
+        "es_correcta": false,
+        "explicacion": "Row filters apply to ALL queries on the table, including COUNT(*). The count reflects only rows visible to the user."
+      },
+      {
+        "texto_opcion": "NULL — when no rows pass the filter, COUNT(*) returns NULL.",
+        "es_correcta": false,
+        "explicacion": "`COUNT(*)` never returns NULL — it returns 0 when there are no rows to count."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter",
+      "UDF"
+    ]
+  },
+  {
+    "pregunta": "A column mask UDF is applied to `salary` in the `employees` table. A user with only `SELECT` on the table queries `SELECT salary FROM employees`. What privilege is automatically invoked to run the mask function?",
+    "opciones": [
+      {
+        "texto_opcion": "The mask function runs with the **table owner's privileges** (or the engine's elevated privileges) — the querying user does not need EXECUTE on the mask UDF.",
+        "es_correcta": true,
+        "explicacion": "Column mask and row filter UDFs are invoked by the Unity Catalog engine with elevated privileges. End users only need SELECT on the table — they don't need EXECUTE on the UDF."
+      },
+      {
+        "texto_opcion": "The function runs with the querying user's privileges — if they lack EXECUTE, the query fails.",
+        "es_correcta": false,
+        "explicacion": "End users do not need EXECUTE on the mask function. The function runs transparently with engine-level privileges."
+      },
+      {
+        "texto_opcion": "The function does not run — the raw salary value is returned because the user lacks EXECUTE.",
+        "es_correcta": false,
+        "explicacion": "The mask always runs regardless of the user's EXECUTE privilege on the function. The user gets the masked value, not the raw value."
+      },
+      {
+        "texto_opcion": "The query asks the user to authenticate with additional credentials before executing the mask.",
+        "es_correcta": false,
+        "explicacion": "Masks are completely transparent to end users. No additional authentication or credentials are required."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Column Masking",
+      "Privileges"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has a table with a row filter applied. They attempt to share it via **Delta Sharing** with an external recipient. What is the expected behavior?",
+    "opciones": [
+      {
+        "texto_opcion": "Standard Delta Sharing **cannot** share tables with table-level row filters or column masks — this is a documented limitation.",
+        "es_correcta": true,
+        "explicacion": "Standard Delta Sharing does not support sharing tables with active row-level security or column masks. ABAC-secured tables have special considerations, but table-level policies block standard Delta Sharing."
+      },
+      {
+        "texto_opcion": "Delta Sharing works normally — the row filter applies to the external recipient based on their identity.",
+        "es_correcta": false,
+        "explicacion": "Standard Delta Sharing cannot apply identity-based filters to external recipients (who have different identity systems). This is why it's a documented limitation."
+      },
+      {
+        "texto_opcion": "Delta Sharing shares the table but excludes all rows for the external recipient.",
+        "es_correcta": false,
+        "explicacion": "Standard Delta Sharing on a filtered table fails — it does not share with zero rows."
+      },
+      {
+        "texto_opcion": "Delta Sharing automatically removes the row filter when creating the share.",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing does not modify the source table's row filter. The sharing operation fails due to the incompatibility."
+      }
+    ],
+    "tags": [
+      "7.3",
+      "Row Filter",
+      "Limitations"
+    ]
+  }
+]

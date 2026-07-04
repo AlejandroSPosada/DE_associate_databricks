@@ -1,0 +1,588 @@
+[
+  {
+    "pregunta": "A data engineer opens the Databricks sidebar and clicks on **Workflows**. They land on the Jobs list page. Which of the following best describes what the `Trigger` column indicates?",
+    "opciones": [
+      {
+        "texto_opcion": "How the job's runs are initiated — for example: `Scheduled`, `Manual`, `File arrival`, `Continuous`, or `API`.",
+        "es_correcta": true,
+        "explicacion": "The `Trigger` column shows how a job is started. This helps operators quickly distinguish scheduled production jobs from manually run ad-hoc jobs and file-triggered ingestion pipelines."
+      },
+      {
+        "texto_opcion": "The event that caused the most recent run to fail.",
+        "es_correcta": false,
+        "explicacion": "The `Trigger` column shows the trigger type configured on the job, not the cause of failure. Failure causes are visible in the task run detail and error section."
+      },
+      {
+        "texto_opcion": "The Databricks Runtime version that triggered the cluster to start.",
+        "es_correcta": false,
+        "explicacion": "The Databricks Runtime version is shown in the job's cluster configuration, not the `Trigger` column."
+      },
+      {
+        "texto_opcion": "Whether the job was triggered by a webhook or a system table event.",
+        "es_correcta": false,
+        "explicacion": "Webhook notifications are outbound from Databricks — they don't trigger jobs. File arrival, schedules, and API calls are the inbound triggers listed in the `Trigger` column."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Jobs UI"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is monitoring a job run. The job's lifecycle state is `QUEUED`. What does this state mean?",
+    "opciones": [
+      {
+        "texto_opcion": "The run is waiting to start because the maximum concurrent run limit for that job has been reached.",
+        "es_correcta": true,
+        "explicacion": "`QUEUED` means the run was triggered but cannot start yet — typically because another run of the same job is already executing and the configured `max_concurrent_runs` limit has been reached."
+      },
+      {
+        "texto_opcion": "The run is waiting for a cluster to finish provisioning.",
+        "es_correcta": false,
+        "explicacion": "Cluster provisioning causes the `PENDING` state, not `QUEUED`. `QUEUED` specifically indicates waiting due to concurrency limits."
+      },
+      {
+        "texto_opcion": "The run was blocked by an upstream job that has not finished yet.",
+        "es_correcta": false,
+        "explicacion": "Being blocked by an upstream job-level dependency corresponds to the `BLOCKED` state, not `QUEUED`."
+      },
+      {
+        "texto_opcion": "The run completed successfully and is waiting to be archived.",
+        "es_correcta": false,
+        "explicacion": "`QUEUED` is an active (non-terminal) state meaning the run has not started. Completed runs are in `TERMINATED` state."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Lifecycle States"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is building an automation script that polls the Databricks Jobs REST API to wait for a job run to finish. Which lifecycle states indicate that the run has **finished** and polling should stop?",
+    "opciones": [
+      {
+        "texto_opcion": "`TERMINATED`, `SKIPPED`, and `INTERNAL_ERROR` — these are the terminal states after which no further state changes occur.",
+        "es_correcta": true,
+        "explicacion": "Terminal states signal that execution has ended. `TERMINATED` covers most outcomes (success, failure, canceled, timed out). `SKIPPED` means the run didn't execute. `INTERNAL_ERROR` is a platform-level failure. Polling should stop when any of these is reached."
+      },
+      {
+        "texto_opcion": "`RUNNING` and `TERMINATING` — these indicate the run is at the end of its lifecycle.",
+        "es_correcta": false,
+        "explicacion": "`RUNNING` and `TERMINATING` are active states — the run is still in progress. Polling must continue until a terminal state is reached."
+      },
+      {
+        "texto_opcion": "`FAILED` and `SUCCEEDED` — these are the only terminal states for a job run.",
+        "es_correcta": false,
+        "explicacion": "`FAILED` and `SUCCEEDED` are `result_state` values, not `lifecycle_state` values. The terminal lifecycle state is `TERMINATED` (which then has a `result_state` of `SUCCESS`, `FAILED`, etc.)."
+      },
+      {
+        "texto_opcion": "`PENDING` and `QUEUED` — the run will never start if it stays in these states.",
+        "es_correcta": false,
+        "explicacion": "`PENDING` and `QUEUED` are initial, non-terminal states. The run will eventually proceed to `RUNNING` (or be canceled). These are not terminal states."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Lifecycle States"
+    ]
+  },
+  {
+    "pregunta": "A job run completes with lifecycle state `TERMINATED` and result state `TIMEDOUT`. What caused this outcome?",
+    "opciones": [
+      {
+        "texto_opcion": "The job run exceeded the configured `timeout_seconds` limit and was automatically stopped by Databricks.",
+        "es_correcta": true,
+        "explicacion": "`TIMEDOUT` as a result state means the wall-clock time of the run exceeded the `timeout_seconds` configured on the job. Databricks automatically terminates runs that exceed their timeout."
+      },
+      {
+        "texto_opcion": "The cluster failed to start within the cluster startup timeout window.",
+        "es_correcta": false,
+        "explicacion": "Cluster startup failure typically results in `TERMINATED` + `FAILED` (with an error in the Run Events panel), not `TIMEDOUT`. `TIMEDOUT` applies to the job's overall duration limit."
+      },
+      {
+        "texto_opcion": "A user manually stopped the run after it ran too long.",
+        "es_correcta": false,
+        "explicacion": "Manual cancellation results in `TERMINATED` + `CANCELED`, not `TIMEDOUT`. `TIMEDOUT` is an automatic platform enforcement of the configured timeout."
+      },
+      {
+        "texto_opcion": "The job was scheduled too frequently and a new run was started before the previous one finished.",
+        "es_correcta": false,
+        "explicacion": "Over-scheduling results in `MAXIMUM_CONCURRENT_RUNS_REACHED` result state. `TIMEDOUT` specifically means the run's configured time limit was exceeded."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Result States"
+    ]
+  },
+  {
+    "pregunta": "A data engineer opens a multi-task job run and sees this pattern in the DAG view: task `ingest` is **red**, task `transform` is **pink**, and task `load` is **pink**. What does this pattern indicate?",
+    "opciones": [
+      {
+        "texto_opcion": "`ingest` failed (red), causing `transform` and `load` to be skipped (pink) because their `Run if: All succeeded` condition was not met.",
+        "es_correcta": true,
+        "explicacion": "Red = failed, pink = skipped. Downstream tasks with `Run if: All succeeded` are automatically skipped when their upstream dependency fails. This cascading skip pattern is visually immediate in the DAG."
+      },
+      {
+        "texto_opcion": "`ingest` failed; `transform` is currently running; `load` is waiting.",
+        "es_correcta": false,
+        "explicacion": "Pink means skipped — not running or waiting. Running tasks appear blue; waiting/retrying tasks appear yellow."
+      },
+      {
+        "texto_opcion": "All three tasks failed at the same time due to a cluster failure.",
+        "es_correcta": false,
+        "explicacion": "If a cluster failure affected all tasks simultaneously, all would be red (failed), not pink. Pink specifically means skipped — the task did not run at all."
+      },
+      {
+        "texto_opcion": "`ingest` failed; `transform` and `load` are disabled tasks that do not run.",
+        "es_correcta": false,
+        "explicacion": "Disabled tasks also appear grayed-out or pink in the DAG, but the typical pink-cascade pattern in a run context indicates skipped due to upstream failure, not disabled state."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "DAG View"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to understand which tasks in a job are running in parallel versus sequentially. Which UI feature is most useful for this?",
+    "opciones": [
+      {
+        "texto_opcion": "The **DAG view** — parallel tasks (no dependency between them) appear side-by-side, while sequential tasks are connected with arrows indicating the dependency chain.",
+        "es_correcta": true,
+        "explicacion": "The DAG view's visual layout places independent tasks side-by-side (parallel) and connects dependent tasks with directed arrows (sequential). This makes the execution structure immediately visible."
+      },
+      {
+        "texto_opcion": "The **Runs tab matrix view** — it shows which tasks ran at the same time across multiple job runs.",
+        "es_correcta": false,
+        "explicacion": "The matrix view compares task outcomes across multiple runs (task × run). It does not show parallelism structure within a single run. The DAG view is the correct tool."
+      },
+      {
+        "texto_opcion": "The **Run Events panel** — it lists events in chronological order, showing which tasks started at the same time.",
+        "es_correcta": false,
+        "explicacion": "The Run Events panel shows a log of events. While it can reveal when tasks started, the DAG view provides the clearest visual representation of parallel vs. sequential structure."
+      },
+      {
+        "texto_opcion": "The **Spark UI** — it shows which Spark stages execute in parallel.",
+        "es_correcta": false,
+        "explicacion": "The Spark UI shows parallelism within a single task's Spark execution. It does not show the job-level DAG structure of Lakeflow task dependencies."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "DAG View"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses the **Timeline view** for a job run and observes that `task_load` has a large horizontal gap before its bar starts, even though `task_transform` (its only dependency) completed quickly. What does the gap indicate?",
+    "opciones": [
+      {
+        "texto_opcion": "A long cluster provisioning time — `task_load` likely uses a different cluster and had to wait for it to start.",
+        "es_correcta": true,
+        "explicacion": "A gap in the timeline between a dependency completing and a task starting typically indicates cluster startup time. If tasks use separate job clusters, each needs its own provisioning, which can add minutes to the total run time."
+      },
+      {
+        "texto_opcion": "`task_transform` is actually still running — the timeline shows estimated completion, not actual.",
+        "es_correcta": false,
+        "explicacion": "The Timeline view shows actual wall-clock execution times based on real timestamps. The gap after `task_transform`'s bar ends is a real idle period."
+      },
+      {
+        "texto_opcion": "`task_load` has `max_retries: 3` configured and is waiting for its first retry.",
+        "es_correcta": false,
+        "explicacion": "A retry wait would appear as a yellow (WAITING_FOR_RETRY) state after an initial failure. A gap before any execution starts indicates waiting for the cluster, not for a retry."
+      },
+      {
+        "texto_opcion": "The gap represents time the scheduler spent waiting for a free slot to execute `task_load`.",
+        "es_correcta": false,
+        "explicacion": "Scheduler delays are typically negligible (milliseconds). A significant visual gap in the timeline is almost always attributable to cluster provisioning time."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Timeline View"
+    ]
+  },
+  {
+    "pregunta": "A data engineer checks the **Run Events panel** for a failed job run and sees the event: `Task retrying: task_api_ingest (attempt 2 of 3)`. What does this tell them?",
+    "opciones": [
+      {
+        "texto_opcion": "`task_api_ingest` failed on its first attempt and is on its second attempt (one more retry remains after this).",
+        "es_correcta": true,
+        "explicacion": "\"Attempt 2 of 3\" means the task has already failed once and is currently on its second attempt. If this attempt also fails, one retry remains (attempt 3). The Run Events panel shows this progression without needing to read raw logs."
+      },
+      {
+        "texto_opcion": "The task has been retrying for 2 minutes out of a 3-minute timeout.",
+        "es_correcta": false,
+        "explicacion": "Attempt numbers refer to execution attempts (original + retries), not time. The \"2 of 3\" means the second execution attempt out of a maximum of 3."
+      },
+      {
+        "texto_opcion": "The task is waiting for 2 seconds before starting its third and final attempt.",
+        "es_correcta": false,
+        "explicacion": "The retry wait duration is defined by `min_retry_interval_millis`, not by the attempt number. \"Attempt 2 of 3\" describes which attempt is happening, not a time duration."
+      },
+      {
+        "texto_opcion": "The task has been skipped twice and will run on the third attempt only.",
+        "es_correcta": false,
+        "explicacion": "Skipped tasks do not retry — they are simply not executed due to dependency conditions. Retrying implies the task failed and is being re-executed."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Run Events"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to use the Run Events panel to identify how much time cluster startup is adding to total job runtime. Which two events should they compare?",
+    "opciones": [
+      {
+        "texto_opcion": "The timestamp of **`Cluster starting`** and the timestamp of **`Cluster ready`** — the difference is the cluster provisioning time.",
+        "es_correcta": true,
+        "explicacion": "The Run Events panel logs `Cluster starting` (provisioning begins) and `Cluster ready` (first task can execute). The time difference between these two events is the cluster startup overhead."
+      },
+      {
+        "texto_opcion": "The timestamp of **`Run triggered`** and **`Task started`** for the first task.",
+        "es_correcta": false,
+        "explicacion": "While this range captures total pre-task latency (scheduling + provisioning), it does not isolate cluster startup time specifically. `Cluster starting` → `Cluster ready` is the precise window."
+      },
+      {
+        "texto_opcion": "The timestamp of **`Task started`** for the first task and **`Task succeeded`** for the last task.",
+        "es_correcta": false,
+        "explicacion": "This range measures total task execution time, not cluster startup overhead."
+      },
+      {
+        "texto_opcion": "The timestamp of **`Run triggered`** and **`Run completed`** — this gives total run time including cluster startup.",
+        "es_correcta": false,
+        "explicacion": "This gives total wall-clock run time, not the cluster startup portion specifically. To isolate startup time, compare `Cluster starting` to `Cluster ready`."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Run Events"
+    ]
+  },
+  {
+    "pregunta": "A data engineer sees a task in the DAG view showing a **yellow** status indicator during an active run. What does this status mean?",
+    "opciones": [
+      {
+        "texto_opcion": "The task is **waiting for retry** — it failed on its previous attempt and is in the `WAITING_FOR_RETRY` lifecycle state, paused before the next retry attempt.",
+        "es_correcta": true,
+        "explicacion": "Yellow indicates `WAITING_FOR_RETRY`. The task already failed at least once and is now waiting the configured `min_retry_interval_millis` before attempting again."
+      },
+      {
+        "texto_opcion": "The task is running slowly and may exceed its timeout.",
+        "es_correcta": false,
+        "explicacion": "Actively running tasks appear **blue**, not yellow — regardless of whether they are running slowly."
+      },
+      {
+        "texto_opcion": "The task completed with warnings but did not fail.",
+        "es_correcta": false,
+        "explicacion": "Yellow is not a warning indicator for completed tasks. Successful tasks appear green regardless of warnings in logs."
+      },
+      {
+        "texto_opcion": "The task is pending cluster provisioning before it can start.",
+        "es_correcta": false,
+        "explicacion": "Pending/provisioning tasks typically appear gray or blue (once the cluster is ready and the task is being initialized). Yellow specifically means waiting for retry."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "DAG View",
+      "Task Status"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to find all failed runs of a specific job within the last 14 days without querying system tables. Where in the UI can they filter by result state?",
+    "opciones": [
+      {
+        "texto_opcion": "The job's **Runs tab** — it includes filters for result state (`Succeeded`, `Failed`, `Canceled`, etc.) and date range.",
+        "es_correcta": true,
+        "explicacion": "The Runs tab within a specific job provides result state filters and a date range picker. This allows filtering to show only failed runs within a custom date window, without writing any SQL."
+      },
+      {
+        "texto_opcion": "The main job list page — filter all jobs by `Failed` status to show only jobs with recent failures.",
+        "es_correcta": false,
+        "explicacion": "The job list page shows job-level summaries and last 5 run indicators. It does not support filtering by result state across all runs of a specific job."
+      },
+      {
+        "texto_opcion": "The Spark UI — the Jobs tab shows Spark job failure status.",
+        "es_correcta": false,
+        "explicacion": "The Spark UI shows internal Spark job execution stages, not Lakeflow job run history. The Lakeflow Runs tab is the correct location."
+      },
+      {
+        "texto_opcion": "The Run Events panel — scroll to find all events labeled `Task failed`.",
+        "es_correcta": false,
+        "explicacion": "The Run Events panel shows events for a single run, not across multiple runs. The Runs tab with result state filtering is the correct tool."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Jobs UI",
+      "Filtering"
+    ]
+  },
+  {
+    "pregunta": "A data engineer configures an **If/else task** in a Lakeflow job. At runtime, the condition evaluates to `False`. Which tasks in the `True` branch are shown in the DAG view?",
+    "opciones": [
+      {
+        "texto_opcion": "The `True` branch tasks are shown as **skipped (pink)** in the DAG — they appear in the graph but did not execute.",
+        "es_correcta": true,
+        "explicacion": "Conditional branches are always visible in the DAG. When a condition evaluates to False, the True-branch tasks are skipped and shown in pink. The DAG always shows the full job structure, not just the executed path."
+      },
+      {
+        "texto_opcion": "The `True` branch tasks are hidden from the DAG view — only executed tasks are shown.",
+        "es_correcta": false,
+        "explicacion": "The DAG always shows all tasks, including skipped ones. Skipped tasks are visible in pink, which is helpful for understanding the full job structure."
+      },
+      {
+        "texto_opcion": "The `True` branch tasks are marked as **canceled (gray)** because a user would need to cancel them.",
+        "es_correcta": false,
+        "explicacion": "Tasks in an unexecuted conditional branch are automatically skipped (pink) — no manual cancellation is needed or triggered."
+      },
+      {
+        "texto_opcion": "The `True` branch tasks are shown as **failed (red)** because the condition was not met.",
+        "es_correcta": false,
+        "explicacion": "Condition not being met is not a failure — it's an expected skip. Skipped tasks appear pink, not red."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "DAG View",
+      "Control Flow"
+    ]
+  },
+  {
+    "pregunta": "A data engineer's team wants to track failure rates across 20 different production jobs over the past 30 days. The Lakeflow Jobs UI is not sufficient for this. Why?",
+    "opciones": [
+      {
+        "texto_opcion": "The UI shows individual run outcomes but does not compute aggregate failure rate percentages across jobs; it also has a 60-day history limit.",
+        "es_correcta": true,
+        "explicacion": "The Jobs UI is designed for per-job, per-run inspection. It has no built-in cross-job failure rate calculation. For aggregate metrics across many jobs, system tables with SQL queries are required."
+      },
+      {
+        "texto_opcion": "The UI is unavailable for admin users — failure data requires system table access.",
+        "es_correcta": false,
+        "explicacion": "Any user with appropriate permissions can access the Jobs UI. The limitation is analytical capability, not access control."
+      },
+      {
+        "texto_opcion": "The UI only shows data for jobs created by the current user, not all production jobs.",
+        "es_correcta": false,
+        "explicacion": "Users with appropriate permissions can see all jobs in the workspace. The limitation is that the UI cannot compute cross-job failure rate statistics."
+      },
+      {
+        "texto_opcion": "Failure rates are only calculated after 90 days of history — 30 days is too short.",
+        "es_correcta": false,
+        "explicacion": "There is no 90-day minimum for failure rate calculation. The UI limitation is the lack of aggregate statistics, not a history length requirement."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Failure Rates",
+      "UI Limitations"
+    ]
+  },
+  {
+    "pregunta": "A job run finishes with lifecycle state `TERMINATED` and result state `MAXIMUM_CONCURRENT_RUNS_REACHED`. What caused this?",
+    "opciones": [
+      {
+        "texto_opcion": "A new run was triggered while the maximum number of concurrent runs for that job was already active, so the new run was immediately terminated without executing.",
+        "es_correcta": true,
+        "explicacion": "`MAXIMUM_CONCURRENT_RUNS_REACHED` means the job had a configured concurrency limit and a new run arrived while that limit was already reached. The new run was not queued — it was immediately terminated."
+      },
+      {
+        "texto_opcion": "The job used too many clusters simultaneously and exceeded the workspace cluster limit.",
+        "es_correcta": false,
+        "explicacion": "Workspace cluster limits cause different errors. `MAXIMUM_CONCURRENT_RUNS_REACHED` is a job-level setting (`max_concurrent_runs`), not a workspace-level cluster limit."
+      },
+      {
+        "texto_opcion": "The job ran too many tasks in parallel within a single run.",
+        "es_correcta": false,
+        "explicacion": "Intra-job task parallelism is controlled by the DAG structure, not by `max_concurrent_runs`. This result state refers to concurrent job runs (multiple instances of the same job), not tasks."
+      },
+      {
+        "texto_opcion": "The job was triggered more than the allowed number of times per day.",
+        "es_correcta": false,
+        "explicacion": "There is no daily trigger frequency limit in Databricks. `MAXIMUM_CONCURRENT_RUNS_REACHED` refers to the number of simultaneously active runs of a single job, not daily trigger count."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Result States"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to set up a notification to be sent via Slack when a production job exceeds 2 hours. What is the correct configuration approach?",
+    "opciones": [
+      {
+        "texto_opcion": "Create a **Notification destination** in workspace settings pointing to the Slack webhook, then configure a **health rule** on the job with `RUN_DURATION_SECONDS > 7200`.",
+        "es_correcta": true,
+        "explicacion": "Webhook notification destinations (Slack, PagerDuty, etc.) are configured in workspace Settings. Health rules define the SLA threshold. When the rule fires, the webhook notification is triggered."
+      },
+      {
+        "texto_opcion": "Set `timeout_seconds: 7200` on the job — this automatically sends a Slack alert when the limit is reached.",
+        "es_correcta": false,
+        "explicacion": "`timeout_seconds` terminates the job at the limit — it does not send Slack notifications. Notifications require a Notification destination and health rule."
+      },
+      {
+        "texto_opcion": "Configure `email_notifications.on_duration_warning` with the Slack webhook URL.",
+        "es_correcta": false,
+        "explicacion": "`email_notifications` only supports email addresses. Slack integration requires a Webhook Notification destination configured in workspace settings."
+      },
+      {
+        "texto_opcion": "Use the Jobs REST API to poll run duration every 5 minutes and send a Slack message if it exceeds 7200 seconds.",
+        "es_correcta": false,
+        "explicacion": "While this works, it's an external custom solution. The built-in approach is to use Databricks Notification destinations + health rules — no custom polling needed."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Notifications"
+    ]
+  },
+  {
+    "pregunta": "A data engineer configures `no_alert_for_skipped_runs: true` on a job. When would this setting prevent an email from being sent?",
+    "opciones": [
+      {
+        "texto_opcion": "When a job run's outcome is `SKIPPED` — for example, because the job was triggered but all tasks were skipped due to upstream failures or disabled tasks.",
+        "es_correcta": true,
+        "explicacion": "`no_alert_for_skipped_runs: true` suppresses the `on_failure` notification when the run outcome is effectively a skip. This prevents alert fatigue when skips are expected behavior."
+      },
+      {
+        "texto_opcion": "When a task within a run fails and is skipped due to `max_retries: 0`.",
+        "es_correcta": false,
+        "explicacion": "A task failure with no retries results in the run failing, not in a `SKIPPED` outcome. The `no_alert_for_skipped_runs` setting applies to the run-level `SKIPPED` state."
+      },
+      {
+        "texto_opcion": "When the job schedule is paused — preventing emails from runs that were skipped during the pause period.",
+        "es_correcta": false,
+        "explicacion": "Paused jobs do not generate runs at all, so no emails are sent. `no_alert_for_skipped_runs` applies to runs that are generated but result in a skipped outcome."
+      },
+      {
+        "texto_opcion": "On every run — it globally disables all failure notifications for the job.",
+        "es_correcta": false,
+        "explicacion": "`no_alert_for_skipped_runs` only suppresses notifications specifically for `SKIPPED` run outcomes. Failures still trigger `on_failure` notifications."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Notifications"
+    ]
+  },
+  {
+    "pregunta": "A data engineering team wants to monitor Databricks job health from a **Grafana** dashboard used by their ops team. Which approach does Databricks recommend?",
+    "opciones": [
+      {
+        "texto_opcion": "Query `system.lakeflow` tables from a Databricks SQL Warehouse and export the data to Grafana via a JDBC/ODBC connector or API — this is the most reliable and scalable method.",
+        "es_correcta": true,
+        "explicacion": "Databricks recommends system tables as the preferred source for external monitoring pipelines. They provide up to 365 days of history, support complex SQL, and can be accessed via SQL Warehouse connections (JDBC/ODBC) that Grafana can query directly."
+      },
+      {
+        "texto_opcion": "Install the Grafana agent on each Databricks cluster to scrape metrics directly from the JVM.",
+        "es_correcta": false,
+        "explicacion": "While cluster-level JVM metrics can be scraped, this provides compute metrics (CPU, memory) — not job run history or failure rates. System tables are the correct source for job-level monitoring data."
+      },
+      {
+        "texto_opcion": "Export the Jobs UI HTML page and parse the run status from the rendered HTML.",
+        "es_correcta": false,
+        "explicacion": "Scraping HTML from the UI is fragile and not supported. Use the REST API or system tables for programmatic access to job run data."
+      },
+      {
+        "texto_opcion": "Enable the `grafana_export` setting in the Databricks workspace configuration.",
+        "es_correcta": false,
+        "explicacion": "There is no `grafana_export` setting in Databricks. Integration with Grafana uses standard data access methods: JDBC/ODBC from SQL Warehouse or API-based data export."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "External Monitoring"
+    ]
+  },
+  {
+    "pregunta": "A data engineer reviews a failed job and opens the task run detail. The error section shows a `java.lang.OutOfMemoryError: GC overhead limit exceeded`. Without fixing the code, which information in the task run detail helps confirm the root cause?",
+    "opciones": [
+      {
+        "texto_opcion": "The **Spark UI link** in the task run detail — it allows inspection of executor memory usage, GC time, and stage/task metrics to confirm memory pressure.",
+        "es_correcta": true,
+        "explicacion": "The OOM error suggests memory pressure. The Spark UI (linked from the task run detail) shows executor memory breakdown, GC time percentage, and which stage/task triggered the OOM — confirming whether it's a data skew, insufficient executor memory, or broadcast join issue."
+      },
+      {
+        "texto_opcion": "The **Metrics tab** in the task run detail — it shows the exact amount of memory consumed by each task.",
+        "es_correcta": false,
+        "explicacion": "The Metrics tab is specific to streaming tasks (showing backlog, records/sec). For batch OOM debugging, the Spark UI is the correct tool."
+      },
+      {
+        "texto_opcion": "The **Run Events panel** — it shows memory allocation events for each task.",
+        "es_correcta": false,
+        "explicacion": "Run Events logs lifecycle events (task started, retrying, failed) — it does not show memory allocation or JVM GC events."
+      },
+      {
+        "texto_opcion": "The **Timeline view** — long bars indicate memory-intensive tasks.",
+        "es_correcta": false,
+        "explicacion": "Long timeline bars indicate long-running tasks, which could have many causes. They do not directly indicate memory usage. The Spark UI is needed to confirm OOM root cause."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "Task Inspection"
+    ]
+  },
+  {
+    "pregunta": "A data engineer sees a `For each` task in the DAG view of a job. The task shows as running. How can the engineer monitor the individual iterations?",
+    "opciones": [
+      {
+        "texto_opcion": "Click on the `For each` task node — it expands to show sub-runs, one per iteration, each with its own status and duration.",
+        "es_correcta": true,
+        "explicacion": "`For each` tasks spawn sub-runs for each iteration. Clicking the task node in the DAG opens the iteration-level view, showing which iterations have succeeded, are running, or have failed."
+      },
+      {
+        "texto_opcion": "Navigate to a separate job named `For each` in the Jobs list — each iteration is a separate job.",
+        "es_correcta": false,
+        "explicacion": "`For each` iterations run as sub-runs within the parent job — they are not separate jobs in the job list. They are visible by clicking the task node."
+      },
+      {
+        "texto_opcion": "Open the Spark UI — each `For each` iteration corresponds to a Spark stage.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow `For each` iterations are job orchestration units, not Spark stages. They are visible in the DAG view's task detail, not in the Spark stage tab."
+      },
+      {
+        "texto_opcion": "Open the Run Events panel — each iteration's start and completion is logged as a separate event.",
+        "es_correcta": false,
+        "explicacion": "While the Run Events panel may log some iteration events, the primary interface for monitoring individual `For each` iterations is the DAG task detail with sub-run expansion."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "DAG View",
+      "Control Flow"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is monitoring a currently active job run. The run has been in `RUNNING` state for 90 minutes. The job has `timeout_seconds: 5400`. In the DAG view, which task appears **blue**?",
+    "opciones": [
+      {
+        "texto_opcion": "The task that is **currently executing** — blue indicates an active `RUNNING` state, meaning the task is in progress.",
+        "es_correcta": true,
+        "explicacion": "Blue in the DAG view indicates a task that is currently running (in the `RUNNING` lifecycle state). Only the actively executing task(s) appear blue; completed tasks are green or red."
+      },
+      {
+        "texto_opcion": "All tasks that have already succeeded — blue indicates `SUCCESS` result state.",
+        "es_correcta": false,
+        "explicacion": "Succeeded tasks appear **green**, not blue. Blue indicates a task currently in the `RUNNING` lifecycle state."
+      },
+      {
+        "texto_opcion": "The task closest to the `timeout_seconds` limit — blue is a warning that the timeout is approaching.",
+        "es_correcta": false,
+        "explicacion": "Blue is not a timeout warning indicator. It simply means the task is actively running. Timeout enforcement uses `timeout_seconds` and results in `TIMEDOUT` result state when exceeded."
+      },
+      {
+        "texto_opcion": "Tasks waiting for cluster provisioning — blue means cluster is being initialized.",
+        "es_correcta": false,
+        "explicacion": "Cluster initialization causes `PENDING` state (gray). Blue means the task is actively executing — the cluster is already available."
+      }
+    ],
+    "tags": [
+      "6.2",
+      "DAG View",
+      "Lifecycle States"
+    ]
+  }
+]

@@ -1,0 +1,770 @@
+[
+  {
+    "pregunta": "A data engineer is designing a Lakehouse pipeline. Raw JSON events arrive from Kafka and must be stored exactly as received, with no transformations applied. Which layer should hold this data?",
+    "opciones": [
+      {
+        "texto_opcion": "Bronze — it stores raw, unmodified source data as the system of record.",
+        "es_correcta": true,
+        "explicacion": "Bronze is the landing zone for raw ingested data. No transformations are applied so the data can always be reprocessed from source."
+      },
+      {
+        "texto_opcion": "Silver — it normalizes and cleans incoming data before storage.",
+        "es_correcta": false,
+        "explicacion": "Silver applies cleaning and filtering; storing untransformed raw data there violates the layer's purpose."
+      },
+      {
+        "texto_opcion": "Gold — it stores business-ready aggregated data.",
+        "es_correcta": false,
+        "explicacion": "Gold holds curated, aggregated datasets for consumption; raw events do not belong here."
+      },
+      {
+        "texto_opcion": "Landing Zone — a separate external location outside the Lakehouse.",
+        "es_correcta": false,
+        "explicacion": "In a Medallion Architecture the Bronze layer *is* the landing zone within the Lakehouse; there is no additional named layer."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Bronze"
+    ]
+  },
+  {
+    "pregunta": "Which statement best describes the primary goal of the Silver layer in a Medallion Architecture?",
+    "opciones": [
+      {
+        "texto_opcion": "Provide a clean, validated, deduplicated version of Bronze data for downstream use.",
+        "es_correcta": true,
+        "explicacion": "Silver refines Bronze data by applying type casting, null handling, deduplication, and business rules to produce a trustworthy dataset."
+      },
+      {
+        "texto_opcion": "Store raw data in its original format to act as a historical record.",
+        "es_correcta": false,
+        "explicacion": "Storing raw, unmodified data is the role of the Bronze layer."
+      },
+      {
+        "texto_opcion": "Serve pre-aggregated metrics directly to BI dashboards.",
+        "es_correcta": false,
+        "explicacion": "Serving aggregated metrics to BI tools is the purpose of the Gold layer."
+      },
+      {
+        "texto_opcion": "Enforce row-level security policies for end-user consumption.",
+        "es_correcta": false,
+        "explicacion": "Security policies can be applied at any layer but are not the defining purpose of Silver."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to expose a daily sales summary table consumed by a Power BI dashboard. The table must be pre-computed for query performance. In which Medallion layer should this object live?",
+    "opciones": [
+      {
+        "texto_opcion": "Gold — it holds business-level aggregations optimized for reporting.",
+        "es_correcta": true,
+        "explicacion": "Gold tables are purpose-built for consumption by BI tools and data science; they contain pre-aggregated, domain-specific data."
+      },
+      {
+        "texto_opcion": "Silver — it contains refined data ready for analysis.",
+        "es_correcta": false,
+        "explicacion": "Silver holds cleaned entity-level data, not pre-computed business metrics."
+      },
+      {
+        "texto_opcion": "Bronze — it holds all historical data including aggregations.",
+        "es_correcta": false,
+        "explicacion": "Bronze stores raw data only; aggregations are never computed in the Bronze layer."
+      },
+      {
+        "texto_opcion": "Any layer is acceptable as long as the table is Delta format.",
+        "es_correcta": false,
+        "explicacion": "Using Delta format is correct, but layer placement is determined by data quality and consumption purpose, not format."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Gold"
+    ]
+  },
+  {
+    "pregunta": "A pipeline reads from a Bronze table and applies the following transformations:\n\n```python\ndf = spark.read.table(\"bronze.orders\")\ndf_clean = (\n    df.dropDuplicates([\"order_id\"])\n      .filter(df.order_id.isNotNull())\n      .withColumn(\"amount\", df.amount.cast(\"double\"))\n)\ndf_clean.write.format(\"delta\").saveAsTable(\"silver.orders\")\n```\n\nWhich Medallion layer does the output represent?",
+    "opciones": [
+      {
+        "texto_opcion": "Silver — deduplication, null filtering, and type casting are characteristic Silver transformations.",
+        "es_correcta": true,
+        "explicacion": "Silver refines Bronze data by removing duplicates, handling nulls, and enforcing correct data types."
+      },
+      {
+        "texto_opcion": "Gold — the data is being written to a named table for consumption.",
+        "es_correcta": false,
+        "explicacion": "Writing to a named Delta table is common at all layers; what defines Gold is business-level aggregation, not mere table creation."
+      },
+      {
+        "texto_opcion": "Bronze — the code reads from a Bronze source so the output is also Bronze.",
+        "es_correcta": false,
+        "explicacion": "The layer of the output is determined by the transformations applied, not the layer of the source."
+      },
+      {
+        "texto_opcion": "Landing Zone — the data is not yet aggregated enough for Silver.",
+        "es_correcta": false,
+        "explicacion": "Landing Zone is not a formal Medallion layer; deduplication and type casting qualify the output as Silver."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer notices that a bug in the Silver transformation logic produced incorrect records. What is the main advantage of keeping raw data in the Bronze layer?",
+    "opciones": [
+      {
+        "texto_opcion": "Bronze data can be reprocessed at any time to regenerate Silver and Gold layers after a logic fix.",
+        "es_correcta": true,
+        "explicacion": "Because Bronze holds raw, unmodified source data, correcting a bug simply requires re-running the transformation pipeline from Bronze."
+      },
+      {
+        "texto_opcion": "Bronze tables automatically roll back to the previous version when a bug is detected.",
+        "es_correcta": false,
+        "explicacion": "Delta time travel can undo writes to a table, but it does not automatically detect or fix bugs."
+      },
+      {
+        "texto_opcion": "Bronze enforces schema validation, preventing bad records from ever being ingested.",
+        "es_correcta": false,
+        "explicacion": "Schema enforcement is typically relaxed in Bronze to accept all incoming data; strict validation is a Silver concern."
+      },
+      {
+        "texto_opcion": "Bronze data is immutable and cannot be overwritten, so the source data is always protected.",
+        "es_correcta": false,
+        "explicacion": "Bronze tables are Delta tables and can be updated; immutability is a design choice, not a technical constraint of the Bronze layer."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Bronze",
+      "Reprocessing"
+    ]
+  },
+  {
+    "pregunta": "Which of the following schema enforcement strategies is most appropriate for the Bronze layer?",
+    "opciones": [
+      {
+        "texto_opcion": "Schema evolution enabled — accept new columns from the source without failing the pipeline.",
+        "es_correcta": true,
+        "explicacion": "Bronze should accept data as-is from the source; enabling schema evolution (e.g., `mergeSchema`) prevents ingestion failures when source schemas change."
+      },
+      {
+        "texto_opcion": "Strict schema enforcement — reject any record that does not match the expected schema.",
+        "es_correcta": false,
+        "explicacion": "Strict enforcement belongs in Silver, where data quality is enforced; Bronze should preserve all incoming data."
+      },
+      {
+        "texto_opcion": "Schema-on-read — do not persist any schema at the Bronze layer.",
+        "es_correcta": false,
+        "explicacion": "Delta tables always have a schema; schema-on-read describes data lakes without table semantics, not Medallion Bronze."
+      },
+      {
+        "texto_opcion": "Fixed schema — define the schema once and prevent all future changes.",
+        "es_correcta": false,
+        "explicacion": "A fixed schema in Bronze would break ingestion every time a source column is added or renamed."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Schema Evolution",
+      "Bronze"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is building a Gold layer object that must always reflect the latest state of the Silver table without being manually refreshed. Which object type should be used?",
+    "opciones": [
+      {
+        "texto_opcion": "Materialized view — it is automatically refreshed when the underlying Silver table changes.",
+        "es_correcta": true,
+        "explicacion": "Databricks materialized views are incrementally updated when their sources change, making them ideal for Gold layer objects that need to stay current."
+      },
+      {
+        "texto_opcion": "Standard view — it always returns current data without storing results.",
+        "es_correcta": false,
+        "explicacion": "A standard view re-executes its query at read time and does not pre-compute results, so performance for large aggregations suffers."
+      },
+      {
+        "texto_opcion": "External table — it reads data directly from cloud storage each query.",
+        "es_correcta": false,
+        "explicacion": "External tables point to files in cloud storage; they are not automatically refreshed based on upstream changes."
+      },
+      {
+        "texto_opcion": "Temporary view — it persists across sessions and is automatically updated.",
+        "es_correcta": false,
+        "explicacion": "Temporary views exist only within a session and are never auto-refreshed."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Gold",
+      "Materialized Views"
+    ]
+  },
+  {
+    "pregunta": "A streaming table receives raw clickstream events and must land them in the Lakehouse with minimal latency and no transformation. Which layer and write pattern is correct?\n\n```python\n(spark.readStream\n     .format(\"cloudFiles\")\n     .option(\"cloudFiles.format\", \"json\")\n     .load(\"/mnt/raw/clicks\")\n     .writeStream\n     .format(\"delta\")\n     .outputMode(\"append\")\n     .option(\"checkpointLocation\", \"/chk/bronze_clicks\")\n     .table(\"bronze.clicks\"))\n```",
+    "opciones": [
+      {
+        "texto_opcion": "Bronze — raw events are appended with no transformation, using Auto Loader for incremental ingestion.",
+        "es_correcta": true,
+        "explicacion": "The code uses `cloudFiles` (Auto Loader) to stream raw JSON into a Delta table with append mode and a checkpoint — canonical Bronze ingestion."
+      },
+      {
+        "texto_opcion": "Silver — the streaming write pattern implies the data is already cleaned.",
+        "es_correcta": false,
+        "explicacion": "Streaming writes are used at all layers; the absence of transformations identifies this as Bronze."
+      },
+      {
+        "texto_opcion": "Gold — the checkpoint ensures exactly-once delivery required for reporting.",
+        "es_correcta": false,
+        "explicacion": "Checkpoints provide exactly-once semantics for streaming but do not define the Gold layer."
+      },
+      {
+        "texto_opcion": "Landing Zone — this is outside the Medallion layers because it uses cloud storage paths.",
+        "es_correcta": false,
+        "explicacion": "Reading from a cloud path and writing to a Delta table defines the Bronze layer; the cloud path is the source, not the destination."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Bronze",
+      "Streaming"
+    ]
+  },
+  {
+    "pregunta": "Which of the following transformations should be performed in the Silver layer and NOT in the Bronze layer?",
+    "opciones": [
+      {
+        "texto_opcion": "Applying business rules to flag fraudulent transactions based on amount thresholds.",
+        "es_correcta": true,
+        "explicacion": "Business rule application belongs in Silver (or Gold); Bronze must preserve raw data without interpretation."
+      },
+      {
+        "texto_opcion": "Appending new records from a source system without modification.",
+        "es_correcta": false,
+        "explicacion": "Appending unmodified records is a Bronze operation."
+      },
+      {
+        "texto_opcion": "Storing the raw API response body as a string column.",
+        "es_correcta": false,
+        "explicacion": "Storing raw response data is a Bronze concern."
+      },
+      {
+        "texto_opcion": "Capturing the ingestion timestamp for each incoming record.",
+        "es_correcta": false,
+        "explicacion": "Adding metadata like an ingestion timestamp is acceptable in Bronze to support lineage tracking."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Silver",
+      "Design Decisions"
+    ]
+  },
+  {
+    "pregunta": "A Gold table is re-created each night with a full overwrite from a Silver source. A bug in last night's Gold run caused incorrect aggregations. What is the simplest recovery strategy?",
+    "opciones": [
+      {
+        "texto_opcion": "Re-run the Gold pipeline; since Silver is correct, the overwrite will produce accurate results.",
+        "es_correcta": true,
+        "explicacion": "Gold tables built by full overwrites from a correct Silver source can always be regenerated by re-running the pipeline."
+      },
+      {
+        "texto_opcion": "Restore Bronze to the previous version and re-run all three layers.",
+        "es_correcta": false,
+        "explicacion": "If Silver is correct and the bug was only in the Gold logic, restoring Bronze is unnecessary and time-consuming."
+      },
+      {
+        "texto_opcion": "Use Delta time travel to revert the Gold table to yesterday's version.",
+        "es_correcta": false,
+        "explicacion": "Yesterday's version also contains the incorrect data from the same faulty run; reverting would not fix the bug."
+      },
+      {
+        "texto_opcion": "Delete the Gold table and re-ingest data from the source system.",
+        "es_correcta": false,
+        "explicacion": "Re-ingesting from the source is only necessary if Bronze is corrupt; here the fix is simply re-running the Gold transformation."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Gold",
+      "Reprocessing"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes the following code to build a Gold layer table from `silver.customers`. What is correct about this implementation?\n\n```python\ndf = spark.read.table(\"silver.customers\")\n(\n    df.groupBy(\"country\")\n      .agg(count(\"customer_id\").alias(\"total_customers\"))\n      .write.format(\"delta\")\n      .mode(\"overwrite\")\n      .saveAsTable(\"gold.customers_by_country\")\n)\n```",
+    "opciones": [
+      {
+        "texto_opcion": "This code correctly produces a Gold table by aggregating Silver data and writing it as a Delta table.",
+        "es_correcta": true,
+        "explicacion": "Reading from Silver, grouping, counting, and writing with overwrite to a named Delta table is the standard Gold layer pattern."
+      },
+      {
+        "texto_opcion": "The code is wrong because Gold tables must use `append` mode, not `overwrite`.",
+        "es_correcta": false,
+        "explicacion": "`overwrite` is commonly used for Gold tables that are fully regenerated each run; both modes are valid depending on design."
+      },
+      {
+        "texto_opcion": "The code produces a Silver table because it reads from another Silver table.",
+        "es_correcta": false,
+        "explicacion": "The output layer is determined by the transformation applied (aggregation → Gold), not the source layer."
+      },
+      {
+        "texto_opcion": "The code is wrong because `saveAsTable` cannot be used for Gold layer objects.",
+        "es_correcta": false,
+        "explicacion": "`saveAsTable` writes a managed Delta table and is perfectly valid for Gold layer objects."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Gold",
+      "Aggregations"
+    ]
+  },
+  {
+    "pregunta": "In a Medallion Architecture, which statement about data duplication across layers is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Data intentionally exists in multiple layers; each layer serves a different quality and consumption purpose.",
+        "es_correcta": true,
+        "explicacion": "The Medallion pattern accepts storage duplication as a trade-off for data quality progression and independent reprocessability at each layer."
+      },
+      {
+        "texto_opcion": "Data should never be duplicated; each record must exist in exactly one layer.",
+        "es_correcta": false,
+        "explicacion": "Medallion Architecture explicitly duplicates data across Bronze, Silver, and Gold for quality and access pattern reasons."
+      },
+      {
+        "texto_opcion": "Only Gold data is stored as Delta; Bronze and Silver use Parquet to save storage costs.",
+        "es_correcta": false,
+        "explicacion": "All three layers typically use Delta format to benefit from ACID transactions, time travel, and schema enforcement."
+      },
+      {
+        "texto_opcion": "Bronze and Silver share the same physical location; only the schema differs.",
+        "es_correcta": false,
+        "explicacion": "Each layer has its own separate storage location (schema/catalog namespace); they are not co-located."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Design Decisions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must ensure that only records with a valid `event_date` and non-null `user_id` reach the Silver layer. Where should this validation logic be applied?",
+    "opciones": [
+      {
+        "texto_opcion": "In the Bronze-to-Silver transformation — Silver enforces quality constraints on incoming Bronze data.",
+        "es_correcta": true,
+        "explicacion": "Quality gates (null checks, format validation) are applied during the Bronze-to-Silver transformation to produce a clean Silver dataset."
+      },
+      {
+        "texto_opcion": "In the source system before data reaches Bronze — invalid records must never enter the Lakehouse.",
+        "es_correcta": false,
+        "explicacion": "Bronze intentionally stores all raw data including invalid records so the full history is preserved for debugging and reprocessing."
+      },
+      {
+        "texto_opcion": "In the Gold layer — only Gold consumers need validated data.",
+        "es_correcta": false,
+        "explicacion": "Applying validation only at Gold means Silver still contains dirty data, defeating the layer's purpose."
+      },
+      {
+        "texto_opcion": "Validation is not needed; Delta constraints automatically enforce data quality.",
+        "es_correcta": false,
+        "explicacion": "Delta table constraints can help but must be explicitly defined; validation logic is still required in the transformation pipeline."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Silver",
+      "Data Quality"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to track the number of records rejected during the Silver cleaning step. Which is the recommended approach in a Medallion Architecture?",
+    "opciones": [
+      {
+        "texto_opcion": "Write rejected records to a quarantine (dead-letter) table alongside the Silver table for later review.",
+        "es_correcta": true,
+        "explicacion": "A quarantine table captures rejected records without discarding them, enabling root-cause analysis and selective reprocessing."
+      },
+      {
+        "texto_opcion": "Drop rejected records silently; the Bronze layer can always be used to recover them.",
+        "es_correcta": false,
+        "explicacion": "Silently dropping records hides data quality issues; a quarantine table makes failures visible and auditable."
+      },
+      {
+        "texto_opcion": "Fail the entire pipeline when any invalid record is detected.",
+        "es_correcta": false,
+        "explicacion": "Failing on every invalid record is brittle; production pipelines should isolate bad records rather than halt entirely."
+      },
+      {
+        "texto_opcion": "Store rejected records back in Bronze with an error flag column.",
+        "es_correcta": false,
+        "explicacion": "Adding error flags to Bronze modifies the raw data, which violates the Bronze principle of preserving the original source record."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Silver",
+      "Data Quality"
+    ]
+  },
+  {
+    "pregunta": "Which of the following is a valid reason to use a standard SQL view (not a materialized view) in the Gold layer?",
+    "opciones": [
+      {
+        "texto_opcion": "The query is simple and fast enough that pre-computing results provides no meaningful benefit.",
+        "es_correcta": true,
+        "explicacion": "Standard views are appropriate when the underlying query runs quickly enough that materializing results adds complexity without a performance benefit."
+      },
+      {
+        "texto_opcion": "Standard views automatically cache results, improving performance over materialized views.",
+        "es_correcta": false,
+        "explicacion": "Standard SQL views do not cache results; they re-execute the query on every read."
+      },
+      {
+        "texto_opcion": "Standard views support incremental refresh, making them more efficient than materialized views.",
+        "es_correcta": false,
+        "explicacion": "Incremental refresh is a feature of materialized views, not standard views."
+      },
+      {
+        "texto_opcion": "Standard views must be used in Gold because materialized views are only supported in Silver.",
+        "es_correcta": false,
+        "explicacion": "Materialized views can be used at any Medallion layer; there is no layer restriction."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Gold",
+      "Views"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is choosing between a managed table and an external table for a Gold layer reporting dataset. The team needs full Unity Catalog governance and wants Databricks to manage the table lifecycle. Which choice is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Managed table — Unity Catalog controls the data location and lifecycle, including drop behavior.",
+        "es_correcta": true,
+        "explicacion": "Managed tables have their storage managed by Unity Catalog; dropping the table also drops the data, and full governance features apply."
+      },
+      {
+        "texto_opcion": "External table — it provides better performance because data is stored in a user-specified location.",
+        "es_correcta": false,
+        "explicacion": "External tables do not inherently outperform managed tables; the distinction is governance and lifecycle management, not performance."
+      },
+      {
+        "texto_opcion": "External table — Unity Catalog only governs external tables, not managed tables.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog governs both managed and external tables; managed tables receive full UC governance."
+      },
+      {
+        "texto_opcion": "Either type is identical; managed vs. external only affects table creation syntax.",
+        "es_correcta": false,
+        "explicacion": "The difference is significant: managed tables have Databricks-controlled storage and lifecycle; external tables do not."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Gold",
+      "Managed vs External Tables"
+    ]
+  },
+  {
+    "pregunta": "A team wants to serve real-time product recommendation scores that are computed from a continuously updated Silver stream. Which Gold layer object type is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "Streaming table — it continuously ingests from the Silver stream and keeps the Gold dataset current.",
+        "es_correcta": true,
+        "explicacion": "Streaming tables in Databricks are designed for continuous ingestion from streaming sources, making them ideal for real-time Gold outputs."
+      },
+      {
+        "texto_opcion": "Materialized view — it auto-refreshes and supports streaming sources with low latency.",
+        "es_correcta": false,
+        "explicacion": "Materialized views refresh based on upstream changes but are not optimized for sub-minute latency from streaming sources."
+      },
+      {
+        "texto_opcion": "Standard view — it always reflects the latest state of the Silver stream.",
+        "es_correcta": false,
+        "explicacion": "A standard view over a streaming source does not inherently provide low latency; it re-runs the query at read time."
+      },
+      {
+        "texto_opcion": "Batch table — schedule it to run every minute to approximate real-time.",
+        "es_correcta": false,
+        "explicacion": "A minutely batch is not real-time and adds unnecessary operational overhead compared to a streaming table."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Gold",
+      "Streaming Tables"
+    ]
+  },
+  {
+    "pregunta": "A Bronze table stores customer records ingested from multiple source systems. Some systems send the same customer with different `customer_id` formats. Where should deduplication and ID normalization be handled?",
+    "opciones": [
+      {
+        "texto_opcion": "Silver — deduplication and ID normalization are data quality transformations that belong in the Bronze-to-Silver step.",
+        "es_correcta": true,
+        "explicacion": "Silver's purpose is to produce a clean, consistent, deduplicated entity view; cross-system ID resolution is a Silver transformation."
+      },
+      {
+        "texto_opcion": "Bronze — standardize IDs at ingestion so downstream layers use consistent identifiers.",
+        "es_correcta": false,
+        "explicacion": "Transforming data during Bronze ingestion violates the raw-data principle; Bronze should capture source data as-is."
+      },
+      {
+        "texto_opcion": "Gold — only Gold consumers need a unified customer view.",
+        "es_correcta": false,
+        "explicacion": "Applying deduplication only at Gold means multiple Silver tables will contain inconsistent customer records, causing redundant logic."
+      },
+      {
+        "texto_opcion": "It should be handled in the source system before ingestion begins.",
+        "es_correcta": false,
+        "explicacion": "While ideal, data engineers cannot always control source systems; Medallion Architecture accommodates this by placing the logic in Silver."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Silver",
+      "Design Decisions"
+    ]
+  },
+  {
+    "pregunta": "An engineer designs a Medallion pipeline where the Bronze table uses `DEEP CLONE` to copy a source Delta table nightly. Which statement is correct about this design?",
+    "opciones": [
+      {
+        "texto_opcion": "It is a valid Bronze pattern — `DEEP CLONE` creates an independent copy of the source data in the Bronze layer.",
+        "es_correcta": true,
+        "explicacion": "`DEEP CLONE` copies both data files and the Delta transaction log, creating a fully independent Bronze replica that can be used for downstream transformations."
+      },
+      {
+        "texto_opcion": "It is invalid because Bronze must only use streaming ingestion, not batch copies.",
+        "es_correcta": false,
+        "explicacion": "Bronze supports both batch and streaming ingestion patterns; `DEEP CLONE` is a valid batch approach."
+      },
+      {
+        "texto_opcion": "It is invalid because `DEEP CLONE` merges data with existing records rather than creating a copy.",
+        "es_correcta": false,
+        "explicacion": "`DEEP CLONE` creates a full independent copy; it does not perform a merge operation."
+      },
+      {
+        "texto_opcion": "It is invalid because `DEEP CLONE` only copies the schema, not the actual data files.",
+        "es_correcta": false,
+        "explicacion": "`DEEP CLONE` copies both data files and metadata. `SHALLOW CLONE` copies only metadata with file references."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Bronze",
+      "Delta Lake"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must decide whether to apply a SCD Type 2 (slowly changing dimension) pattern to customer records. In which Medallion layer does this logic most appropriately belong?",
+    "opciones": [
+      {
+        "texto_opcion": "Silver — SCD Type 2 produces a versioned, historical record of entity changes, which is a Silver-level concern.",
+        "es_correcta": true,
+        "explicacion": "Silver maintains historical accuracy of entities using patterns like SCD Type 2 (with `effective_from`, `effective_to` columns), providing a reliable history for Gold aggregations."
+      },
+      {
+        "texto_opcion": "Bronze — SCD Type 2 must be applied at ingestion to capture every change from the source.",
+        "es_correcta": false,
+        "explicacion": "Bronze stores raw source data; applying SCD logic at ingestion would transform the data, violating the Bronze principle."
+      },
+      {
+        "texto_opcion": "Gold — SCD Type 2 is an aggregation pattern used for reporting.",
+        "es_correcta": false,
+        "explicacion": "SCD Type 2 is an entity modeling pattern, not an aggregation; it belongs in Silver where entity history is managed."
+      },
+      {
+        "texto_opcion": "SCD Type 2 is not compatible with Delta Lake and should not be used in a Medallion Architecture.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake's `MERGE INTO` statement is well-suited for implementing SCD Type 2 patterns in Silver."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Silver",
+      "Design Decisions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer notices the Gold pipeline is slow because it re-aggregates the entire Silver table on every run. Which design change would most improve performance while keeping data current?",
+    "opciones": [
+      {
+        "texto_opcion": "Replace the batch Gold table with a materialized view that supports incremental refresh.",
+        "es_correcta": true,
+        "explicacion": "Materialized views in Databricks incrementally process only changed Silver data, avoiding full recomputation on every run."
+      },
+      {
+        "texto_opcion": "Increase the cluster size to run the full aggregation faster each night.",
+        "es_correcta": false,
+        "explicacion": "Scaling the cluster speeds up the run but does not change the O(n) full-scan problem; the correct fix is incremental processing."
+      },
+      {
+        "texto_opcion": "Move the aggregation logic to Bronze so it runs closer to the source.",
+        "es_correcta": false,
+        "explicacion": "Aggregations do not belong in Bronze; this would also still process all data on every run."
+      },
+      {
+        "texto_opcion": "Cache the Silver table in memory before running Gold aggregations.",
+        "es_correcta": false,
+        "explicacion": "Caching reduces repeated scans within a single run but does not provide incremental processing across runs."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Gold",
+      "Optimization"
+    ]
+  },
+  {
+    "pregunta": "The following pipeline reads from Bronze and writes to Gold, skipping Silver entirely:\n\n```python\ndf = spark.read.table(\"bronze.transactions\")\n(\n    df.filter(df.amount > 0)\n      .groupBy(\"merchant_id\")\n      .agg(sum(\"amount\").alias(\"total_sales\"))\n      .write.format(\"delta\")\n      .mode(\"overwrite\")\n      .saveAsTable(\"gold.merchant_totals\")\n)\n```\n\nWhat is the main risk of this design?",
+    "opciones": [
+      {
+        "texto_opcion": "Aggregating directly from Bronze means the Gold table may include duplicates, nulls, or malformed data from the raw source.",
+        "es_correcta": true,
+        "explicacion": "Skipping Silver means no deduplication, null handling, or type validation occurs before aggregation, so Gold metrics may be inaccurate."
+      },
+      {
+        "texto_opcion": "The code will fail because Gold tables cannot read from Bronze tables directly.",
+        "es_correcta": false,
+        "explicacion": "There is no technical restriction preventing a read from Bronze; the issue is a data quality risk, not a runtime error."
+      },
+      {
+        "texto_opcion": "The pipeline cannot use `overwrite` mode when reading from Bronze.",
+        "es_correcta": false,
+        "explicacion": "`overwrite` mode is valid regardless of the source layer."
+      },
+      {
+        "texto_opcion": "The pipeline will produce incorrect results because `sum` is not supported on Delta tables.",
+        "es_correcta": false,
+        "explicacion": "`sum` is a standard Spark aggregate function fully supported on Delta tables."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Design Decisions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is onboarding a new team member. They ask: \"How many Medallion layers are required in every pipeline?\" What is the correct answer?",
+    "opciones": [
+      {
+        "texto_opcion": "The number of layers is flexible; teams may use two or four layers depending on complexity, though Bronze/Silver/Gold is the standard pattern.",
+        "es_correcta": true,
+        "explicacion": "Medallion Architecture is a design pattern, not a strict rule. Some teams add a landing zone or split Silver into multiple sub-layers for complex pipelines."
+      },
+      {
+        "texto_opcion": "Exactly three layers — Bronze, Silver, Gold — are always required.",
+        "es_correcta": false,
+        "explicacion": "While Bronze/Silver/Gold is the canonical pattern, the architecture is adaptable; simpler pipelines may omit a layer."
+      },
+      {
+        "texto_opcion": "At least four layers are required: Landing, Bronze, Silver, Gold.",
+        "es_correcta": false,
+        "explicacion": "A separate Landing layer is optional; many implementations combine Landing and Bronze into one."
+      },
+      {
+        "texto_opcion": "Only two layers are recommended: Raw and Refined.",
+        "es_correcta": false,
+        "explicacion": "Two-layer pipelines exist but are not the Medallion Architecture pattern; Bronze/Silver/Gold is the three-layer standard."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Design Decisions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to provide analysts with a dataset that joins `silver.orders` and `silver.customers` filtered to the current year. The result is needed immediately and will be queried frequently. Which Gold object is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "Materialized view — the join result is pre-computed and stored for fast repeated access.",
+        "es_correcta": true,
+        "explicacion": "A materialized view stores the pre-computed join result, making frequent queries fast without re-executing the join each time."
+      },
+      {
+        "texto_opcion": "Standard view — it executes the join at query time, always returning the latest data.",
+        "es_correcta": false,
+        "explicacion": "A standard view re-runs the join on every query, which is inefficient for a frequently-queried, large join."
+      },
+      {
+        "texto_opcion": "Streaming table — it provides real-time results from the Silver tables.",
+        "es_correcta": false,
+        "explicacion": "Streaming tables ingest from streams; this use case involves batch Silver tables, not a streaming source."
+      },
+      {
+        "texto_opcion": "Temporary view — it caches the join result for the duration of the analyst's session.",
+        "es_correcta": false,
+        "explicacion": "Temporary views are session-scoped and cannot be shared across analysts or sessions."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Gold",
+      "Design Decisions"
+    ]
+  },
+  {
+    "pregunta": "Which statement correctly describes the relationship between Bronze, Silver, and Gold layers in terms of data latency?",
+    "opciones": [
+      {
+        "texto_opcion": "Bronze typically has the lowest latency since it is the first to receive raw data; Gold has the highest latency due to aggregation processing time.",
+        "es_correcta": true,
+        "explicacion": "Data flows Bronze → Silver → Gold; each layer adds processing time. Bronze data is available soonest after source events occur."
+      },
+      {
+        "texto_opcion": "Gold has the lowest latency because it is pre-aggregated and ready to query without transformation.",
+        "es_correcta": false,
+        "explicacion": "Gold is pre-aggregated, making queries fast, but the data itself arrives last in the pipeline after Bronze and Silver processing."
+      },
+      {
+        "texto_opcion": "All three layers have identical latency because they are populated by the same pipeline run.",
+        "es_correcta": false,
+        "explicacion": "Each layer depends on the previous one completing; Bronze is populated first, then Silver, then Gold — latency increases through the chain."
+      },
+      {
+        "texto_opcion": "Silver has the lowest latency because it skips the raw ingestion step of Bronze.",
+        "es_correcta": false,
+        "explicacion": "Silver cannot be populated until Bronze data exists; it always has higher latency than Bronze."
+      }
+    ],
+    "tags": [
+      "3.1",
+      "Medallion Architecture",
+      "Design Decisions",
+      "Latency"
+    ]
+  }
+]

@@ -1,0 +1,901 @@
+[
+  {
+    "pregunta": "A data engineer has two DataFrames:\n\n`orders_df` (10 million rows) and `customers_df` (500 rows).\n\n```python\nresult = orders_df.join(customers_df, \"customer_id\", \"inner\")\n```\n\nWhich join strategy will Spark most likely use automatically, and why?",
+    "opciones": [
+      {
+        "texto_opcion": "Broadcast join — `customers_df` is small enough to fit under `spark.sql.autoBroadcastJoinThreshold`.",
+        "es_correcta": true,
+        "explicacion": "Spark's Catalyst optimizer automatically broadcasts small tables (default threshold 10MB) to avoid a shuffle."
+      },
+      {
+        "texto_opcion": "Sort-merge join — both DataFrames are always sorted before joining.",
+        "es_correcta": false,
+        "explicacion": "Sort-merge join is the fallback for large-large joins, not when one side is small enough to broadcast."
+      },
+      {
+        "texto_opcion": "Shuffle hash join — Spark prefers this strategy by default for all joins.",
+        "es_correcta": false,
+        "explicacion": "Shuffle hash join is not the default strategy; broadcast join is preferred when one side is small."
+      },
+      {
+        "texto_opcion": "Cross join — Spark falls back to cross join when row counts differ greatly.",
+        "es_correcta": false,
+        "explicacion": "A cross join only occurs without a join condition; here an equality condition on `customer_id` is given."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```python\ndf = df_a.join(df_b, df_a.id == df_b.id, \"left\")\n```\n\nWhat is included in the result?",
+    "opciones": [
+      {
+        "texto_opcion": "All rows from `df_a`, with matching columns from `df_b` or nulls where no match exists.",
+        "es_correcta": true,
+        "explicacion": "A left join preserves every row of the left DataFrame, filling unmatched right-side columns with null."
+      },
+      {
+        "texto_opcion": "Only rows that exist in both `df_a` and `df_b`.",
+        "es_correcta": false,
+        "explicacion": "That describes an inner join, not a left join."
+      },
+      {
+        "texto_opcion": "All rows from `df_b`, with matching columns from `df_a` or nulls where no match exists.",
+        "es_correcta": false,
+        "explicacion": "That describes a right join; here `df_a` is the left side and is fully preserved instead."
+      },
+      {
+        "texto_opcion": "All rows from both DataFrames, including unmatched rows from either side.",
+        "es_correcta": false,
+        "explicacion": "That describes a full outer join, not a left join."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must combine `sales_2024_df` and `sales_2025_df`, which have identical schemas, by stacking rows from both into one DataFrame.\n\nWhich method should be used?",
+    "opciones": [
+      {
+        "texto_opcion": "`sales_2024_df.union(sales_2025_df)`",
+        "es_correcta": true,
+        "explicacion": "`union()` appends rows from one DataFrame to another based on column position, which is appropriate for identical schemas."
+      },
+      {
+        "texto_opcion": "`sales_2024_df.join(sales_2025_df, \"date\")`",
+        "es_correcta": false,
+        "explicacion": "`join()` combines columns based on a key; it does not stack rows."
+      },
+      {
+        "texto_opcion": "`sales_2024_df.crossJoin(sales_2025_df)`",
+        "es_correcta": false,
+        "explicacion": "A cross join produces the Cartesian product of rows, not a row-wise stack."
+      },
+      {
+        "texto_opcion": "`sales_2024_df.merge(sales_2025_df)`",
+        "es_correcta": false,
+        "explicacion": "`merge()` is not a PySpark DataFrame method."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to join `transactions_df` and `accounts_df` on both `account_id` and `region`, since `account_id` alone is not unique across regions.\n\nWhich code correctly performs this join?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\ntransactions_df.join(\n    accounts_df,\n    [\"account_id\", \"region\"],\n    \"inner\"\n)\n```",
+        "es_correcta": true,
+        "explicacion": "Passing a list of column names joins on all listed keys simultaneously, which is required when a single key isn't unique."
+      },
+      {
+        "texto_opcion": "```python\ntransactions_df.join(\n    accounts_df, \"account_id\"\n).join(accounts_df, \"region\")\n```",
+        "es_correcta": false,
+        "explicacion": "This joins `accounts_df` twice, producing duplicated and ambiguous columns instead of a single multi-key join."
+      },
+      {
+        "texto_opcion": "```python\ntransactions_df.join(\n    accounts_df,\n    \"account_id\" and \"region\"\n)\n```",
+        "es_correcta": false,
+        "explicacion": "Using `and` between strings evaluates to just `\"region\"` in Python, so only one key is actually used."
+      },
+      {
+        "texto_opcion": "```python\ntransactions_df.union(accounts_df)\n```",
+        "es_correcta": false,
+        "explicacion": "`union()` stacks rows; it cannot combine columns from two different DataFrames based on keys."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to find all customers in `customers_df` who have never placed an order in `orders_df`.\n\nWhich join type should be used?",
+    "opciones": [
+      {
+        "texto_opcion": "Left anti join.",
+        "es_correcta": true,
+        "explicacion": "A `left_anti` join returns only rows from the left DataFrame that have no match in the right DataFrame."
+      },
+      {
+        "texto_opcion": "Left semi join.",
+        "es_correcta": false,
+        "explicacion": "A `left_semi` join returns left rows that DO have a match, the opposite of what's needed here."
+      },
+      {
+        "texto_opcion": "Inner join.",
+        "es_correcta": false,
+        "explicacion": "An inner join only returns matching rows, excluding the customers with no orders."
+      },
+      {
+        "texto_opcion": "Cross join.",
+        "es_correcta": false,
+        "explicacion": "A cross join produces every combination of rows and is unrelated to finding unmatched records."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer joins two large DataFrames with no broadcast candidate:\n\n```python\nbig_a.join(big_b, \"id\")\n```\n\nWhich physical strategy does Spark use by default for this large-to-large join?",
+    "opciones": [
+      {
+        "texto_opcion": "Sort-merge join.",
+        "es_correcta": true,
+        "explicacion": "When both sides are too large to broadcast, Spark's default strategy shuffles and sorts both sides, then merges matching keys."
+      },
+      {
+        "texto_opcion": "Broadcast hash join.",
+        "es_correcta": false,
+        "explicacion": "Broadcast joins require one side to be small enough to fit in memory on every executor, which is not the case here."
+      },
+      {
+        "texto_opcion": "Nested loop join.",
+        "es_correcta": false,
+        "explicacion": "Nested loop join is typically used for non-equi joins or cross joins, not standard equality joins on large tables."
+      },
+      {
+        "texto_opcion": "Cartesian join.",
+        "es_correcta": false,
+        "explicacion": "A Cartesian/cross join only happens without an equality condition; here an explicit join key is provided."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following and gets an `AnalysisException: Reference 'id' is ambiguous`:\n\n```python\ndf_a.join(df_b, df_a.id == df_b.id).select(\"id\")\n```\n\nWhat is the best fix?",
+    "opciones": [
+      {
+        "texto_opcion": "Use the simplified join syntax `df_a.join(df_b, \"id\")`, which keeps only one `id` column.",
+        "es_correcta": true,
+        "explicacion": "Joining on a column name string (instead of an explicit equality condition) deduplicates the join key in the result automatically."
+      },
+      {
+        "texto_opcion": "Add `.distinct()` after the join to remove the duplicate column.",
+        "es_correcta": false,
+        "explicacion": "`distinct()` removes duplicate rows, not duplicate columns; it does not resolve column ambiguity."
+      },
+      {
+        "texto_opcion": "Replace `select(\"id\")` with `select(\"*\")`.",
+        "es_correcta": false,
+        "explicacion": "Selecting all columns does not resolve the ambiguity of referencing `id` and still results in two `id` columns."
+      },
+      {
+        "texto_opcion": "Cast the `id` column to a different data type before joining.",
+        "es_correcta": false,
+        "explicacion": "Changing the data type does not address the underlying issue of duplicate column names after the join."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to combine `df_2024` and `df_2025`, which have the same columns but in a different order.\n\nWhich method correctly stacks the rows by matching column names rather than position?",
+    "opciones": [
+      {
+        "texto_opcion": "`df_2024.unionByName(df_2025)`",
+        "es_correcta": true,
+        "explicacion": "`unionByName()` resolves columns by name instead of position, avoiding misaligned data when column order differs."
+      },
+      {
+        "texto_opcion": "`df_2024.union(df_2025)`",
+        "es_correcta": false,
+        "explicacion": "`union()` resolves columns purely by position, which would misalign data here since the column order differs."
+      },
+      {
+        "texto_opcion": "`df_2024.join(df_2025, how=\"outer\")`",
+        "es_correcta": false,
+        "explicacion": "A join combines columns based on a key; it does not stack rows from two DataFrames."
+      },
+      {
+        "texto_opcion": "`df_2024.concat(df_2025)`",
+        "es_correcta": false,
+        "explicacion": "`concat()` is not a DataFrame-level method in PySpark for combining DataFrames."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to generate every possible combination of `products_df` rows with `promotions_df` rows for a test dataset, regardless of any matching key.\n\nWhich join should be used?",
+    "opciones": [
+      {
+        "texto_opcion": "`products_df.crossJoin(promotions_df)`",
+        "es_correcta": true,
+        "explicacion": "`crossJoin()` produces the Cartesian product, pairing every row of one DataFrame with every row of the other."
+      },
+      {
+        "texto_opcion": "`products_df.join(promotions_df, \"product_id\", \"outer\")`",
+        "es_correcta": false,
+        "explicacion": "An outer join only returns rows based on key matches (plus unmatched rows with nulls), not every combination."
+      },
+      {
+        "texto_opcion": "`products_df.join(promotions_df, \"product_id\", \"inner\")`",
+        "es_correcta": false,
+        "explicacion": "An inner join restricts results to matching keys, the opposite of generating all combinations."
+      },
+      {
+        "texto_opcion": "`products_df.union(promotions_df)`",
+        "es_correcta": false,
+        "explicacion": "`union()` stacks rows vertically; it does not produce combinations of rows from two DataFrames."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "Sample of `employees_df`:\n\n| emp_id | name  | dept_id |\n|--------|-------|---------|\n| 1      | Ana   | 10      |\n| 2      | Luis  | 20      |\n| 3      | Marta | NULL    |\n\nSample of `departments_df`:\n\n| dept_id | dept_name |\n|---------|-----------|\n| 10      | Sales     |\n| 20      | IT        |\n\nA data engineer runs `employees_df.join(departments_df, \"dept_id\", \"left\")`. How many rows appear in the result, and what is `dept_name` for Marta?",
+    "opciones": [
+      {
+        "texto_opcion": "3 rows; Marta's `dept_name` is null.",
+        "es_correcta": true,
+        "explicacion": "A left join keeps all rows from `employees_df`; since Marta's `dept_id` is null and has no match, `dept_name` becomes null."
+      },
+      {
+        "texto_opcion": "2 rows; Marta is excluded because her `dept_id` is null.",
+        "es_correcta": false,
+        "explicacion": "A left join preserves all left-side rows regardless of whether the join key matches, so Marta is still included."
+      },
+      {
+        "texto_opcion": "3 rows; Marta's `dept_name` defaults to an empty string.",
+        "es_correcta": false,
+        "explicacion": "Spark fills unmatched columns with null, not an empty string."
+      },
+      {
+        "texto_opcion": "4 rows; an extra row is created for the unmatched department.",
+        "es_correcta": false,
+        "explicacion": "A left join never adds rows beyond what exists in the left DataFrame; only existing rows are preserved."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer joins two DataFrames where the join column has different names (`cust_id` in `orders_df`, `customer_id` in `customers_df`):\n\n```python\norders_df.join(\n    customers_df,\n    orders_df.cust_id == customers_df.customer_id,\n    \"inner\"\n)\n```\n\nWhat is the result regarding the join columns?",
+    "opciones": [
+      {
+        "texto_opcion": "Both `cust_id` and `customer_id` appear as separate columns in the output.",
+        "es_correcta": true,
+        "explicacion": "When joining on an explicit equality expression between differently named columns, Spark keeps both columns since there is no ambiguity to resolve."
+      },
+      {
+        "texto_opcion": "Only `cust_id` appears; `customer_id` is automatically dropped.",
+        "es_correcta": false,
+        "explicacion": "Spark does not drop either column automatically when the join expression uses two distinct column names."
+      },
+      {
+        "texto_opcion": "The columns are merged into a single column named `id`.",
+        "es_correcta": false,
+        "explicacion": "Spark never renames or merges join columns into a new name automatically."
+      },
+      {
+        "texto_opcion": "The join fails because the column names do not match.",
+        "es_correcta": false,
+        "explicacion": "Joining with an explicit equality condition works regardless of whether column names match."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to identify which `products_df` rows DO have at least one matching row in `inventory_df`, returning only columns from `products_df`.\n\nWhich join type is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "Left semi join.",
+        "es_correcta": true,
+        "explicacion": "`left_semi` returns rows from the left DataFrame that have a match in the right one, without including right-side columns."
+      },
+      {
+        "texto_opcion": "Left anti join.",
+        "es_correcta": false,
+        "explicacion": "`left_anti` returns rows with NO match, the opposite of what is needed here."
+      },
+      {
+        "texto_opcion": "Right join.",
+        "es_correcta": false,
+        "explicacion": "A right join preserves all rows from `inventory_df`, not just matched `products_df` rows."
+      },
+      {
+        "texto_opcion": "Full outer join.",
+        "es_correcta": false,
+        "explicacion": "A full outer join would include unmatched rows from both sides and all columns, which is more than required."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer explicitly forces a broadcast join:\n\n```python\nfrom pyspark.sql.functions import broadcast\nresult = large_df.join(broadcast(small_df), \"id\")\n```\n\nWhat is the main risk of this approach?",
+    "opciones": [
+      {
+        "texto_opcion": "If `small_df` is actually large, executors may run out of memory broadcasting it to all nodes.",
+        "es_correcta": true,
+        "explicacion": "Broadcasting sends a full copy of the DataFrame to every executor; if it's larger than expected, this can cause out-of-memory errors."
+      },
+      {
+        "texto_opcion": "The join will silently drop rows with null keys.",
+        "es_correcta": false,
+        "explicacion": "Dropping null-key rows is standard inner join behavior, unrelated to broadcasting specifically."
+      },
+      {
+        "texto_opcion": "Broadcast joins always produce incorrect results for inner joins.",
+        "es_correcta": false,
+        "explicacion": "Broadcast joins produce the same logical result as other join strategies; they only change execution, not correctness."
+      },
+      {
+        "texto_opcion": "The `broadcast()` hint disables predicate pushdown.",
+        "es_correcta": false,
+        "explicacion": "Broadcasting and predicate pushdown are unrelated optimization mechanisms."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must merge `df_a` and `df_b`, which have a different number of columns, by stacking their rows.\n\nWhat happens if `df_a.union(df_b)` is executed?",
+    "opciones": [
+      {
+        "texto_opcion": "An `AnalysisException` is raised because the number of columns must match.",
+        "es_correcta": true,
+        "explicacion": "`union()` requires both DataFrames to have the same number of columns; a mismatch raises an analysis error."
+      },
+      {
+        "texto_opcion": "Spark fills the missing columns with null automatically.",
+        "es_correcta": false,
+        "explicacion": "`union()` does not auto-fill missing columns; the schemas must already align in column count."
+      },
+      {
+        "texto_opcion": "The extra columns from the larger DataFrame are silently dropped.",
+        "es_correcta": false,
+        "explicacion": "Spark does not silently drop columns to make a union work; it raises an exception instead."
+      },
+      {
+        "texto_opcion": "The operation succeeds and produces a wide DataFrame with all columns from both sides.",
+        "es_correcta": false,
+        "explicacion": "`union()` stacks rows under existing columns by position; it does not widen the schema."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs all rows from both `current_inventory_df` and `new_shipments_df`, matched on `sku`, including unmatched rows from either side with nulls filled in for missing columns.\n\nWhich join type should be used?",
+    "opciones": [
+      {
+        "texto_opcion": "Full outer join.",
+        "es_correcta": true,
+        "explicacion": "A full outer join returns all rows from both DataFrames, filling unmatched columns with null on either side."
+      },
+      {
+        "texto_opcion": "Inner join.",
+        "es_correcta": false,
+        "explicacion": "An inner join only returns rows present in both DataFrames, excluding unmatched rows."
+      },
+      {
+        "texto_opcion": "Left semi join.",
+        "es_correcta": false,
+        "explicacion": "A left semi join only returns matched rows from the left side, without columns from the right and without unmatched rows."
+      },
+      {
+        "texto_opcion": "Left anti join.",
+        "es_correcta": false,
+        "explicacion": "A left anti join only returns unmatched left-side rows, not all rows from both sides."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer notices a join is very slow and the Spark UI shows a large shuffle with significant data skew on the join key.\n\nWhich approach is most likely to improve performance?",
+    "opciones": [
+      {
+        "texto_opcion": "Salt the skewed key to distribute it across more partitions before joining.",
+        "es_correcta": true,
+        "explicacion": "Salting adds randomness to a skewed key, spreading the heavy key's rows across multiple partitions to balance the shuffle."
+      },
+      {
+        "texto_opcion": "Switch the join order from `df_a.join(df_b)` to `df_b.join(df_a)`.",
+        "es_correcta": false,
+        "explicacion": "Simply reversing join order does not address data skew on the join key itself."
+      },
+      {
+        "texto_opcion": "Use `union()` instead of `join()` to avoid the shuffle.",
+        "es_correcta": false,
+        "explicacion": "`union()` performs a fundamentally different operation and cannot replace a join based on keys."
+      },
+      {
+        "texto_opcion": "Convert both DataFrames to RDDs before joining.",
+        "es_correcta": false,
+        "explicacion": "Converting to RDDs loses Catalyst optimizations and does not resolve key skew."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "What does the following code return?\n\n```python\ndf_a.join(df_b, df_a.key == df_b.key, \"right\")\n```",
+    "opciones": [
+      {
+        "texto_opcion": "All rows from `df_b`, with matching `df_a` columns or nulls where there is no match.",
+        "es_correcta": true,
+        "explicacion": "A right join preserves every row of the right DataFrame (`df_b`), filling unmatched left-side columns with null."
+      },
+      {
+        "texto_opcion": "All rows from `df_a`, with matching `df_b` columns or nulls where there is no match.",
+        "es_correcta": false,
+        "explicacion": "That describes a left join; here `df_b` is on the right side and is the one fully preserved."
+      },
+      {
+        "texto_opcion": "Only rows present in both DataFrames.",
+        "es_correcta": false,
+        "explicacion": "That describes an inner join, not a right join."
+      },
+      {
+        "texto_opcion": "Every combination of rows from `df_a` and `df_b`.",
+        "es_correcta": false,
+        "explicacion": "That describes a cross join; a right join uses the equality condition on `key` to match rows."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to remove duplicate rows after a union of two DataFrames with identical schemas that may overlap.\n\nWhich code achieves this correctly?",
+    "opciones": [
+      {
+        "texto_opcion": "`df_a.union(df_b).dropDuplicates()`",
+        "es_correcta": true,
+        "explicacion": "`union()` stacks the rows and `dropDuplicates()` removes exact duplicate rows from the combined result."
+      },
+      {
+        "texto_opcion": "`df_a.join(df_b, how=\"inner\").distinct()`",
+        "es_correcta": false,
+        "explicacion": "A join without a key condition produces a Cartesian product, which is not the same as stacking and deduplicating rows."
+      },
+      {
+        "texto_opcion": "`df_a.union(df_b).distinct().join(df_b)`",
+        "es_correcta": false,
+        "explicacion": "Joining again after deduplication is unnecessary and would reintroduce duplicate or mismatched rows."
+      },
+      {
+        "texto_opcion": "`df_a.unionAll(df_b)`",
+        "es_correcta": false,
+        "explicacion": "`unionAll()` is an alias for `union()` and does not remove duplicates by itself."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer increases `spark.sql.autoBroadcastJoinThreshold` from its default to a higher value before running a join between a 50MB table and a 2GB table.\n\nWhat is the most likely effect?",
+    "opciones": [
+      {
+        "texto_opcion": "The 50MB table now qualifies for a broadcast join, avoiding a full shuffle.",
+        "es_correcta": true,
+        "explicacion": "Raising the threshold above the smaller table's size allows the optimizer to broadcast it instead of using sort-merge join."
+      },
+      {
+        "texto_opcion": "Both tables will be broadcast to all executors.",
+        "es_correcta": false,
+        "explicacion": "Only the side under the threshold is broadcast; the 2GB table remains too large to broadcast."
+      },
+      {
+        "texto_opcion": "The join automatically switches to a cross join.",
+        "es_correcta": false,
+        "explicacion": "Changing the broadcast threshold has no effect on whether a cross join is used; that depends on the join condition."
+      },
+      {
+        "texto_opcion": "The query fails because the threshold exceeds executor memory.",
+        "es_correcta": false,
+        "explicacion": "Increasing the threshold does not automatically cause a failure; it simply changes which join strategy is chosen."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to disable broadcast joins entirely for a specific query to force a sort-merge join for testing.\n\nWhich configuration achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "`spark.conf.set(\"spark.sql.autoBroadcastJoinThreshold\", \"-1\")`",
+        "es_correcta": true,
+        "explicacion": "Setting the broadcast threshold to -1 disables automatic broadcasting, forcing Spark to use a shuffle-based join strategy."
+      },
+      {
+        "texto_opcion": "`spark.conf.set(\"spark.sql.shuffle.partitions\", \"-1\")`",
+        "es_correcta": false,
+        "explicacion": "This configuration controls the number of shuffle partitions, not whether broadcast joins are used."
+      },
+      {
+        "texto_opcion": "`spark.conf.set(\"spark.sql.join.preferSortMergeJoin\", \"true\")`",
+        "es_correcta": false,
+        "explicacion": "This is not a valid or standard Spark configuration property."
+      },
+      {
+        "texto_opcion": "`df.join(other, \"id\").disableBroadcast()`",
+        "es_correcta": false,
+        "explicacion": "`disableBroadcast()` is not a real DataFrame method."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "Sample of `orders_df`:\n\n| order_id | cust_id |\n|----------|---------|\n| 1        | c1      |\n| 2        | c2      |\n| 3        | c1      |\n\nSample of `customers_df`:\n\n| cust_id | name |\n|---------|------|\n| c1      | Ana  |\n\nA data engineer runs `orders_df.join(customers_df, \"cust_id\", \"inner\")`. How many rows does the result contain?",
+    "opciones": [
+      {
+        "texto_opcion": "2 rows — only orders matching `c1`.",
+        "es_correcta": true,
+        "explicacion": "An inner join keeps only matching keys; only order_id 1 and 3 match `cust_id` c1, since c2 has no match."
+      },
+      {
+        "texto_opcion": "3 rows — all orders are kept regardless of match.",
+        "es_correcta": false,
+        "explicacion": "An inner join excludes unmatched rows; order_id 2 (`c2`) has no match and is dropped."
+      },
+      {
+        "texto_opcion": "1 row — only the first matching order is returned.",
+        "es_correcta": false,
+        "explicacion": "An inner join returns all matching rows, not just the first one found."
+      },
+      {
+        "texto_opcion": "0 rows — the join fails since `customers_df` is missing `c2`.",
+        "es_correcta": false,
+        "explicacion": "Missing keys do not cause the entire join to fail; rows with matches are still returned."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to join `df_a` and `df_b` where `df_a.amount` is greater than `df_b.threshold` (a non-equality condition).\n\nWhich code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`df_a.join(df_b, df_a.amount > df_b.threshold)`",
+        "es_correcta": true,
+        "explicacion": "Join conditions can use any boolean expression, including non-equality comparisons like greater-than."
+      },
+      {
+        "texto_opcion": "`df_a.join(df_b, \"amount > threshold\")`",
+        "es_correcta": false,
+        "explicacion": "Passing a raw string like this is treated as a column name, not a SQL expression, and will raise an error."
+      },
+      {
+        "texto_opcion": "`df_a.join(df_b, [\"amount\", \"threshold\"])`",
+        "es_correcta": false,
+        "explicacion": "Passing a list of column names performs an equality join on those columns, not a greater-than comparison."
+      },
+      {
+        "texto_opcion": "Non-equality joins are not supported in PySpark.",
+        "es_correcta": false,
+        "explicacion": "PySpark fully supports non-equality (theta) joins through expression-based join conditions."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants the final DataFrame to contain `customers_df.id` from a join with `orders_df`, but `orders_df` also has a column named `id` (a different entity) that should be kept under a different name.\n\nWhich approach avoids ambiguity?",
+    "opciones": [
+      {
+        "texto_opcion": "Rename `orders_df`'s `id` column with `.withColumnRenamed(\"id\", \"order_id\")` before joining.",
+        "es_correcta": true,
+        "explicacion": "Renaming the conflicting column before the join avoids ambiguity since both DataFrames will then have unique column names."
+      },
+      {
+        "texto_opcion": "Run `.distinct()` on the joined result.",
+        "es_correcta": false,
+        "explicacion": "`distinct()` removes duplicate rows; it does not resolve naming conflicts between columns."
+      },
+      {
+        "texto_opcion": "Cast both `id` columns to the same data type.",
+        "es_correcta": false,
+        "explicacion": "Matching data types does not resolve the issue of two columns sharing the same name."
+      },
+      {
+        "texto_opcion": "Use `crossJoin()` instead of `join()`.",
+        "es_correcta": false,
+        "explicacion": "A cross join still includes both `id` columns and does not address naming ambiguity; it also changes the join semantics entirely."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is choosing between `left_semi` and `inner` joins to filter `products_df` rows that have related rows in `sales_df`, without needing any columns from `sales_df`.\n\nWhich statement correctly compares them for this use case?",
+    "opciones": [
+      {
+        "texto_opcion": "`left_semi` avoids row duplication when a product has multiple matching sales rows; `inner` would duplicate the product row for each match.",
+        "es_correcta": true,
+        "explicacion": "An inner join produces one output row per matching pair, duplicating the left row for each match, while `left_semi` returns each matching left row only once."
+      },
+      {
+        "texto_opcion": "Both produce identical results in every case, so there is no practical difference.",
+        "es_correcta": false,
+        "explicacion": "They differ when a left row matches multiple right rows: inner duplicates the row, left_semi does not."
+      },
+      {
+        "texto_opcion": "`inner` only works with a single join key, while `left_semi` supports multiple keys.",
+        "es_correcta": false,
+        "explicacion": "Both join types support single or multiple join keys equally."
+      },
+      {
+        "texto_opcion": "`left_semi` includes columns from `sales_df`, while `inner` does not.",
+        "es_correcta": false,
+        "explicacion": "It's the opposite: `left_semi` returns only left-side columns, while `inner` includes columns from both sides."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following and notices the result has more rows than expected:\n\n```python\nresult = df_a.join(df_b, \"id\")\n```\n\nWhat is the most likely cause?",
+    "opciones": [
+      {
+        "texto_opcion": "`df_b` contains duplicate `id` values, causing each match in `df_a` to be duplicated for every matching row.",
+        "es_correcta": true,
+        "explicacion": "When the join key is not unique on one side, every matching combination produces a separate output row, inflating the row count."
+      },
+      {
+        "texto_opcion": "The default join type is `outer`, which always increases row counts.",
+        "es_correcta": false,
+        "explicacion": "The default join type in PySpark is `inner`, not `outer`."
+      },
+      {
+        "texto_opcion": "`join()` always doubles the row count regardless of data.",
+        "es_correcta": false,
+        "explicacion": "Row count changes depend on key uniqueness and matches, not a fixed doubling behavior."
+      },
+      {
+        "texto_opcion": "Spark automatically adds a cross join fallback when row counts seem too low.",
+        "es_correcta": false,
+        "explicacion": "Spark does not silently fall back to cross joins; this would require an explicit `crossJoin()` call or join without a condition."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to combine three DataFrames (`q1_df`, `q2_df`, `q3_df`) with identical schemas into a single DataFrame by stacking rows.\n\nWhich code is correct and idiomatic?",
+    "opciones": [
+      {
+        "texto_opcion": "`q1_df.union(q2_df).union(q3_df)`",
+        "es_correcta": true,
+        "explicacion": "Chaining `union()` calls is the standard way to stack multiple DataFrames with matching schemas."
+      },
+      {
+        "texto_opcion": "`q1_df.join(q2_df).join(q3_df)`",
+        "es_correcta": false,
+        "explicacion": "Joining combines columns based on keys; it does not stack rows and would require join conditions."
+      },
+      {
+        "texto_opcion": "`[q1_df, q2_df, q3_df].union()`",
+        "es_correcta": false,
+        "explicacion": "`union()` is not a method on a Python list; it must be called on a DataFrame."
+      },
+      {
+        "texto_opcion": "`q1_df.crossJoin(q2_df).crossJoin(q3_df)`",
+        "es_correcta": false,
+        "explicacion": "Cross joins produce Cartesian products, not a simple row-wise stack of the three DataFrames."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is debugging a join that should return rows where `df_a.id` matches `df_b.id` OR `df_a.alt_id` matches `df_b.id`.\n\nWhich code correctly expresses this condition?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\ndf_a.join(\n    df_b,\n    (df_a.id == df_b.id) |\n    (df_a.alt_id == df_b.id)\n)\n```",
+        "es_correcta": true,
+        "explicacion": "The `|` operator combines two equality conditions with OR logic inside a single join expression."
+      },
+      {
+        "texto_opcion": "```python\ndf_a.join(df_b, [\"id\", \"alt_id\"])\n```",
+        "es_correcta": false,
+        "explicacion": "Passing a list of columns requires ALL of them to match (AND logic), not an OR condition."
+      },
+      {
+        "texto_opcion": "```python\ndf_a.join(df_b, \"id\").union(\n    df_a.join(df_b, \"alt_id\")\n)\n```",
+        "es_correcta": false,
+        "explicacion": "This produces duplicated rows for cases that match both conditions and is not equivalent to a single OR join."
+      },
+      {
+        "texto_opcion": "```python\ndf_a.join(df_b, df_a.id == df_b.id and df_a.alt_id == df_b.id)\n```",
+        "es_correcta": false,
+        "explicacion": "Using Python's `and` keyword does not work correctly with Column expressions and also implies AND, not OR, logic."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to keep all columns from `df_a` and `df_b` after an inner join on `id`, including two separate `id` columns, for auditing purposes.\n\nWhich join syntax preserves both `id` columns separately?",
+    "opciones": [
+      {
+        "texto_opcion": "`df_a.join(df_b, df_a[\"id\"] == df_b[\"id\"], \"inner\")`",
+        "es_correcta": true,
+        "explicacion": "Using an explicit column equality expression (rather than a string or list of names) keeps both `id` columns in the output."
+      },
+      {
+        "texto_opcion": "`df_a.join(df_b, \"id\", \"inner\")`",
+        "es_correcta": false,
+        "explicacion": "Joining on a column name string merges the join key into a single column, dropping the duplicate."
+      },
+      {
+        "texto_opcion": "`df_a.join(df_b, [\"id\"], \"inner\")`",
+        "es_correcta": false,
+        "explicacion": "Passing a list of column names also merges the join key into a single column, same as the string form."
+      },
+      {
+        "texto_opcion": "`df_a.unionByName(df_b)`",
+        "es_correcta": false,
+        "explicacion": "`unionByName()` stacks rows by matching column names; it does not perform a join or preserve two separate id columns."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must combine `legacy_df` (missing a `region` column) with `current_df` (which has `region`) by stacking rows, allowing the missing column to be filled with null automatically.\n\nWhich method handles this correctly?",
+    "opciones": [
+      {
+        "texto_opcion": "`legacy_df.unionByName(current_df, allowMissingColumns=True)`",
+        "es_correcta": true,
+        "explicacion": "Setting `allowMissingColumns=True` lets `unionByName()` fill columns absent in one DataFrame with null automatically."
+      },
+      {
+        "texto_opcion": "`legacy_df.union(current_df)`",
+        "es_correcta": false,
+        "explicacion": "`union()` requires both DataFrames to have the same number of columns and does not auto-fill missing ones."
+      },
+      {
+        "texto_opcion": "`legacy_df.unionByName(current_df)`",
+        "es_correcta": false,
+        "explicacion": "Without `allowMissingColumns=True`, `unionByName()` raises an error if column sets differ."
+      },
+      {
+        "texto_opcion": "`legacy_df.join(current_df, \"region\", \"outer\")`",
+        "es_correcta": false,
+        "explicacion": "A join combines columns based on a key rather than stacking rows, and would not produce the desired row-wise union."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs `df_a.crossJoin(df_b)` where `df_a` has 1,000 rows and `df_b` has 1,000 rows.\n\nHow many rows does the result contain, and what is the main concern?",
+    "opciones": [
+      {
+        "texto_opcion": "1,000,000 rows; the main concern is the explosive growth in result size and compute cost.",
+        "es_correcta": true,
+        "explicacion": "A cross join multiplies row counts (1,000 x 1,000), which can quickly become very expensive on larger DataFrames."
+      },
+      {
+        "texto_opcion": "2,000 rows; the main concern is duplicate column names.",
+        "es_correcta": false,
+        "explicacion": "A cross join produces the Cartesian product (multiplication), not a simple addition of row counts."
+      },
+      {
+        "texto_opcion": "1,000 rows; the main concern is missing matches.",
+        "es_correcta": false,
+        "explicacion": "A cross join is not limited to one row per left row; it pairs every row with every other row."
+      },
+      {
+        "texto_opcion": "0 rows unless a join key is specified.",
+        "es_correcta": false,
+        "explicacion": "`crossJoin()` does not require or use a join key; it always returns the full Cartesian product."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  },
+  {
+    "pregunta": "Which scenario best justifies using a left anti join instead of filtering with a `NOT IN` subquery in Spark SQL?",
+    "opciones": [
+      {
+        "texto_opcion": "When comparing large DataFrames, since `left_anti` is generally optimized better by Catalyst than correlated subqueries.",
+        "es_correcta": true,
+        "explicacion": "Anti joins are typically translated into efficient join-based physical plans, while `NOT IN` subqueries can be harder for the optimizer to plan efficiently at scale."
+      },
+      {
+        "texto_opcion": "When the two DataFrames have completely different schemas with no common columns.",
+        "es_correcta": false,
+        "explicacion": "A join (including anti join) still requires a common key to compare; schema mismatch is unrelated to the choice between anti join and `NOT IN`."
+      },
+      {
+        "texto_opcion": "When duplicate rows in the result are required.",
+        "es_correcta": false,
+        "explicacion": "Anti joins return each unmatched left row exactly once; neither approach is meant to produce duplicates."
+      },
+      {
+        "texto_opcion": "When the right-side DataFrame must be included in the final output.",
+        "es_correcta": false,
+        "explicacion": "Anti joins explicitly exclude right-side columns from the output, the opposite of including them."
+      }
+    ],
+    "tags": [
+      "3.3",
+      "DataFrame Joins"
+    ]
+  }
+]

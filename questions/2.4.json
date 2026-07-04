@@ -1,0 +1,901 @@
+[
+  {
+    "pregunta": "A data engineer wants to ingest data from a Salesforce CRM system into a Databricks lakehouse using Lakeflow Connect. Which type of connector should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "A managed connector, because Salesforce is a supported SaaS source handled by Databricks.",
+        "es_correcta": true,
+        "explicacion": "Managed connectors in Lakeflow Connect cover SaaS applications like Salesforce, handling authentication, scheduling, and schema evolution automatically."
+      },
+      {
+        "texto_opcion": "A standard connector, because Salesforce exposes a REST API.",
+        "es_correcta": false,
+        "explicacion": "Standard connectors target database sources (JDBC-based), not SaaS APIs. Salesforce falls under managed connectors."
+      },
+      {
+        "texto_opcion": "A custom connector built with the Databricks Partner Connect framework.",
+        "es_correcta": false,
+        "explicacion": "Partner Connect is a marketplace integration tool, not a Lakeflow Connect connector type."
+      },
+      {
+        "texto_opcion": "An Auto Loader pipeline, because it continuously monitors cloud storage for new files.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader handles file-based ingestion from cloud storage, not SaaS API sources like Salesforce."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is setting up a Lakeflow Connect pipeline to ingest from a MySQL database. The team needs the pipeline to replicate all changes (inserts, updates, deletes) continuously. Which ingestion mode should the engineer configure?",
+    "opciones": [
+      {
+        "texto_opcion": "CDC (Change Data Capture) mode using the database's binary log.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect standard connectors support CDC via binary log replication to capture all DML changes continuously from supported databases like MySQL."
+      },
+      {
+        "texto_opcion": "Full snapshot mode on a scheduled trigger.",
+        "es_correcta": false,
+        "explicacion": "Full snapshot mode re-reads the entire table on each run and does not capture deletes or incremental changes efficiently."
+      },
+      {
+        "texto_opcion": "Watermark-based incremental mode using a `last_updated` column.",
+        "es_correcta": false,
+        "explicacion": "Watermark ingestion captures inserts and updates but misses hard deletes. It is not a full CDC approach."
+      },
+      {
+        "texto_opcion": "Auto Loader with schema inference against the MySQL JDBC driver.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader is designed for file-based sources on cloud storage, not for JDBC database replication."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "Which of the following best describes the difference between a **standard connector** and a **managed connector** in Lakeflow Connect?",
+    "opciones": [
+      {
+        "texto_opcion": "Standard connectors offer higher customization for cloud storage and message buses (e.g., S3, Kafka); managed connectors are fully managed by Databricks and cover both databases (via CDC) and SaaS applications (e.g., Salesforce, Workday).",
+        "es_correcta": true,
+        "explicacion": "<p>According to the official documentation, standard connectors provide higher levels of customization and target cloud object storage (S3, ADLS, GCS) and message buses (Kafka, Kinesis, Pub/Sub). Managed connectors are fully managed by Databricks and cover two sub-types: database connectors (MySQL, PostgreSQL, SQL Server via CDC) and SaaS connectors (Salesforce, Workday, ServiceNow).</p>"
+      },
+      {
+        "texto_opcion": "Standard connectors target relational databases via JDBC or CDC; managed connectors target SaaS applications via REST APIs.",
+        "es_correcta": false,
+        "explicacion": "<p>This is incorrect. Relational databases (MySQL, PostgreSQL, SQL Server) are handled by <em>managed</em> database CDC connectors, not standard connectors. Standard connectors are for cloud storage and message buses.</p>"
+      },
+      {
+        "texto_opcion": "Standard connectors are open-source community-built connectors; managed connectors are proprietary and require an additional license.",
+        "es_correcta": false,
+        "explicacion": "<p>Licensing is not the defining difference. Community connectors are a separate third category in Lakeflow Connect. The standard vs. managed distinction is based on the source system type and level of management provided by Databricks.</p>"
+      },
+      {
+        "texto_opcion": "Standard connectors support only batch ingestion; managed connectors support both batch and streaming.",
+        "es_correcta": false,
+        "explicacion": "<p>The batch vs. streaming distinction does not define standard vs. managed connectors. Both types can support incremental ingestion. The key difference is the type of source system each is designed for.</p>"
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer creates a Lakeflow Connect pipeline. After the initial full load, the pipeline should only ingest **new and changed records** on each subsequent run. Which behavior describes this?",
+    "opciones": [
+      {
+        "texto_opcion": "Incremental ingestion — the pipeline tracks state and ingests only changes after the initial snapshot.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect pipelines perform a full initial load and then switch to incremental mode, tracking state via checkpoints or CDC offsets."
+      },
+      {
+        "texto_opcion": "Full refresh — the pipeline truncates and reloads the target table on every run.",
+        "es_correcta": false,
+        "explicacion": "Full refresh reloads all data every run and does not preserve a state cursor for incremental changes."
+      },
+      {
+        "texto_opcion": "Merge mode — the pipeline always reads the full source and upserts into the target.",
+        "es_correcta": false,
+        "explicacion": "While Lakeflow Connect uses MERGE operations to apply changes, the ingestion itself is incremental, not a full source re-read."
+      },
+      {
+        "texto_opcion": "Append-only mode — the pipeline appends all source rows on each run without deduplication.",
+        "es_correcta": false,
+        "explicacion": "Append-only mode does not filter already-processed records and would produce duplicates on repeated runs."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A Lakeflow Connect pipeline has been ingesting data from a PostgreSQL source. A data engineer notices that new columns were added to the source table. What does Lakeflow Connect do by default when the source schema changes?",
+    "opciones": [
+      {
+        "texto_opcion": "It automatically evolves the target Delta table schema to include the new columns.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect supports automatic schema evolution — new columns detected in the source are propagated to the target Delta table without manual intervention."
+      },
+      {
+        "texto_opcion": "It fails the pipeline and requires the engineer to manually ALTER the target table.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect handles schema changes automatically; manual ALTER statements are not required."
+      },
+      {
+        "texto_opcion": "It ignores new columns and continues writing only the previously mapped fields.",
+        "es_correcta": false,
+        "explicacion": "Ignoring new columns is not the default behavior. Lakeflow Connect evolves the schema to reflect source changes."
+      },
+      {
+        "texto_opcion": "It creates a separate table for each schema version of the source.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect writes to a single target table and evolves its schema, rather than creating versioned tables."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer configures a Lakeflow Connect ingestion pipeline for SQL Server using the Databricks UI or API, selecting **CDC** as the ingestion mode:\n\n```\nConnector : SQL Server\nHost      : db.corp.com\nDatabase  : sales\nTable     : orders\nTarget    : bronze.sales\nMode      : cdc\n```\n\nWhat does selecting **CDC mode** configure for this pipeline?",
+    "opciones": [
+      {
+        "texto_opcion": "The pipeline reads the SQL Server transaction log to capture and replicate all inserts, updates, and deletes to the target Delta table.",
+        "es_correcta": true,
+        "explicacion": "When CDC mode is configured in a Lakeflow Connect ingestion pipeline, it uses the source database's transaction/binary log (SQL Server CDC or Change Tracking) to capture and replicate all DML operations — inserts, updates, and deletes — to the target Delta table."
+      },
+      {
+        "texto_opcion": "The pipeline computes a diff between the current and previous table snapshot to detect changes.",
+        "es_correcta": false,
+        "explicacion": "Snapshot diffing is a separate pattern (used by create_auto_cdc_from_snapshot_flow). CDC mode in Lakeflow Connect reads the source transaction log directly, not table snapshots."
+      },
+      {
+        "texto_opcion": "The pipeline activates Spark Structured Streaming with an event-time watermark on the orders table.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect CDC mode uses log-based replication from the SQL Server source. Spark Structured Streaming watermarks are a separate mechanism used in transformation pipelines, not in Lakeflow Connect ingestion configuration."
+      },
+      {
+        "texto_opcion": "The pipeline switches to append-only mode and ignores delete operations from the source.",
+        "es_correcta": false,
+        "explicacion": "CDC mode explicitly captures deletes in addition to inserts and updates. Append-only is a distinct ingestion mode that does not propagate deletes."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "Which of the following source systems is best suited for a **managed connector** in Lakeflow Connect?",
+    "opciones": [
+      {
+        "texto_opcion": "Workday",
+        "es_correcta": true,
+        "explicacion": "Workday is a SaaS HR application and is a supported managed connector source in Lakeflow Connect."
+      },
+      {
+        "texto_opcion": "PostgreSQL",
+        "es_correcta": false,
+        "explicacion": "PostgreSQL is a relational database accessed via JDBC/CDC and uses a standard connector, not a managed connector."
+      },
+      {
+        "texto_opcion": "Amazon S3",
+        "es_correcta": false,
+        "explicacion": "S3 is a cloud object store typically ingested via Auto Loader, not a Lakeflow Connect managed connector."
+      },
+      {
+        "texto_opcion": "Apache Kafka",
+        "es_correcta": false,
+        "explicacion": "Kafka is a streaming platform handled through Spark Structured Streaming or Delta Live Tables, not a Lakeflow Connect managed connector."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to land ingested data from a Lakeflow Connect pipeline into the correct lakehouse layer. Where should the pipeline write its output by default?",
+    "opciones": [
+      {
+        "texto_opcion": "The bronze layer, as Lakeflow Connect handles raw ingestion before any transformation.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect is an ingestion tool that lands raw source data into the bronze layer. Transformations to silver/gold happen in subsequent pipeline stages."
+      },
+      {
+        "texto_opcion": "The silver layer, because Lakeflow Connect deduplicates and cleans records during ingestion.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect performs raw replication, not data quality transformations. Deduplication and cleansing belong in the silver layer logic."
+      },
+      {
+        "texto_opcion": "The gold layer, because it generates aggregated fact tables from the source.",
+        "es_correcta": false,
+        "explicacion": "Gold layer tables are aggregated business views, not raw ingestion targets."
+      },
+      {
+        "texto_opcion": "An external storage location outside Unity Catalog.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect integrates with Unity Catalog and writes to managed Delta tables, not external unmanaged locations."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is comparing options to ingest files dropped into an S3 bucket versus records from a Salesforce org. Which pairing correctly maps each source to its Lakeflow/Databricks ingestion approach?",
+    "opciones": [
+      {
+        "texto_opcion": "S3 → Auto Loader; Salesforce → Lakeflow Connect managed connector.",
+        "es_correcta": true,
+        "explicacion": "Auto Loader is optimized for file-based cloud storage ingestion. Lakeflow Connect managed connectors handle SaaS API sources like Salesforce."
+      },
+      {
+        "texto_opcion": "S3 → Lakeflow Connect standard connector; Salesforce → Auto Loader.",
+        "es_correcta": false,
+        "explicacion": "Standard connectors target JDBC databases, not S3. Auto Loader handles files, not SaaS APIs."
+      },
+      {
+        "texto_opcion": "S3 → Lakeflow Connect managed connector; Salesforce → JDBC standard connector.",
+        "es_correcta": false,
+        "explicacion": "Managed connectors target SaaS apps, not S3. JDBC standard connectors are for relational databases, not Salesforce."
+      },
+      {
+        "texto_opcion": "S3 → Delta Live Tables; Salesforce → Lakeflow Connect standard connector.",
+        "es_correcta": false,
+        "explicacion": "DLT is a transformation framework, not a file ingestion tool. Salesforce uses managed, not standard, connectors."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer configures a Lakeflow Connect ingestion pipeline with a MySQL source:\n\n```\nConnector : MySQL\nHost      : prod-db\nDatabase  : inventory\nTable     : products\nMode      : CDC\n```\n\nWhen this pipeline runs for the **first time**, what happens to the source data?",
+    "opciones": [
+      {
+        "texto_opcion": "The pipeline performs a full load of all existing data from the source table, and in parallel begins tracking changes for incremental ingestion on subsequent runs.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect always performs a full load on the first pipeline run to capture all existing data. In parallel, it begins tracking changes so that subsequent runs ingest only new inserts, updates, and deletes incrementally."
+      },
+      {
+        "texto_opcion": "The pipeline skips all existing rows and only begins capturing new changes from the moment the pipeline first runs.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect does not skip existing data. The first run always performs a full snapshot of the source to establish a baseline."
+      },
+      {
+        "texto_opcion": "The pipeline performs a full load of all source data on every run, replacing the target Delta table each time.",
+        "es_correcta": false,
+        "explicacion": "Every run after the first uses incremental change tracking — not a full reload. A full load only happens on the initial run."
+      },
+      {
+        "texto_opcion": "The pipeline scans the source table for a watermark column and ingests only rows newer than the current timestamp.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect's MySQL connector uses CDC (change data capture), not watermark-based filtering. The first run is always a full snapshot regardless of any timestamp column."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "What is the primary purpose of **checkpointing** in a Lakeflow Connect pipeline?",
+    "opciones": [
+      {
+        "texto_opcion": "To track ingestion progress so the pipeline can resume from where it stopped after a failure.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect checkpoints store the last successfully processed offset or cursor, enabling fault-tolerant incremental ingestion without reprocessing data."
+      },
+      {
+        "texto_opcion": "To create a backup copy of the source data before overwriting the target table.",
+        "es_correcta": false,
+        "explicacion": "Checkpoints track pipeline state, not data backups. Delta table history provides data versioning."
+      },
+      {
+        "texto_opcion": "To trigger schema validation against the Unity Catalog before each run.",
+        "es_correcta": false,
+        "explicacion": "Schema validation is handled separately. Checkpoints are a state-tracking mechanism for incremental progress."
+      },
+      {
+        "texto_opcion": "To enforce exactly-once delivery guarantees at the Unity Catalog metastore level.",
+        "es_correcta": false,
+        "explicacion": "Checkpoints help achieve exactly-once semantics in concert with Delta's ACID transactions, but their primary role is progress tracking."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A managed Lakeflow Connect pipeline ingesting from Salesforce has stopped updating. The data engineer checks the pipeline logs and sees that schema evolution has caused the pipeline to block. What most likely caused this?",
+    "opciones": [
+      {
+        "texto_opcion": "A column was removed from the Salesforce object; managed connectors automatically handle new columns but column deletions may require manual reconciliation.",
+        "es_correcta": true,
+        "explicacion": "<p>According to the official FAQ, all managed connectors automatically handle new and deleted columns unless you opt out. However, column deletions can require schema reconciliation on the target Delta table, which may block the pipeline if the target schema cannot be automatically reconciled.</p>"
+      },
+      {
+        "texto_opcion": "The Salesforce API rate limit was exceeded during the last ingestion cycle.",
+        "es_correcta": false,
+        "explicacion": "<p>API rate limit errors produce connectivity or throttling errors, not schema evolution blocks. The scenario described is specifically about a structural change in the source schema.</p>"
+      },
+      {
+        "texto_opcion": "The Unity Catalog metastore was temporarily unavailable.",
+        "es_correcta": false,
+        "explicacion": "<p>A metastore outage would surface as a connectivity or permission error, not a schema evolution issue.</p>"
+      },
+      {
+        "texto_opcion": "The pipeline was not configured with a checkpoint location.",
+        "es_correcta": false,
+        "explicacion": "<p>Missing checkpoints cause restart-from-scratch behavior, not schema evolution blocks.</p>"
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to replicate a SQL Server table to Databricks, including soft deletes (rows marked with `is_deleted = true`). Which Lakeflow Connect configuration best handles this?",
+    "opciones": [
+      {
+        "texto_opcion": "CDC mode — it replicates the `UPDATE` that sets `is_deleted = true` to the target table.",
+        "es_correcta": true,
+        "explicacion": "CDC mode captures all DML changes including updates. A soft delete (column flag update) is an `UPDATE` event and is faithfully replicated."
+      },
+      {
+        "texto_opcion": "Full snapshot mode — it will detect and sync the `is_deleted` flag on each run.",
+        "es_correcta": false,
+        "explicacion": "Full snapshot mode can synchronize the flag but requires a full table re-read every run, which is inefficient compared to CDC."
+      },
+      {
+        "texto_opcion": "Append-only mode — deleted rows are appended with the `is_deleted` flag set to `true`.",
+        "es_correcta": false,
+        "explicacion": "Append-only mode does not update existing rows. It would not propagate changes to already-ingested records."
+      },
+      {
+        "texto_opcion": "Hard-delete mode — it physically removes matching rows from the Delta target table.",
+        "es_correcta": false,
+        "explicacion": "Hard-delete mode removes rows physically. Soft deletes use a flag column and should be handled as regular updates via CDC."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer reviews the target Delta table of a Lakeflow Connect CDC pipeline and notices system columns prefixed with `_lf_`. Two of them are `_lf_deleted` (BOOLEAN) and `_lf_updated` (TIMESTAMP). What do these columns represent?",
+    "opciones": [
+      {
+        "texto_opcion": "They are metadata columns automatically appended by Lakeflow Connect to track CDC operation information such as deletion status and last-modified timestamp from the source.",
+        "es_correcta": true,
+        "explicacion": "<p>Lakeflow Connect appends <code>_lf_*</code> system metadata columns to target Delta tables. These columns expose CDC operation details — such as whether a row was deleted and when it was last updated at the source — enabling downstream consumers to handle deletes and ordering correctly. Note: exact column names may vary by connector version; always verify against the specific connector's documentation.</p>"
+      },
+      {
+        "texto_opcion": "They are user-defined audit columns that the engineer must add manually to the source schema before configuring the pipeline.",
+        "es_correcta": false,
+        "explicacion": "<p><code>_lf_*</code> columns are automatically appended by the Lakeflow Connect framework, not manually created by the engineer.</p>"
+      },
+      {
+        "texto_opcion": "They are Delta table internal columns written by the Delta transaction log engine.",
+        "es_correcta": false,
+        "explicacion": "<p>Delta's internal metadata is stored in the <code>_delta_log</code> directory and is not surfaced as user-visible columns like <code>_lf_deleted</code>.</p>"
+      },
+      {
+        "texto_opcion": "They are Unity Catalog lineage tracking columns automatically added by the metastore.",
+        "es_correcta": false,
+        "explicacion": "<p>Unity Catalog lineage is tracked internally and is not surfaced as table columns. These are Lakeflow Connect-specific system fields.</p>"
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to ingest from an Oracle database into Databricks. Which Lakeflow Connect option is currently available for Oracle, and what does it require?",
+    "opciones": [
+      {
+        "texto_opcion": "A query-based connector (Public Preview), which queries Oracle directly using a cursor column and does not require CDC configuration or an ingestion gateway.",
+        "es_correcta": true,
+        "explicacion": "<p>As of April 2026, Databricks released query-based connectors in Public Preview. Oracle is a supported source. Unlike CDC-based connectors, query-based connectors ingest data by querying the source directly with a cursor column, with no need for LogMiner, CDC setup, or an ingestion gateway. A full CDC-based managed connector for Oracle does not currently exist in Lakeflow Connect.</p>"
+      },
+      {
+        "texto_opcion": "A managed CDC connector that requires Oracle LogMiner (supplemental logging) to be enabled on the source database.",
+        "es_correcta": false,
+        "explicacion": "<p>Oracle does not currently have a managed CDC connector in Lakeflow Connect. The available option for Oracle is the query-based connector (Public Preview as of April 2026), which does not use LogMiner or require CDC configuration.</p>"
+      },
+      {
+        "texto_opcion": "Oracle is not supported in Lakeflow Connect and requires a third-party ETL tool.",
+        "es_correcta": false,
+        "explicacion": "<p>Oracle is supported via the query-based connector in Lakeflow Connect (Public Preview since April 2026), alongside other sources like Teradata, MySQL, PostgreSQL, SQL Server, and MariaDB.</p>"
+      },
+      {
+        "texto_opcion": "A standard connector using JDBC full-load mode, which requires an Oracle GoldenGate license.",
+        "es_correcta": false,
+        "explicacion": "<p>GoldenGate is a separate Oracle product and is not required. The available Lakeflow Connect approach for Oracle is the query-based connector, which uses direct SQL queries with a cursor column.</p>"
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer configures a Lakeflow Connect pipeline to ingest from Salesforce. After the first successful run, data appears in the `bronze.salesforce_accounts` table. A new Salesforce custom field `annual_revenue_usd` is added by the admin. What happens on the **next pipeline run**?",
+    "opciones": [
+      {
+        "texto_opcion": "The pipeline detects the new field and automatically adds `annual_revenue_usd` as a column in the target Delta table.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect managed connectors support additive schema evolution. New fields discovered in the source are propagated to the target Delta table."
+      },
+      {
+        "texto_opcion": "The pipeline fails with a schema mismatch error and requires a full re-sync.",
+        "es_correcta": false,
+        "explicacion": "Additive schema changes (new columns) do not cause failures. Only breaking changes like column deletions may require intervention."
+      },
+      {
+        "texto_opcion": "The new field is silently dropped and the target schema is unchanged.",
+        "es_correcta": false,
+        "explicacion": "Dropping new fields silently would cause data loss. Lakeflow Connect evolves the schema to include new columns."
+      },
+      {
+        "texto_opcion": "A new target table `bronze.salesforce_accounts_v2` is created with the updated schema.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect evolves the existing table in place. It does not create versioned tables for schema changes."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "Which of the following statements about Lakeflow Connect **standard connectors** is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "They provide higher customization for ingesting from cloud object storage (e.g., S3, ADLS, GCS) and message buses (e.g., Kafka, Kinesis), and can be used with Structured Streaming or Lakeflow Spark Declarative Pipelines.",
+        "es_correcta": true,
+        "explicacion": "<p>According to the official documentation, standard connectors offer higher levels of ingestion pipeline customization compared to managed connectors. They target cloud object storage and message buses and can operate at multiple layers of the ETL stack — either Structured Streaming (full customization) or Lakeflow Spark Declarative Pipelines (more managed experience).</p>"
+      },
+      {
+        "texto_opcion": "They connect to relational databases such as MySQL, PostgreSQL, and SQL Server using JDBC or CDC protocols.",
+        "es_correcta": false,
+        "explicacion": "<p>Relational databases (MySQL, PostgreSQL, SQL Server) are handled by <em>managed</em> database CDC connectors in Lakeflow Connect, not by standard connectors. Standard connectors are for cloud storage and message buses.</p>"
+      },
+      {
+        "texto_opcion": "They connect to SaaS platforms like Salesforce and ServiceNow using REST APIs.",
+        "es_correcta": false,
+        "explicacion": "<p>SaaS applications are handled by managed SaaS connectors, not standard connectors.</p>"
+      },
+      {
+        "texto_opcion": "They require an on-premises Databricks cluster to run and cannot use serverless compute.",
+        "es_correcta": false,
+        "explicacion": "<p>Lakeflow Connect pipelines run on Databricks serverless or classic compute. On-premises clusters are not required.</p>"
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer observes the following in a Lakeflow Connect pipeline log:\n\n```\n[INFO] Initial snapshot complete: 5,200,000 rows loaded.\n[INFO] Switching to incremental CDC mode.\n[INFO] CDC offset: binlog position mysql-bin.000123:4567890\n```\n\nWhat does this sequence indicate?",
+    "opciones": [
+      {
+        "texto_opcion": "The pipeline completed the initial full load and is now tracking changes from the MySQL binary log.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect performs a full snapshot first, then records the binary log position to begin CDC. All subsequent runs consume only log events after this offset."
+      },
+      {
+        "texto_opcion": "The pipeline failed during the snapshot and fell back to reading the binary log from the beginning.",
+        "es_correcta": false,
+        "explicacion": "The log shows a successful snapshot completion, not a failure. Switching to CDC is the expected behavior after a successful initial load."
+      },
+      {
+        "texto_opcion": "The pipeline is running in full refresh mode and will restart from this offset on the next run.",
+        "es_correcta": false,
+        "explicacion": "Full refresh does not use CDC offsets. The binary log position confirms the pipeline is in incremental CDC mode."
+      },
+      {
+        "texto_opcion": "The CDC offset was manually set by the engineer to skip historical records.",
+        "es_correcta": false,
+        "explicacion": "The offset was automatically set after the initial snapshot completion, not manually configured."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to ensure that a Lakeflow Connect pipeline only ingests records from a source table where `region = 'EMEA'`. Which approach is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Apply a filter predicate in the Lakeflow Connect pipeline configuration to select only `region = 'EMEA'` rows.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect supports row-level filter predicates in the source configuration, allowing ingestion of a subset of source records."
+      },
+      {
+        "texto_opcion": "Create a database view filtering by `region = 'EMEA'` and point the connector at the view.",
+        "es_correcta": false,
+        "explicacion": "While technically possible, Lakeflow Connect's native predicate filtering is the preferred and more maintainable approach."
+      },
+      {
+        "texto_opcion": "Use a Delta Live Tables `CONSTRAINT` to drop non-EMEA rows after ingestion.",
+        "es_correcta": false,
+        "explicacion": "`CONSTRAINT` clauses enforce data quality rules on ingested rows but do not prevent ingestion. Filtering at the source is more efficient."
+      },
+      {
+        "texto_opcion": "Ingest all rows first and apply a `WHERE` filter in a downstream silver-layer transformation.",
+        "es_correcta": false,
+        "explicacion": "Downstream filtering is less efficient as it ingests and stores unnecessary data. Source-level filtering reduces pipeline cost."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is configuring a Lakeflow Connect pipeline and must choose a **Unity Catalog** destination. What is the minimum set of permissions required on the target catalog to create and write to a new table?",
+    "opciones": [
+      {
+        "texto_opcion": "`USE CATALOG`, `USE SCHEMA`, and `CREATE TABLE` on the target schema.",
+        "es_correcta": true,
+        "explicacion": "To create a new table, the pipeline service principal needs USE CATALOG and USE SCHEMA to navigate the hierarchy, plus CREATE TABLE to write the new target table."
+      },
+      {
+        "texto_opcion": "`SELECT` on the target schema.",
+        "es_correcta": false,
+        "explicacion": "`SELECT` is a read permission. Writing a new table requires CREATE TABLE, not SELECT."
+      },
+      {
+        "texto_opcion": "`ALL PRIVILEGES` on the target catalog.",
+        "es_correcta": false,
+        "explicacion": "`ALL PRIVILEGES` is overly permissive. The minimum required is USE CATALOG + USE SCHEMA + CREATE TABLE."
+      },
+      {
+        "texto_opcion": "`INSERT` on the target schema.",
+        "es_correcta": false,
+        "explicacion": "`INSERT` allows adding rows to an existing table but does not permit creating a new one."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A Lakeflow Connect pipeline ingesting from MySQL is restarted after a 3-hour outage. The engineer expects no data loss. Which feature ensures the pipeline resumes processing from the correct position?",
+    "opciones": [
+      {
+        "texto_opcion": "Persistent checkpointing — the pipeline stores its last processed binary log offset and resumes from there.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect persists the CDC offset/checkpoint. On restart, the pipeline reads from the saved position, ensuring no records are lost or duplicated."
+      },
+      {
+        "texto_opcion": "Delta table time travel — the pipeline queries the source Delta table at the timestamp before the outage.",
+        "es_correcta": false,
+        "explicacion": "Delta time travel applies to Delta tables, not to JDBC/CDC sources. MySQL does not expose time travel."
+      },
+      {
+        "texto_opcion": "The pipeline performs a full re-snapshot to guarantee consistency after any interruption.",
+        "es_correcta": false,
+        "explicacion": "A full re-snapshot would be costly and unnecessary. Checkpointing allows efficient incremental resume."
+      },
+      {
+        "texto_opcion": "Unity Catalog lineage automatically replays missing events from the source.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog tracks data lineage for governance, not event replay. Checkpoint-based resumption is the correct mechanism."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to monitor the status and throughput of all Lakeflow Connect pipelines in their workspace. Where should the engineer look?",
+    "opciones": [
+      {
+        "texto_opcion": "The Pipelines UI in the Databricks workspace, which shows pipeline status, run history, and data flow metrics.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect pipelines are managed through the Databricks Pipelines UI (same as Delta Live Tables), providing run status, event logs, and throughput metrics."
+      },
+      {
+        "texto_opcion": "The Unity Catalog Data Explorer, which tracks all active ingestion jobs.",
+        "es_correcta": false,
+        "explicacion": "Data Explorer shows catalog assets and lineage, not pipeline run metrics or ingestion throughput."
+      },
+      {
+        "texto_opcion": "The Databricks SQL warehouse query history.",
+        "es_correcta": false,
+        "explicacion": "Query history logs SQL executions, not ingestion pipeline runs or connector statuses."
+      },
+      {
+        "texto_opcion": "The cluster event log under the associated job cluster.",
+        "es_correcta": false,
+        "explicacion": "Cluster event logs track compute events. Pipeline-level monitoring is available through the Pipelines UI."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer sets up two Lakeflow Connect pipelines:\n\n- Pipeline A: source = MySQL `orders` table, mode = CDC\n- Pipeline B: source = Salesforce `Opportunity` object\n\nWhich statement correctly categorizes these pipelines?",
+    "opciones": [
+      {
+        "texto_opcion": "Both pipelines use managed connectors — Pipeline A uses a managed database CDC connector (MySQL) and Pipeline B uses a managed SaaS connector (Salesforce).",
+        "es_correcta": true,
+        "explicacion": "<p>According to the official documentation, MySQL, PostgreSQL, and SQL Server are supported via managed database CDC connectors. Salesforce, Workday, and ServiceNow are supported via managed SaaS connectors. Both are sub-types of managed connectors in Lakeflow Connect. Standard connectors are for cloud object storage and message buses, not databases or SaaS apps.</p>"
+      },
+      {
+        "texto_opcion": "Pipeline A uses a standard connector (MySQL via CDC); Pipeline B uses a managed connector (Salesforce).",
+        "es_correcta": false,
+        "explicacion": "<p>MySQL is handled by a <em>managed</em> database CDC connector in Lakeflow Connect, not a standard connector. Standard connectors are designed for cloud storage and message buses like S3 and Kafka.</p>"
+      },
+      {
+        "texto_opcion": "Both pipelines use standard connectors because they both produce Delta tables.",
+        "es_correcta": false,
+        "explicacion": "<p>All Lakeflow Connect pipelines write to Delta tables regardless of connector type. The standard vs. managed distinction is based on the source system, not the output format.</p>"
+      },
+      {
+        "texto_opcion": "Pipeline A uses a managed connector; Pipeline B uses a standard connector.",
+        "es_correcta": false,
+        "explicacion": "<p>Salesforce is a managed SaaS connector, not a standard connector. Standard connectors are for cloud storage and message buses, not SaaS applications.</p>"
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must ingest data from an on-premises SQL Server instance that is not directly accessible from Databricks. Which component enables connectivity in this scenario?",
+    "opciones": [
+      {
+        "texto_opcion": "A Databricks-managed gateway or self-hosted ingestion gateway deployed in the on-premises network.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect supports gateway-based connectivity for on-premises or private network sources, routing traffic securely from the source to the Databricks pipeline."
+      },
+      {
+        "texto_opcion": "A public internet-facing SQL Server endpoint with a static IP whitelist.",
+        "es_correcta": false,
+        "explicacion": "Exposing SQL Server directly to the public internet is a security risk and not the recommended approach. A gateway provides private, secure connectivity."
+      },
+      {
+        "texto_opcion": "Uploading CSV exports of the SQL Server data to S3 and using Auto Loader.",
+        "es_correcta": false,
+        "explicacion": "CSV exports via Auto Loader bypass Lakeflow Connect entirely and do not provide CDC or real-time replication."
+      },
+      {
+        "texto_opcion": "Installing a Databricks Runtime extension on the SQL Server host.",
+        "es_correcta": false,
+        "explicacion": "Databricks Runtime runs on cluster nodes, not source database servers. A gateway agent handles the connectivity."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer examines a Lakeflow Connect target table and notices the following schema:\n\n| Column         | Type      |\n|----------------|-----------|\n| id             | STRING    |\n| name           | STRING    |\n| _lf_source_ts  | TIMESTAMP |\n| _lf_ingested   | TIMESTAMP |\n| _lf_op         | STRING    |\n\nWhat does the `_lf_op` column represent?",
+    "opciones": [
+      {
+        "texto_opcion": "The CDC operation type — `I` (insert), `U` (update), or `D` (delete) — for each replicated row.",
+        "es_correcta": true,
+        "explicacion": "`_lf_op` is a Lakeflow Connect metadata column that stores the DML operation type from the source, enabling downstream logic to handle each change correctly."
+      },
+      {
+        "texto_opcion": "The operational status of the Lakeflow Connect pipeline at the time of ingestion.",
+        "es_correcta": false,
+        "explicacion": "`_lf_op` refers to the source DML operation on a per-row basis, not the pipeline's run status."
+      },
+      {
+        "texto_opcion": "The name of the Databricks operator who last modified the row.",
+        "es_correcta": false,
+        "explicacion": "`_lf_op` is a CDC operation indicator, not a user audit column."
+      },
+      {
+        "texto_opcion": "The number of optimistic concurrency operations that occurred during the write.",
+        "es_correcta": false,
+        "explicacion": "Concurrency operations are tracked by Delta's transaction log, not by a user-visible column like `_lf_op`."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to replicate data from multiple tables in a PostgreSQL database to Databricks using Lakeflow Connect. Which configuration best handles this with minimal pipeline overhead?",
+    "opciones": [
+      {
+        "texto_opcion": "Configure a single Lakeflow Connect pipeline with multiple source tables specified, landing each as a separate Delta table.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect supports multi-table ingestion within a single pipeline, reducing operational overhead while landing each source table into its own Delta table in the bronze layer."
+      },
+      {
+        "texto_opcion": "Create one Lakeflow Connect pipeline per source table.",
+        "es_correcta": false,
+        "explicacion": "One pipeline per table works but creates unnecessary operational overhead. Multi-table ingestion in a single pipeline is more efficient."
+      },
+      {
+        "texto_opcion": "Use a single pipeline and merge all tables into one target Delta table.",
+        "es_correcta": false,
+        "explicacion": "Merging all source tables into one target would mix data and complicate downstream transformations. Each table should land in its own target."
+      },
+      {
+        "texto_opcion": "Export all PostgreSQL tables to CSV files and ingest them with Auto Loader.",
+        "es_correcta": false,
+        "explicacion": "Manual CSV exports bypass Lakeflow Connect's CDC and incremental capabilities, making the pipeline less efficient and more fragile."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "Which of the following is a key advantage of using Lakeflow Connect managed connectors over building a custom ingestion pipeline using the Salesforce REST API directly in PySpark?",
+    "opciones": [
+      {
+        "texto_opcion": "Managed connectors handle authentication, pagination, rate limiting, and schema evolution automatically.",
+        "es_correcta": true,
+        "explicacion": "Managed connectors abstract away API complexity. A custom PySpark pipeline would require the engineer to implement retry logic, token refresh, pagination, and schema change handling manually."
+      },
+      {
+        "texto_opcion": "Managed connectors provide lower latency than direct API calls.",
+        "es_correcta": false,
+        "explicacion": "Latency is not the primary differentiator. The main advantage is reduced engineering complexity through built-in API handling."
+      },
+      {
+        "texto_opcion": "Managed connectors bypass Unity Catalog and write directly to DBFS for faster writes.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect integrates with Unity Catalog and writes to governed Delta tables, not raw DBFS paths."
+      },
+      {
+        "texto_opcion": "Managed connectors allow the engineer to write custom transformation logic inside the connector.",
+        "es_correcta": false,
+        "explicacion": "Managed connectors are for raw ingestion. Transformations are applied in downstream DLT pipelines, not inside the connector."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is designing a bronze layer ingestion using Lakeflow Connect from a MySQL source. The downstream silver layer applies a `MERGE` to deduplicate records. Which Lakeflow Connect feature makes the silver `MERGE` logic simpler to implement?",
+    "opciones": [
+      {
+        "texto_opcion": "The `_lf_op` and `_lf_source_ts` metadata columns, which indicate the operation type and source timestamp for ordering changes.",
+        "es_correcta": true,
+        "explicacion": "By exposing the DML operation type and source timestamp, Lakeflow Connect lets downstream MERGE logic correctly apply inserts, updates, and deletes in the right order."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect automatically deduplicates rows before writing to the bronze table.",
+        "es_correcta": false,
+        "explicacion": "Deduplication is a silver-layer concern. Lakeflow Connect writes raw CDC events to bronze without deduplication."
+      },
+      {
+        "texto_opcion": "The pipeline writes only the latest version of each row, eliminating the need for a MERGE.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect CDC preserves all change events in bronze. The downstream silver layer is responsible for applying the latest state via MERGE."
+      },
+      {
+        "texto_opcion": "The target Delta table has a primary key constraint that prevents duplicate rows.",
+        "es_correcta": false,
+        "explicacion": "Delta tables do not enforce primary key uniqueness constraints in the same way as relational databases. Deduplication requires explicit MERGE logic."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to validate that a Lakeflow Connect pipeline is ingesting data correctly. They run the following query:\n\n```sql\nSELECT _lf_op, COUNT(*) as cnt\nFROM bronze.mysql_orders\nGROUP BY _lf_op\n```\n\n| _lf_op | cnt    |\n|--------|--------|\n| I      | 48,200 |\n| U      | 12,100 |\n| D      | 850    |\n\nWhat does this result confirm?",
+    "opciones": [
+      {
+        "texto_opcion": "The pipeline has captured inserts, updates, and deletes from the source, with the operation counts visible per CDC event type.",
+        "es_correcta": true,
+        "explicacion": "The `_lf_op` values `I`, `U`, and `D` correspond to insert, update, and delete CDC operations. The query confirms all three DML types have been replicated."
+      },
+      {
+        "texto_opcion": "The target table has 48,200 current active rows after applying all changes.",
+        "es_correcta": false,
+        "explicacion": "The counts reflect raw CDC events in the bronze table, not the final row count after applying MERGE logic in a silver layer."
+      },
+      {
+        "texto_opcion": "The pipeline is running in append-only mode and `D` rows are flagged but not physically deleted.",
+        "es_correcta": false,
+        "explicacion": "Append-only mode typically does not use the `_lf_op` column. The presence of `D` events confirms CDC mode is active."
+      },
+      {
+        "texto_opcion": "The source table had 850 schema changes that were applied to the target.",
+        "es_correcta": false,
+        "explicacion": "`D` in `_lf_op` represents row-level delete operations, not schema changes. Schema evolution events are handled separately."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to share a Lakeflow Connect pipeline configuration across environments (dev, staging, prod). Which approach aligns with Databricks best practices for pipeline portability?",
+    "opciones": [
+      {
+        "texto_opcion": "Define the pipeline as code using the Declarative Automation Bundles framework and parameterize environment-specific values.",
+        "es_correcta": true,
+        "explicacion": "Declarative Automation Bundles allow pipelines to be defined as code with parameterized configurations, enabling repeatable deployment across dev/staging/prod environments."
+      },
+      {
+        "texto_opcion": "Manually recreate the pipeline in each environment via the Databricks UI.",
+        "es_correcta": false,
+        "explicacion": "Manual UI recreation is error-prone and not scalable. Code-based deployment with DABs is the recommended practice."
+      },
+      {
+        "texto_opcion": "Export the pipeline as a CSV and import it into each environment.",
+        "es_correcta": false,
+        "explicacion": "Databricks pipelines are not exported as CSV files. DABs use YAML/JSON configuration files for version-controlled deployment."
+      },
+      {
+        "texto_opcion": "Clone the pipeline notebook from the source environment to the target environment.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect pipelines are not notebook-based. DABs provide the correct framework for environment promotion."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is reviewing the ingestion architecture for a new project. The source is a ServiceNow ticketing system. Which Lakeflow Connect connector type should be selected, and why?",
+    "opciones": [
+      {
+        "texto_opcion": "Managed connector — ServiceNow is a SaaS application accessed via REST API, which managed connectors are designed for.",
+        "es_correcta": true,
+        "explicacion": "ServiceNow exposes a REST/SOAP API and is classified as a SaaS source. Lakeflow Connect managed connectors handle authentication and API pagination for such systems."
+      },
+      {
+        "texto_opcion": "Standard connector — ServiceNow uses a relational database internally, so JDBC access is possible.",
+        "es_correcta": false,
+        "explicacion": "While ServiceNow may use a database internally, Lakeflow Connect accesses it through its SaaS API, not via JDBC. The appropriate connector is managed."
+      },
+      {
+        "texto_opcion": "Auto Loader — ServiceNow can export data files to cloud storage for batch ingestion.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader is for file-based ingestion. Using file exports would bypass Lakeflow Connect's native API integration and real-time capabilities."
+      },
+      {
+        "texto_opcion": "Custom connector — ServiceNow requires a proprietary driver not supported by Lakeflow Connect.",
+        "es_correcta": false,
+        "explicacion": "ServiceNow is a supported managed connector in Lakeflow Connect. No custom connector is needed."
+      }
+    ],
+    "tags": [
+      "2.4",
+      "Lakeflow Connect — standard & managed connectors"
+    ]
+  }
+]

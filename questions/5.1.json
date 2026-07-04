@@ -1,0 +1,768 @@
+[
+  {
+    "pregunta": "A data engineer creates a Git folder in Databricks by going to the Workspace sidebar and selecting **Create > Git folder**. They provide a GitHub URL and click **Create Git folder**.\n\nWhat is the primary purpose of a Databricks Git folder?",
+    "opciones": [
+      {
+        "texto_opcion": "A native workspace directory that mirrors a remote Git repository, enabling version control operations directly in Databricks.",
+        "es_correcta": true,
+        "explicacion": "A Git folder clones a remote repo into the Databricks workspace, allowing branching, committing, pulling, merging, and rebasing from the UI or API."
+      },
+      {
+        "texto_opcion": "A read-only snapshot of a remote repository stored in DBFS for notebook imports.",
+        "es_correcta": false,
+        "explicacion": "Git folders are read-write and bidirectionally synced with the remote — they are not read-only DBFS snapshots."
+      },
+      {
+        "texto_opcion": "A Databricks-managed Git server that hosts repositories internally without requiring a Git provider.",
+        "es_correcta": false,
+        "explicacion": "Databricks Git folders require an external Git provider (GitHub, Azure DevOps, GitLab, etc.). Databricks does not host Git repositories internally."
+      },
+      {
+        "texto_opcion": "A workspace folder that automatically deploys notebooks to production on every save.",
+        "es_correcta": false,
+        "explicacion": "Git folders provide version control integration, not automatic deployment. Deployment requires Databricks Asset Bundles or a CI/CD pipeline."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Git Folders"
+    ]
+  },
+  {
+    "pregunta": "A team migrated from the legacy `/Repos/` path structure to the new Databricks workspace layout.\n\nWhich path prefix is used for Git folders in the current Databricks workspace layout?",
+    "opciones": [
+      {
+        "texto_opcion": "`/Workspace/Users/<email>/`",
+        "es_correcta": true,
+        "explicacion": "The current layout stores Git folders under `/Workspace/Users/<email>/`. The old `/Repos/` path is the legacy structure that has been replaced."
+      },
+      {
+        "texto_opcion": "`/Repos/<email>/`",
+        "es_correcta": false,
+        "explicacion": "This is the **old** legacy path structure. The current recommended path is `/Workspace/Users/<email>/`."
+      },
+      {
+        "texto_opcion": "`/dbfs/git-folders/<email>/`",
+        "es_correcta": false,
+        "explicacion": "Git folders are stored in the Databricks workspace file system, not in DBFS. There is no `/dbfs/git-folders/` path."
+      },
+      {
+        "texto_opcion": "`/SharedWorkspace/Repos/<email>/`",
+        "es_correcta": false,
+        "explicacion": "This path does not exist in Databricks. Shared Git folders can be placed under `/Workspace/Shared/`, not this format."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Git Folders"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following cURL command from a CI/CD pipeline:\n\n```bash\ncurl -X PATCH \\\n  \"${DATABRICKS_HOST}/api/2.0/repos/123456789\" \\\n  -H \"Authorization: Bearer ${DATABRICKS_TOKEN}\" \\\n  -d '{\"branch\": \"main\"}'\n```\n\nWhat does this command do?",
+    "opciones": [
+      {
+        "texto_opcion": "Switches the Git folder with ID `123456789` to the `main` branch, pulling the latest commit from the remote.",
+        "es_correcta": true,
+        "explicacion": "`PATCH /api/2.0/repos/{repo_id}` with a `branch` payload switches the workspace Git folder to that branch and syncs it with the latest remote commit."
+      },
+      {
+        "texto_opcion": "Creates a new repository named `main` in the Databricks workspace.",
+        "es_correcta": false,
+        "explicacion": "Creating a repository uses `POST /api/2.0/repos`. `PATCH` on an existing repo ID updates its branch or tag, it does not create a new repo."
+      },
+      {
+        "texto_opcion": "Merges the `main` branch into the current branch of the Git folder.",
+        "es_correcta": false,
+        "explicacion": "The Repos API does not support merge operations. Merging is done in the Databricks Git UI or in the Git provider (GitHub/ADO)."
+      },
+      {
+        "texto_opcion": "Deletes all branches except `main` in the remote repository.",
+        "es_correcta": false,
+        "explicacion": "The Repos API cannot manage branches in the remote repository. It only controls which branch the workspace Git folder is currently tracking."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Repos API"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to programmatically clone a GitHub repository into a Databricks workspace. Which REST API call correctly accomplishes this?\n\n```json\nA:  POST /api/2.0/repos\n    { \"url\": \"https://github.com/org/proj.git\", \"provider\": \"gitHub\", \"path\": \"/Workspace/Users/user@co.com/proj\" }\n\nB:  PUT /api/2.0/repos\n    { \"url\": \"https://github.com/org/proj.git\", \"provider\": \"gitHub\" }\n\nC:  PATCH /api/2.0/repos/new\n    { \"url\": \"https://github.com/org/proj.git\" }\n\nD:  POST /api/2.0/git/clone\n    { \"repository\": \"https://github.com/org/proj.git\" }\n```",
+    "opciones": [
+      {
+        "texto_opcion": "Option A — `POST /api/2.0/repos` with `url`, `provider`, and `path`.",
+        "es_correcta": true,
+        "explicacion": "`POST /api/2.0/repos` is the correct endpoint to clone a repo. The required fields are `url`, `provider`, and `path` (workspace destination)."
+      },
+      {
+        "texto_opcion": "Option B — `PUT /api/2.0/repos` with `url` and `provider`.",
+        "es_correcta": false,
+        "explicacion": "`PUT` is not a valid verb for the Repos API. The clone endpoint is `POST /api/2.0/repos`. `path` is also required."
+      },
+      {
+        "texto_opcion": "Option C — `PATCH /api/2.0/repos/new` with `url`.",
+        "es_correcta": false,
+        "explicacion": "`PATCH /api/2.0/repos/{repo_id}` updates an **existing** repo. You cannot use it to create a new one, and `new` is not a valid repo ID."
+      },
+      {
+        "texto_opcion": "Option D — `POST /api/2.0/git/clone`.",
+        "es_correcta": false,
+        "explicacion": "`/api/2.0/git/clone` is not a valid Databricks REST API endpoint. The correct endpoint is `/api/2.0/repos`."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Repos API"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses the Databricks Python SDK to manage Git folders. Review the following code:\n\n```python\nfrom databricks.sdk import WorkspaceClient\nw = WorkspaceClient()\nw.repos.update(repo_id=456, branch=\"release/v2.0\")\n```\n\nWhat is the result of executing this code?",
+    "opciones": [
+      {
+        "texto_opcion": "The Git folder with ID `456` is switched to the `release/v2.0` branch, syncing to its latest remote commit.",
+        "es_correcta": true,
+        "explicacion": "`w.repos.update(repo_id=..., branch=...)` calls `PATCH /api/2.0/repos/{repo_id}` under the hood, switching the workspace folder to the specified branch."
+      },
+      {
+        "texto_opcion": "A new branch named `release/v2.0` is created in the remote GitHub repository.",
+        "es_correcta": false,
+        "explicacion": "The Repos API cannot create branches in a remote repository. Branch creation must be done in the Git provider or via Git CLI commands."
+      },
+      {
+        "texto_opcion": "All notebooks in repo `456` are copied to a new folder named `release/v2.0`.",
+        "es_correcta": false,
+        "explicacion": "`w.repos.update()` changes the tracked branch of an existing Git folder; it does not copy files or create new folders."
+      },
+      {
+        "texto_opcion": "The code fails because `branch` must be passed as a positional argument, not a keyword argument.",
+        "es_correcta": false,
+        "explicacion": "The Databricks SDK `repos.update()` accepts `repo_id` and `branch` as keyword arguments. This syntax is valid."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Python SDK"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to switch a Databricks Git folder to track a specific tagged release instead of a branch. Which Repos API payload achieves this?\n\n```json\nA: { \"branch\": \"v1.5.0\" }\nB: { \"tag\": \"v1.5.0\" }\nC: { \"ref\": \"tags/v1.5.0\" }\nD: { \"commit\": \"v1.5.0\" }\n```",
+    "opciones": [
+      {
+        "texto_opcion": "`{ \"tag\": \"v1.5.0\" }`",
+        "es_correcta": true,
+        "explicacion": "The `PATCH /api/2.0/repos/{repo_id}` endpoint accepts either a `branch` key or a `tag` key. To pin to a release tag, use `{ \"tag\": \"v1.5.0\" }`."
+      },
+      {
+        "texto_opcion": "`{ \"branch\": \"v1.5.0\" }`",
+        "es_correcta": false,
+        "explicacion": "Using `branch` with a tag name would fail if `v1.5.0` is not an actual branch name. Tags must be specified with the `tag` key."
+      },
+      {
+        "texto_opcion": "`{ \"ref\": \"tags/v1.5.0\" }`",
+        "es_correcta": false,
+        "explicacion": "`ref` is not a valid field in the Repos API update payload. Only `branch` or `tag` are accepted."
+      },
+      {
+        "texto_opcion": "`{ \"commit\": \"v1.5.0\" }`",
+        "es_correcta": false,
+        "explicacion": "`commit` is not a valid field for the update operation. The Repos API uses `branch` or `tag` to identify the revision."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Repos API"
+    ]
+  },
+  {
+    "pregunta": "A data engineer opens the Git dialog in a Databricks notebook and wants to create a new feature branch named `feature/data-quality` based on `main`.\n\nWhat is the correct sequence of UI steps?",
+    "opciones": [
+      {
+        "texto_opcion": "Click **Create Branch** → enter `feature/data-quality` → select `main` as the base branch → click **Create**.",
+        "es_correcta": true,
+        "explicacion": "The Git dialog's **Create Branch** button opens a form where you enter the branch name and select the base branch before clicking **Create**."
+      },
+      {
+        "texto_opcion": "Type `git checkout -b feature/data-quality` in the notebook cell and run it.",
+        "es_correcta": false,
+        "explicacion": "Running `git` commands in notebook cells has no effect. Git CLI commands must be run from the web terminal in a Git folder with CLI support enabled."
+      },
+      {
+        "texto_opcion": "Go to **Settings > Git** and add the branch name under **Managed Branches**.",
+        "es_correcta": false,
+        "explicacion": "There is no **Managed Branches** setting in Databricks Settings. Branch creation is done through the Git dialog or Git CLI terminal."
+      },
+      {
+        "texto_opcion": "Call `POST /api/2.0/repos/{repo_id}/branches` with `{ \"name\": \"feature/data-quality\" }`.",
+        "es_correcta": false,
+        "explicacion": "The Repos API does not have a `/branches` sub-endpoint. Branch creation in the remote is done through the Git provider API or Git CLI."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Branches"
+    ]
+  },
+  {
+    "pregunta": "Two data engineers share a Git folder at `/Workspace/Shared/etl-project`. Engineer A switches the Git dialog from `main` to `feature/refactor`.\n\nWhat happens to Engineer B, who also has the folder open?",
+    "opciones": [
+      {
+        "texto_opcion": "Engineer B's view of the folder also switches to `feature/refactor`, because shared Git folders have a single shared branch state.",
+        "es_correcta": true,
+        "explicacion": "A Git folder has a single branch state shared by all users with access. When one user switches the branch, it changes for everyone using that folder."
+      },
+      {
+        "texto_opcion": "Engineer B remains on `main` because each user has an isolated branch state within the same folder.",
+        "es_correcta": false,
+        "explicacion": "Databricks Git folders do not provide per-user branch isolation within the same folder. The branch is global to the folder."
+      },
+      {
+        "texto_opcion": "Engineer B receives a merge conflict notification and must resolve it before continuing.",
+        "es_correcta": false,
+        "explicacion": "Switching branches does not trigger a merge conflict notification for other users. The branch simply changes for the entire shared folder."
+      },
+      {
+        "texto_opcion": "Databricks prevents the branch switch because another user has the folder open.",
+        "es_correcta": false,
+        "explicacion": "Databricks does not lock Git operations when multiple users have a folder open. Any user with permission can switch the branch at any time."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Branches",
+      "Collaboration"
+    ]
+  },
+  {
+    "pregunta": "A data engineering team follows best practices for Databricks Git folder collaboration.\n\nWhich approach does Databricks recommend to avoid branch management conflicts between team members?",
+    "opciones": [
+      {
+        "texto_opcion": "Each developer clones the repository into their own personal workspace folder under `/Workspace/Users/<email>/`.",
+        "es_correcta": true,
+        "explicacion": "Databricks recommends each developer has their own Git folder clone. This prevents one user from accidentally switching branches for other users."
+      },
+      {
+        "texto_opcion": "The team uses a single shared Git folder and coordinates branch switches via a Slack channel.",
+        "es_correcta": false,
+        "explicacion": "Using a single shared folder is exactly the antipattern Databricks warns against. Manual coordination is error-prone and doesn't prevent accidental switches."
+      },
+      {
+        "texto_opcion": "Each developer creates a separate Databricks workspace for their feature work.",
+        "es_correcta": false,
+        "explicacion": "Creating separate workspaces per developer is excessive and costly. The correct approach is separate Git folder clones within the same workspace."
+      },
+      {
+        "texto_opcion": "The team uses branch locking through the Repos API to prevent unauthorized branch switches.",
+        "es_correcta": false,
+        "explicacion": "The Repos API does not have a branch-locking feature. Branch protection is managed in the external Git provider (e.g., GitHub branch protection rules)."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Branches",
+      "Best Practices"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following commands from the Databricks web terminal (Git CLI enabled):\n\n```bash\ncd /Workspace/Users/alice@co.com/my-repo\ngit checkout -b feature/ingest-layer\ngit push -u origin feature/ingest-layer\n```\n\nWhat is the outcome?",
+    "opciones": [
+      {
+        "texto_opcion": "A new branch `feature/ingest-layer` is created locally and pushed to the remote Git repository, with tracking configured.",
+        "es_correcta": true,
+        "explicacion": "`git checkout -b` creates a local branch and switches to it. `git push -u origin` pushes it to the remote and sets the upstream tracking reference."
+      },
+      {
+        "texto_opcion": "The commands fail because Git CLI is not supported in Databricks notebooks.",
+        "es_correcta": false,
+        "explicacion": "Git CLI is supported from the **web terminal** (not notebook cells) in Git folders created with the 'Enable Git CLI support' option. The path and commands are valid."
+      },
+      {
+        "texto_opcion": "A new branch is created in the workspace only; the remote is not updated because Databricks Git folders cannot push to remote repos.",
+        "es_correcta": false,
+        "explicacion": "Databricks Git folders with CLI support can push to remote repositories using standard `git push` commands, provided Git credentials are configured."
+      },
+      {
+        "texto_opcion": "The `git checkout -b` command creates the branch but `git push` is blocked by Databricks security policies.",
+        "es_correcta": false,
+        "explicacion": "There is no Databricks-level security policy blocking `git push` for authorized users with valid Git credentials. Push works normally."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Branches",
+      "Git CLI"
+    ]
+  },
+  {
+    "pregunta": "A data engineer adds a new notebook to a Git folder and modifies an existing Python script. They open the Git dialog.\n\nWhich statement correctly describes the commit behavior?",
+    "opciones": [
+      {
+        "texto_opcion": "Modified files are highlighted in the Git dialog; the engineer enters a commit message and clicks **Commit & Push** to send changes to the remote.",
+        "es_correcta": true,
+        "explicacion": "The Git dialog highlights all changed files. A commit message is required, and **Commit & Push** stages, commits, and pushes in one operation."
+      },
+      {
+        "texto_opcion": "Databricks auto-commits every notebook save and pushes to the remote without user action.",
+        "es_correcta": false,
+        "explicacion": "Databricks does not auto-commit. Engineers must manually open the Git dialog, enter a message, and click **Commit & Push**."
+      },
+      {
+        "texto_opcion": "The commit includes notebook output cells by default when using `.py` source format.",
+        "es_correcta": false,
+        "explicacion": "Notebook outputs are NOT included in commits for `.py`, `.scala`, `.sql`, or `.r` formats. Only the `.ipynb` format can include outputs."
+      },
+      {
+        "texto_opcion": "A commit message is optional; the dialog will auto-generate one based on the changed file names.",
+        "es_correcta": false,
+        "explicacion": "A commit message is **required** in the Databricks Git dialog. The dialog will not allow committing without one."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Commits"
+    ]
+  },
+  {
+    "pregunta": "A data engineer saves a notebook in `.py` source format and commits it to a Git repository. A teammate later reviews the commit on GitHub.\n\nWhat will the teammate see in the commit diff?",
+    "opciones": [
+      {
+        "texto_opcion": "Only the source code changes — no notebook output cells are included in the commit.",
+        "es_correcta": true,
+        "explicacion": "When saved in source format (`.py`, `.scala`, `.sql`, `.r`), Databricks excludes notebook outputs from commits by default. Only code changes appear in the diff."
+      },
+      {
+        "texto_opcion": "Both source code changes and all output cells, including tables and charts.",
+        "es_correcta": false,
+        "explicacion": "Output cells are excluded for source-format notebooks. Including outputs requires saving in `.ipynb` format and enabling the output commit option."
+      },
+      {
+        "texto_opcion": "A base64-encoded binary blob representing the entire notebook state.",
+        "es_correcta": false,
+        "explicacion": "`.py` format commits produce plain-text Python diff that is human-readable. Binary encoding is not used for source-format notebooks."
+      },
+      {
+        "texto_opcion": "No diff is visible because Databricks encrypts committed notebook content.",
+        "es_correcta": false,
+        "explicacion": "Committed notebooks are plain-text files in your Git repository with no encryption. They are fully visible and diffable in any Git client."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Commits"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following Git CLI commands from the Databricks web terminal:\n\n```bash\ngit add notebooks/transform.py\ngit commit -m \"refactor: optimize join logic\"\ngit commit -m \"fix: correct null handling\"\ngit push origin feature/silver-layer\n```\n\nHow many commits appear on the remote `feature/silver-layer` branch after this?",
+    "opciones": [
+      {
+        "texto_opcion": "Two commits — both local commits are pushed to the remote branch in a single `git push`.",
+        "es_correcta": true,
+        "explicacion": "`git push` sends all unpushed local commits to the remote. Both commits are staged locally before the push, so both appear on the remote branch."
+      },
+      {
+        "texto_opcion": "One commit — `git push` squashes all local commits into a single commit.",
+        "es_correcta": false,
+        "explicacion": "Standard `git push` does not squash commits. Squashing requires an interactive rebase (`git rebase -i`) before pushing."
+      },
+      {
+        "texto_opcion": "Zero commits — the `git add` only staged one file, so the second commit has no content and is rejected.",
+        "es_correcta": false,
+        "explicacion": "The second `git commit` operates on the already-staged file from `git add`. Both commits have content and are valid."
+      },
+      {
+        "texto_opcion": "The push fails because you cannot make multiple commits before pushing in Databricks.",
+        "es_correcta": false,
+        "explicacion": "Databricks Git CLI supports staging multiple local commits before pushing. This is a standard Git workflow that works as expected."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Commits",
+      "Git CLI"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to commit only specific files from a Git folder with CLI support enabled. They run:\n\n```bash\ngit add src/ingest.py\ngit commit -m \"feat: add ingest module\"\n```\n\nThey intentionally leave `notebooks/scratch.py` unstaged. What happens to `notebooks/scratch.py`?",
+    "opciones": [
+      {
+        "texto_opcion": "It remains as an uncommitted change in the working directory and is not included in the commit.",
+        "es_correcta": true,
+        "explicacion": "`git add` stages only the specified file. Files not added with `git add` remain as unstaged working directory changes and are excluded from the commit."
+      },
+      {
+        "texto_opcion": "It is automatically included in the commit because Databricks commits all modified files by default.",
+        "es_correcta": false,
+        "explicacion": "Git CLI follows standard Git behavior. Only files explicitly staged with `git add` are included in the commit."
+      },
+      {
+        "texto_opcion": "It is deleted from the working directory because it was not staged.",
+        "es_correcta": false,
+        "explicacion": "Unstaged files are never deleted by a `git commit`. They remain in the working directory as uncommitted changes."
+      },
+      {
+        "texto_opcion": "The commit fails because Databricks requires all modified files to be staged before committing.",
+        "es_correcta": false,
+        "explicacion": "Databricks Git CLI follows standard Git rules. Partial staging is valid — only staged files are committed."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Commits",
+      "Git CLI"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to stash uncommitted changes before switching branches. Which Git CLI command accomplishes this in a Databricks web terminal?",
+    "opciones": [
+      {
+        "texto_opcion": "`git stash`",
+        "es_correcta": true,
+        "explicacion": "`git stash` saves uncommitted working directory changes to a temporary stack, allowing a clean branch switch. Changes can be restored later with `git stash pop`."
+      },
+      {
+        "texto_opcion": "`git commit --temp`",
+        "es_correcta": false,
+        "explicacion": "`--temp` is not a valid `git commit` flag. The correct way to temporarily save uncommitted changes is `git stash`."
+      },
+      {
+        "texto_opcion": "`databricks repos stash --repo-id <id>`",
+        "es_correcta": false,
+        "explicacion": "The Repos API does not have a stash operation. Stashing is a standard Git CLI operation (`git stash`) run in the web terminal."
+      },
+      {
+        "texto_opcion": "`git save --branch-switch`",
+        "es_correcta": false,
+        "explicacion": "`git save` is not a valid Git command. The correct command is `git stash`."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Commits",
+      "Git CLI"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to open a pull request to merge their feature branch into `main`.\n\nWhich tool or interface should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "The external Git provider's UI (e.g., GitHub, Azure DevOps, GitLab) — Databricks has no native API for creating pull requests.",
+        "es_correcta": true,
+        "explicacion": "Pull request creation and management is handled entirely in the external Git provider. Databricks provides no native PR creation endpoint."
+      },
+      {
+        "texto_opcion": "The Databricks Git dialog by clicking **New Pull Request** in the kebab menu.",
+        "es_correcta": false,
+        "explicacion": "There is no **New Pull Request** option in the Databricks Git dialog. The kebab menu offers Merge, Rebase, and Reset — but not PR creation."
+      },
+      {
+        "texto_opcion": "`POST /api/2.0/repos/{repo_id}/pull-requests` with the source and target branch.",
+        "es_correcta": false,
+        "explicacion": "The Databricks Repos API does not have a `/pull-requests` endpoint. PRs are created and managed in the external Git provider."
+      },
+      {
+        "texto_opcion": "`databricks repos pr create --source feature/my-branch --target main`",
+        "es_correcta": false,
+        "explicacion": "No such Databricks CLI command exists. Pull request management is outside the scope of the Databricks CLI and Repos API."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Pull Requests"
+    ]
+  },
+  {
+    "pregunta": "After a pull request is merged into `main` on GitHub, a CI/CD pipeline must sync the production Databricks Git folder. Which Repos API call accomplishes this?\n\n```\nA: POST /api/2.0/repos  { \"branch\": \"main\" }\nB: PATCH /api/2.0/repos/{prod_repo_id}  { \"branch\": \"main\" }\nC: GET /api/2.0/repos/{prod_repo_id}/sync\nD: PUT /api/2.0/repos/{prod_repo_id}  { \"pull\": true }\n```",
+    "opciones": [
+      {
+        "texto_opcion": "Option B — `PATCH /api/2.0/repos/{prod_repo_id}` with `{ \"branch\": \"main\" }`.",
+        "es_correcta": true,
+        "explicacion": "`PATCH` on an existing repo with `{ \"branch\": \"main\" }` pulls the latest commit on `main` into the workspace Git folder — effectively syncing after a PR merge."
+      },
+      {
+        "texto_opcion": "Option A — `POST /api/2.0/repos` with `{ \"branch\": \"main\" }`.",
+        "es_correcta": false,
+        "explicacion": "`POST /api/2.0/repos` creates a **new** Git folder (clone). It cannot sync an existing one, and this payload is missing required fields like `url` and `path`."
+      },
+      {
+        "texto_opcion": "Option C — `GET /api/2.0/repos/{prod_repo_id}/sync`.",
+        "es_correcta": false,
+        "explicacion": "There is no `/sync` sub-endpoint in the Repos API. `GET` requests are read-only and cannot trigger a sync."
+      },
+      {
+        "texto_opcion": "Option D — `PUT /api/2.0/repos/{prod_repo_id}` with `{ \"pull\": true }`.",
+        "es_correcta": false,
+        "explicacion": "`PUT` is not a valid HTTP verb for the Repos API. There is also no `pull` field. The correct verb is `PATCH`."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Pull Requests",
+      "Repos API"
+    ]
+  },
+  {
+    "pregunta": "A data engineering team has this workflow:\n\n```\n1. Developer pushes feature branch to GitHub\n2. Opens PR from feature → main\n3. Team reviews and merges the PR in GitHub\n4. CI/CD pipeline runs automatically\n5. Production workspace notebook runs the new code\n```\n\nWhere in this workflow does Databricks take action?",
+    "opciones": [
+      {
+        "texto_opcion": "At step 4 — the CI/CD pipeline calls the Repos API to sync the production Git folder to the latest `main` commit.",
+        "es_correcta": true,
+        "explicacion": "Steps 1–3 happen entirely in GitHub. At step 4, the CI/CD tool (e.g., GitHub Actions) calls `PATCH /api/2.0/repos/{id}` to sync the Databricks workspace to the merged `main`."
+      },
+      {
+        "texto_opcion": "At step 2 — Databricks creates the pull request in GitHub via the Repos API.",
+        "es_correcta": false,
+        "explicacion": "Databricks does not create pull requests. PRs are created in the Git provider (GitHub) by the developer."
+      },
+      {
+        "texto_opcion": "At step 3 — Databricks merges the pull request after code review is approved.",
+        "es_correcta": false,
+        "explicacion": "Merges are performed in the Git provider, not by Databricks. Databricks has no PR merge capability."
+      },
+      {
+        "texto_opcion": "At step 1 — Databricks pushes the feature branch to GitHub automatically.",
+        "es_correcta": false,
+        "explicacion": "Pushing to GitHub requires an explicit **Commit & Push** in the Git dialog or `git push` in the CLI. It is not automatic."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Pull Requests",
+      "CI/CD"
+    ]
+  },
+  {
+    "pregunta": "A data engineer merges a feature branch into `main` using the Databricks Git dialog's **Merge** option. There are no conflicts.\n\nWhat happens immediately after the merge?",
+    "opciones": [
+      {
+        "texto_opcion": "The merge is pushed to the remote Git repository using `git push`.",
+        "es_correcta": true,
+        "explicacion": "When there are no conflicts, the Databricks merge operation completes with an automatic `git push` to the remote repository."
+      },
+      {
+        "texto_opcion": "The merge is saved locally and the engineer must click **Push** separately.",
+        "es_correcta": false,
+        "explicacion": "A conflict-free merge in the Databricks Git dialog automatically pushes to the remote. No separate push step is needed."
+      },
+      {
+        "texto_opcion": "The feature branch is automatically deleted from the remote after the merge.",
+        "es_correcta": false,
+        "explicacion": "Databricks does not automatically delete branches after a merge. Branch deletion must be done manually in the Git provider or via Git CLI."
+      },
+      {
+        "texto_opcion": "A pull request is automatically opened in the Git provider to review the merge.",
+        "es_correcta": false,
+        "explicacion": "Databricks does not create pull requests. The merge happens directly in the workspace Git folder without going through a PR."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Merge"
+    ]
+  },
+  {
+    "pregunta": "A data engineer performs a `git pull` in the Git dialog and sees a merge conflict in `notebooks/etl.py`. The Git dialog shows two options.\n\nWhich resolution approach **keeps only the remote changes and discards all local changes**?",
+    "opciones": [
+      {
+        "texto_opcion": "Select **Take all incoming changes**.",
+        "es_correcta": true,
+        "explicacion": "**Take all incoming changes** accepts the remote (incoming) version entirely, discarding all local changes in the conflicted file."
+      },
+      {
+        "texto_opcion": "Select **Keep all current changes**.",
+        "es_correcta": false,
+        "explicacion": "**Keep all current changes** discards the remote version and keeps the local version — the opposite of what is needed."
+      },
+      {
+        "texto_opcion": "Click **Abort** and then re-pull.",
+        "es_correcta": false,
+        "explicacion": "**Abort** cancels the entire operation and restores the pre-merge state. It does not resolve the conflict in favor of the remote."
+      },
+      {
+        "texto_opcion": "Click **Continue Merge** without editing the file.",
+        "es_correcta": false,
+        "explicacion": "Clicking **Continue Merge** without resolving conflict markers first will fail — Git still sees the conflict markers in the file."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Merge",
+      "Conflicts"
+    ]
+  },
+  {
+    "pregunta": "A data engineer sees the following content in a conflicted file after a `git pull`:\n\n```\n<<<<<<< HEAD\ndf = df.dropDuplicates([\"id\"])\n=======\ndf = df.dropDuplicates([\"id\", \"event_date\"])\n>>>>>>> origin/main\n```\n\nThe engineer wants to keep the **remote** version. What is the correct action?",
+    "opciones": [
+      {
+        "texto_opcion": "Delete the `<<<<<<< HEAD`, `=======`, `>>>>>>> origin/main` markers and keep only `df = df.dropDuplicates([\"id\", \"event_date\"])`, then click **Mark As Resolved**.",
+        "es_correcta": true,
+        "explicacion": "To keep the remote version, remove all conflict markers and the local code block (`HEAD` section), leaving only the remote line. Then mark it resolved."
+      },
+      {
+        "texto_opcion": "Delete only the `=======` line and keep both code lines.",
+        "es_correcta": false,
+        "explicacion": "Leaving both code lines without conflict markers creates a syntax error. You must remove all conflict markers and choose exactly one version."
+      },
+      {
+        "texto_opcion": "Click **Abort** to discard local changes and then re-pull.",
+        "es_correcta": false,
+        "explicacion": "**Abort** exits the merge entirely and returns to the pre-merge state — it does not resolve the conflict in favor of the remote."
+      },
+      {
+        "texto_opcion": "Delete the remote version block (below `=======`) and keep the HEAD version.",
+        "es_correcta": false,
+        "explicacion": "This would keep the **local** version (`df.dropDuplicates([\"id\"])`), not the remote version. The requirement is to keep the remote version."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Merge",
+      "Conflicts"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses **Rebase** instead of **Merge** in the Databricks Git dialog.\n\nWhich statement correctly describes the difference between these two operations?",
+    "opciones": [
+      {
+        "texto_opcion": "Rebase replays commits on top of the target branch, creating a linear history; Merge creates a merge commit that preserves the branching history.",
+        "es_correcta": true,
+        "explicacion": "`git rebase` rewrites commit history for a linear result. `git merge` creates a dedicated merge commit. Databricks recommends merge for Git beginners to avoid force-push issues."
+      },
+      {
+        "texto_opcion": "Rebase is faster because it deletes the source branch after integrating changes; Merge preserves both branches.",
+        "es_correcta": false,
+        "explicacion": "Neither rebase nor merge automatically deletes branches. The speed difference is unrelated to branch deletion."
+      },
+      {
+        "texto_opcion": "Merge creates a linear history; Rebase creates a merge commit with both parents.",
+        "es_correcta": false,
+        "explicacion": "This is reversed. **Rebase** creates linear history. **Merge** creates a merge commit with two parent references."
+      },
+      {
+        "texto_opcion": "Both operations produce identical results; the choice is purely cosmetic.",
+        "es_correcta": false,
+        "explicacion": "Rebase and merge produce different commit graphs and have different implications for force-push requirements and shared branch safety."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Merge"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses the Databricks Git dialog's **Reset** (Hard Reset) option.\n\nWhat is the effect of a hard reset on the current branch?",
+    "opciones": [
+      {
+        "texto_opcion": "All local uncommitted changes are discarded and the local branch is reset to match the remote.",
+        "es_correcta": true,
+        "explicacion": "Hard Reset in the Databricks Git dialog performs `git reset --hard` to the remote HEAD, discarding all local uncommitted changes and syncing to the remote state."
+      },
+      {
+        "texto_opcion": "The branch is deleted from both the local workspace and the remote repository.",
+        "es_correcta": false,
+        "explicacion": "Hard Reset does not delete branches. It only discards local uncommitted changes and aligns the local state with the remote."
+      },
+      {
+        "texto_opcion": "Committed but unpushed changes are reverted and re-staged for a new commit.",
+        "es_correcta": false,
+        "explicacion": "Hard Reset discards uncommitted changes. It does not stage them for a new commit or selectively revert pushed commits."
+      },
+      {
+        "texto_opcion": "The last commit is undone but the file changes are preserved as uncommitted edits.",
+        "es_correcta": false,
+        "explicacion": "This describes a **soft reset** (`git reset --soft HEAD~1`), not a hard reset. Hard reset discards all local changes completely."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Merge"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is setting up a Git folder with **sparse checkout** enabled, specifying the patterns `[\"src/\", \"notebooks/\"]`.\n\nWhat is the effect of sparse checkout?",
+    "opciones": [
+      {
+        "texto_opcion": "Only the `src/` and `notebooks/` directories from the remote repository are cloned into the workspace, reducing sync time and storage.",
+        "es_correcta": true,
+        "explicacion": "Sparse checkout clones only the specified subdirectories. This is useful for large repositories that exceed Databricks' 2 GB memory / 4 GB disk limits."
+      },
+      {
+        "texto_opcion": "The entire repository is cloned, but only `src/` and `notebooks/` are visible in the Databricks workspace UI.",
+        "es_correcta": false,
+        "explicacion": "Sparse checkout physically limits what is downloaded, not just what is displayed. Files outside the patterns are not present on disk."
+      },
+      {
+        "texto_opcion": "Sparse checkout patterns can be changed at any time after the Git folder is created.",
+        "es_correcta": false,
+        "explicacion": "According to Databricks documentation, sparse checkout patterns cannot be changed after the Git folder is created. A new folder would need to be created."
+      },
+      {
+        "texto_opcion": "Sparse checkout is only available when using the Git CLI, not the standard Git folder UI.",
+        "es_correcta": false,
+        "explicacion": "Sparse checkout can be configured in the **Create Git folder** UI dialog. It is not exclusive to the Git CLI."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Git Folders"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to authenticate a GitHub Actions CI/CD pipeline to deploy to a production Databricks workspace. The security team requires no long-lived secrets stored in GitHub.\n\nWhich authentication method should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "OIDC / Workload Identity Federation (`DATABRICKS_AUTH_TYPE: github-oidc`) — uses short-lived tokens with no stored secrets.",
+        "es_correcta": true,
+        "explicacion": "OIDC federation allows GitHub Actions to authenticate to Databricks using short-lived tokens issued by GitHub's identity provider. No PAT or client secret is stored in GitHub secrets."
+      },
+      {
+        "texto_opcion": "Personal Access Token (PAT) stored as a GitHub Actions secret.",
+        "es_correcta": false,
+        "explicacion": "PATs are long-lived credentials. Storing them in GitHub secrets does not meet the requirement of having no long-lived secrets."
+      },
+      {
+        "texto_opcion": "Hardcoding the Databricks token directly in the `deploy.yml` workflow file.",
+        "es_correcta": false,
+        "explicacion": "Hardcoding credentials is a critical security vulnerability. Tokens in workflow files are visible in the repository and must never be done."
+      },
+      {
+        "texto_opcion": "Service Principal with a client secret stored in a `.env` file committed to the repository.",
+        "es_correcta": false,
+        "explicacion": "Committing credentials to a Git repository is a major security risk. Client secrets must not be committed to source control."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "CI/CD",
+      "Authentication"
+    ]
+  },
+  {
+    "pregunta": "A data engineering team follows Databricks best practices for CI/CD.\n\nWhich items should **NOT** be committed to a Git repository? Select the most complete answer.",
+    "opciones": [
+      {
+        "texto_opcion": "Build artifacts (`.jar`, `.whl` files) and credentials/secrets.",
+        "es_correcta": true,
+        "explicacion": "Databricks best practices explicitly state: do NOT commit build artifacts (use Unity Catalog volumes instead) and do NOT commit credentials (use Databricks Secrets via `dbutils.secrets.get(...)`)."
+      },
+      {
+        "texto_opcion": "Notebook source files (`.py`, `.sql`) and YAML configuration files.",
+        "es_correcta": false,
+        "explicacion": "Notebook source files and YAML configs (like `databricks.yml`) **should** be committed to Git. These are the primary versioned artifacts in a Databricks project."
+      },
+      {
+        "texto_opcion": "Delta table data files stored in cloud storage.",
+        "es_correcta": false,
+        "explicacion": "Delta table data files are stored in cloud storage (S3, ADLS, GCS) and are never committed to Git. They are not part of the code repository."
+      },
+      {
+        "texto_opcion": "Python transformation scripts and unit test files.",
+        "es_correcta": false,
+        "explicacion": "Python scripts and unit tests **should** be committed. They are core code artifacts that benefit from version control and code review."
+      }
+    ],
+    "tags": [
+      "5.1",
+      "Best Practices",
+      "Commits"
+    ]
+  }
+]

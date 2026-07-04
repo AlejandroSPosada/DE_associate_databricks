@@ -1,0 +1,872 @@
+[
+  {
+    "pregunta": "A data engineer runs the following command:\n\n```sql\nCOPY INTO sales.transactions\nFROM 's3://bucket/raw/transactions/'\nFILEFORMAT = PARQUET;\n```\n\nThe command is executed a second time without any changes. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "No new data is loaded; COPY INTO skips files already ingested.",
+        "es_correcta": true,
+        "explicacion": "<p>COPY INTO tracks which files have been loaded in the Delta transaction log and skips them on subsequent runs, making it idempotent by design.</p>"
+      },
+      {
+        "texto_opcion": "The table is truncated and all files are reloaded.",
+        "es_correcta": false,
+        "explicacion": "<p>Truncation never happens automatically with COPY INTO. Files are only reloaded if <code>COPY_OPTIONS ('force' = 'true')</code> is explicitly set.</p>"
+      },
+      {
+        "texto_opcion": "An error is raised because the table already contains data.",
+        "es_correcta": false,
+        "explicacion": "<p>COPY INTO appends data and does not fail when the target table already has rows.</p>"
+      },
+      {
+        "texto_opcion": "Duplicate rows are inserted for every file already processed.",
+        "es_correcta": false,
+        "explicacion": "<p>COPY INTO maintains a load history per file to prevent duplicates — it will not re-ingest already-processed files unless <code>force = true</code> is set.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO idempotency"
+    ]
+  },
+  {
+    "pregunta": "Which statement best describes the idempotency guarantee of COPY INTO?",
+    "opciones": [
+      {
+        "texto_opcion": "COPY INTO is idempotent because it tracks each ingested file and will not reload it.",
+        "es_correcta": true,
+        "explicacion": "Databricks maintains per-file load metadata so re-running COPY INTO on the same source path is always safe."
+      },
+      {
+        "texto_opcion": "COPY INTO is idempotent because it uses MERGE logic to deduplicate rows.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO does not perform row-level deduplication; its idempotency is at the file level, not the row level."
+      },
+      {
+        "texto_opcion": "COPY INTO is idempotent only when the `FORCE = TRUE` option is omitted.",
+        "es_correcta": false,
+        "explicacion": "While omitting `FORCE = TRUE` preserves idempotency, the statement is misleading — COPY INTO is idempotent by default without any special condition."
+      },
+      {
+        "texto_opcion": "COPY INTO is idempotent because Delta Lake auto-merges incoming Parquet files.",
+        "es_correcta": false,
+        "explicacion": "Delta Lake does not auto-merge files. The idempotency comes from COPY INTO's own file-tracking metadata, not the storage format."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO idempotency"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to force COPY INTO to reload files that were already ingested. Which option achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "`COPY_OPTIONS ('force' = 'true')`",
+        "es_correcta": true,
+        "explicacion": "<p><code>force</code> is a key inside <code>COPY_OPTIONS</code>. Setting it to <code>'true'</code> disables idempotency and reloads all matching files regardless of prior ingestion history.</p>"
+      },
+      {
+        "texto_opcion": "`COPY INTO … FORCE = TRUE` as a top-level clause",
+        "es_correcta": false,
+        "explicacion": "<p><code>FORCE</code> is not a standalone top-level clause. It must be passed as a key inside <code>COPY_OPTIONS ('force' = 'true')</code>.</p>"
+      },
+      {
+        "texto_opcion": "`COPY_OPTIONS ('overwrite' = 'true')`",
+        "es_correcta": false,
+        "explicacion": "<p><code>overwrite</code> is not a valid COPY INTO option. The only supported <code>COPY_OPTIONS</code> keys are <code>force</code> and <code>mergeSchema</code>.</p>"
+      },
+      {
+        "texto_opcion": "Drop and recreate the Delta table before running COPY INTO.",
+        "es_correcta": false,
+        "explicacion": "<p>Dropping the table resets load history but is destructive and requires re-creating the table schema. <code>COPY_OPTIONS ('force' = 'true')</code> is the non-destructive supported mechanism.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO options"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to load CSV files from Azure Blob Storage into a Delta table. The files use a pipe `|` delimiter and have a header row. Which COPY INTO command is correct?\n\n```sql\n-- Option A\nCOPY INTO inventory.items\nFROM 'abfss://container@account.dfs.core.windows.net/items/'\nFILEFORMAT = (TYPE = 'CSV' DELIMITER = '|' HEADER = 'true');\n\n-- Option B\nCOPY INTO inventory.items\nFROM 'abfss://container@account.dfs.core.windows.net/items/'\nFILEFORMAT = CSV\nCOPY_OPTIONS ('delimiter' = '|', 'header' = 'true');\n\n-- Option C\nCOPY INTO inventory.items\nFROM 'abfss://container@account.dfs.core.windows.net/items/'\nFORMAT_OPTIONS ('delimiter' = '|', 'header' = 'true')\nFILEFORMAT = CSV;\n\n-- Option D\nCOPY INTO inventory.items\nFROM 'abfss://container@account.dfs.core.windows.net/items/'\nFILEFORMAT = CSV\nFORMAT_OPTIONS ('delimiter' = '|', 'header' = 'true');\n```",
+    "opciones": [
+      {
+        "texto_opcion": "Option A",
+        "es_correcta": false,
+        "explicacion": "CSV parsing options like `delimiter` and `header` do not belong inside `FILEFORMAT = (...)`. That clause only accepts the format type keyword (e.g., `FILEFORMAT = CSV`), not parsing options."
+      },
+      {
+        "texto_opcion": "Option B",
+        "es_correcta": false,
+        "explicacion": "`COPY_OPTIONS` controls ingestion behavior against the target Delta table (e.g., `mergeSchema`, `force`), not file parsing. Options like `delimiter` and `header` must go in `FORMAT_OPTIONS`."
+      },
+      {
+        "texto_opcion": "Option C",
+        "es_correcta": false,
+        "explicacion": "The clause order is wrong. Per the official syntax, `FILEFORMAT` must come before `FORMAT_OPTIONS`: `FILEFORMAT = CSV` → `FORMAT_OPTIONS (...)` → `COPY_OPTIONS (...)`. Also, `FILEFORMAT` does not use parentheses or `TYPE =`; the correct syntax is simply `FILEFORMAT = CSV`."
+      },
+      {
+        "texto_opcion": "Option D (rewritten)",
+        "es_correcta": true,
+        "explicacion": "This is the correct syntax. `FILEFORMAT = CSV` specifies the format directly (no parentheses, no `TYPE =`). `FORMAT_OPTIONS` is the correct clause for CSV parsing settings like `delimiter` and `header`, and it appears after `FILEFORMAT` per the documented clause order."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO syntax"
+    ]
+  },
+  {
+    "pregunta": "Which cloud storage path formats are valid sources for COPY INTO?\n\nI. `s3://my-bucket/data/`\nII. `abfss://container@account.dfs.core.windows.net/data/`\nIII. `gs://my-bucket/data/`\nIV. `hdfs://namenode:8020/data/`",
+    "opciones": [
+      {
+        "texto_opcion": "I, II, and III only",
+        "es_correcta": true,
+        "explicacion": "<p>COPY INTO supports AWS S3 (<code>s3://</code>), Azure Data Lake Storage Gen2 (<code>abfss://</code>), and Google Cloud Storage (<code>gs://</code>). COPY INTO is designed for cloud object storage; on-premises HDFS is not a supported source.</p>"
+      },
+      {
+        "texto_opcion": "I and II only",
+        "es_correcta": false,
+        "explicacion": "<p>GCS (<code>gs://</code>) is also a supported cloud storage path for COPY INTO on GCP-backed workspaces.</p>"
+      },
+      {
+        "texto_opcion": "I, II, III, and IV",
+        "es_correcta": false,
+        "explicacion": "<p>HDFS (<code>hdfs://</code>) is not a supported source for COPY INTO; the command is designed exclusively for cloud object storage.</p>"
+      },
+      {
+        "texto_opcion": "II and III only",
+        "es_correcta": false,
+        "explicacion": "<p>S3 (<code>s3://</code>) is a fully supported source path for COPY INTO on AWS-backed Databricks workspaces.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO cloud storage"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs COPY INTO to load JSON files, but some files contain malformed records. What is the correct way to handle this in COPY INTO?",
+    "opciones": [
+      {
+        "texto_opcion": "Use `FORMAT_OPTIONS ('mode' = 'PERMISSIVE')` and add a `_corrupt_record` column to the target table to capture malformed rows.",
+        "es_correcta": true,
+        "explicacion": "<p>COPY INTO passes <code>FORMAT_OPTIONS</code> to the underlying Spark DataFrameReader. Setting <code>mode = PERMISSIVE</code> (the default) stores malformed records in the <code>_corrupt_record</code> column instead of failing the job.</p>"
+      },
+      {
+        "texto_opcion": "`COPY_OPTIONS ('badRecordsPath' = '/tmp/bad_records')`",
+        "es_correcta": false,
+        "explicacion": "<p><code>badRecordsPath</code> is not a valid COPY INTO option. The only supported <code>COPY_OPTIONS</code> keys are <code>force</code> and <code>mergeSchema</code>.</p>"
+      },
+      {
+        "texto_opcion": "`COPY_OPTIONS ('skipMalformedRows' = 'true')`",
+        "es_correcta": false,
+        "explicacion": "<p><code>skipMalformedRows</code> is not a valid COPY INTO option.</p>"
+      },
+      {
+        "texto_opcion": "`FORMAT_OPTIONS ('ignoreCorruptFiles' = 'true')`",
+        "es_correcta": false,
+        "explicacion": "<p><code>ignoreCorruptFiles</code> is a Spark read option that ignores entire unreadable files, not individual malformed rows within a file. It is also not a guaranteed supported key in COPY INTO <code>FORMAT_OPTIONS</code>.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO error handling"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following statement:\n\n```sql\nCOPY INTO logs.events\nFROM (\n  SELECT to_timestamp(event_time) AS event_time, upper(event_type) AS event_type\n  FROM 's3://bucket/events/'\n)\nFILEFORMAT = JSON;\n```\n\nWhat does the subquery inside `FROM` allow the engineer to do?",
+    "opciones": [
+      {
+        "texto_opcion": "Apply column transformations to the raw source data before loading it into the Delta table.",
+        "es_correcta": true,
+        "explicacion": "<p>COPY INTO supports a SELECT subquery in the FROM clause to cast, rename, or transform columns at ingest time before writing to the Delta table.</p>"
+      },
+      {
+        "texto_opcion": "Filter files by date partition before reading them from cloud storage.",
+        "es_correcta": false,
+        "explicacion": "<p>File-level filtering is done via the <code>PATTERN</code> clause or by specifying a more specific path in FROM. The subquery operates on row-level column values, not on file selection.</p>"
+      },
+      {
+        "texto_opcion": "Join the source files with an existing Delta table during ingestion.",
+        "es_correcta": false,
+        "explicacion": "<p>The subquery in COPY INTO is limited to projections and expressions on the source data. Joins against other tables are not supported.</p>"
+      },
+      {
+        "texto_opcion": "Load only new files that have appeared since the last run.",
+        "es_correcta": false,
+        "explicacion": "<p>Incremental file detection is COPY INTO's default idempotency behavior and is not controlled by the subquery.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO transformation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants COPY INTO to load only files matching the pattern `events_2024_*.json` from a cloud storage path. Which clause achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "`COPY INTO … FROM 's3://bucket/events/' PATTERN = 'events_2024_*.json'`",
+        "es_correcta": true,
+        "explicacion": "The `PATTERN` option accepts a glob expression to filter which files at the source path are eligible for ingestion."
+      },
+      {
+        "texto_opcion": "`COPY INTO … FROM 's3://bucket/events/events_2024_*.json'`",
+        "es_correcta": false,
+        "explicacion": "Glob wildcards in the path itself are not supported by COPY INTO; the `PATTERN` option must be used for file filtering."
+      },
+      {
+        "texto_opcion": "`COPY INTO … WHERE file_name LIKE 'events_2024_%'`",
+        "es_correcta": false,
+        "explicacion": "COPY INTO does not support a `WHERE` clause for file name filtering; use the `PATTERN` option instead."
+      },
+      {
+        "texto_opcion": "`COPY INTO … FORMAT_OPTIONS ('filePattern' = 'events_2024_*.json')`",
+        "es_correcta": false,
+        "explicacion": "`filePattern` is not a valid `FORMAT_OPTIONS` key; file filtering belongs in the top-level `PATTERN` option."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO PATTERN"
+    ]
+  },
+  {
+    "pregunta": "Which statement correctly describes how COPY INTO differs from `spark.read` followed by `.write`?",
+    "opciones": [
+      {
+        "texto_opcion": "COPY INTO tracks loaded files and skips re-ingestion; `spark.read` / `.write` has no built-in file tracking.",
+        "es_correcta": true,
+        "explicacion": "COPY INTO maintains a load history per file automatically. A plain `spark.read` + `write` job must implement its own deduplication or overwrite logic."
+      },
+      {
+        "texto_opcion": "COPY INTO is faster because it uses streaming micro-batches under the hood.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO is a batch operation, not a streaming one. Its performance advantage comes from file-level skip logic, not micro-batching."
+      },
+      {
+        "texto_opcion": "COPY INTO supports schema evolution while `spark.read` / `.write` does not.",
+        "es_correcta": false,
+        "explicacion": "Both approaches support schema evolution; `mergeSchema` is available in both COPY INTO `COPY_OPTIONS` and `spark.write` options."
+      },
+      {
+        "texto_opcion": "COPY INTO can only target external Delta tables, not managed tables.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO works with both managed and external Delta tables."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO vs spark.read"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to ingest Avro files from GCS into a Delta table and also evolve the schema automatically as new fields appear. Which COPY INTO command is correct?\n\n```sql\n-- A\nCOPY INTO catalog.schema.my_table\nFROM 'gs://bucket/avro_files/'\nFILEFORMAT = AVRO\nCOPY_OPTIONS ('mergeSchema' = 'true');\n\n-- B\nCOPY INTO catalog.schema.my_table\nFROM 'gs://bucket/avro_files/'\nFILEFORMAT = AVRO\nFORMAT_OPTIONS ('mergeSchema' = 'true');\n\n-- C\nCOPY INTO catalog.schema.my_table\nFROM 'gs://bucket/avro_files/'\nFILEFORMAT = AVRO\nFORMAT_OPTIONS ('mergeSchema' = 'true')\nCOPY_OPTIONS ('mergeSchema' = 'true');\n\n-- D\nCOPY INTO catalog.schema.my_table\nFROM 'gs://bucket/avro_files/'\nFILEFORMAT = AVRO\nOPTIONS ('mergeSchema' = 'true');\n```",
+    "opciones": [
+      {
+        "texto_opcion": "Option A",
+        "es_correcta": true,
+        "explicacion": "<p>The correct syntax is <code>FILEFORMAT = AVRO</code> (no parentheses). <code>mergeSchema</code> controls target table schema evolution and belongs in <code>COPY_OPTIONS</code>, not <code>FORMAT_OPTIONS</code>.</p>"
+      },
+      {
+        "texto_opcion": "Option B",
+        "es_correcta": false,
+        "explicacion": "<p><code>FORMAT_OPTIONS</code> controls file parsing settings (delimiter, header, etc.), not target schema evolution. <code>mergeSchema</code> must go in <code>COPY_OPTIONS</code>.</p>"
+      },
+      {
+        "texto_opcion": "Option C",
+        "es_correcta": false,
+        "explicacion": "<p>While <code>COPY_OPTIONS ('mergeSchema' = 'true')</code> is correct, adding it also to <code>FORMAT_OPTIONS</code> is redundant and incorrect. Only <code>COPY_OPTIONS</code> is needed.</p>"
+      },
+      {
+        "texto_opcion": "Option D",
+        "es_correcta": false,
+        "explicacion": "<p><code>OPTIONS</code> is not a recognized COPY INTO clause. The valid clauses are <code>FORMAT_OPTIONS</code> and <code>COPY_OPTIONS</code>.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO schema evolution"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the command below and then checks the Delta table history.\n\n```sql\nCOPY INTO sales.orders\nFROM 's3://bucket/orders/'\nFILEFORMAT = JSON;\n```\n\nWhich Delta Lake operation type appears in the table history for this COPY INTO run?",
+    "opciones": [
+      {
+        "texto_opcion": "WRITE",
+        "es_correcta": true,
+        "explicacion": "<p>COPY INTO records a <code>WRITE</code> operation in the Delta transaction log, the same as any append-mode write.</p>"
+      },
+      {
+        "texto_opcion": "COPY",
+        "es_correcta": false,
+        "explicacion": "<p>There is no <code>COPY</code> operation type in the Delta transaction log. The command results in a <code>WRITE</code> entry.</p>"
+      },
+      {
+        "texto_opcion": "STREAMING UPDATE",
+        "es_correcta": false,
+        "explicacion": "<p><code>STREAMING UPDATE</code> appears when using Structured Streaming with a Delta sink, not COPY INTO.</p>"
+      },
+      {
+        "texto_opcion": "MERGE",
+        "es_correcta": false,
+        "explicacion": "<p><code>MERGE</code> appears only when using the <code>MERGE INTO</code> SQL command. COPY INTO produces a <code>WRITE</code>.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO Delta history"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is comparing Auto Loader and COPY INTO for a new ingestion pipeline. The source bucket receives thousands of new files per hour. Which statement is accurate?",
+    "opciones": [
+      {
+        "texto_opcion": "Auto Loader is preferred at high file volume because it uses cloud notifications to detect new files efficiently; COPY INTO must list the entire directory each run.",
+        "es_correcta": true,
+        "explicacion": "Auto Loader's file notification mode avoids full directory listings, making it more scalable. COPY INTO lists the directory on every execution, which becomes costly at high file counts."
+      },
+      {
+        "texto_opcion": "COPY INTO is preferred at high file volume because it batches files automatically.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO processes all unloaded files per run but still requires a directory listing, which degrades at scale. Auto Loader handles high-volume scenarios more efficiently."
+      },
+      {
+        "texto_opcion": "Both COPY INTO and Auto Loader require a checkpoint directory to track processed files.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader uses a checkpoint directory; COPY INTO does not — it maintains its own internal file metadata within the Delta table."
+      },
+      {
+        "texto_opcion": "COPY INTO supports continuous streaming while Auto Loader only runs in batch mode.",
+        "es_correcta": false,
+        "explicacion": "It is the reverse: Auto Loader supports both continuous streaming and triggered batch modes; COPY INTO is batch-only."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO vs Auto Loader"
+    ]
+  },
+  {
+    "pregunta": "A data engineer executes the following command:\n\n```sql\nCOPY INTO finance.ledger\nFROM 's3://bucket/ledger/'\nFILEFORMAT = PARQUET\nCOPY_OPTIONS ('force' = 'true');\n```\n\nWhat is the risk of using `force = true` in a production pipeline?",
+    "opciones": [
+      {
+        "texto_opcion": "All previously ingested files are reloaded, potentially creating duplicate rows.",
+        "es_correcta": true,
+        "explicacion": "<p><code>force = true</code> bypasses the file-tracking mechanism and re-ingests every matching file, which will duplicate rows if the table already contains that data.</p>"
+      },
+      {
+        "texto_opcion": "The Delta table is dropped and recreated, causing data loss.",
+        "es_correcta": false,
+        "explicacion": "<p><code>force = true</code> does not drop the table; it only overrides the file-skip logic. The table retains its existing data and new rows are appended on top.</p>"
+      },
+      {
+        "texto_opcion": "The command fails if the target table already contains rows.",
+        "es_correcta": false,
+        "explicacion": "<p>COPY INTO never fails because of existing rows; it always appends. <code>force = true</code> only changes which files are eligible for loading.</p>"
+      },
+      {
+        "texto_opcion": "Schema evolution is automatically disabled when `force = true` is set.",
+        "es_correcta": false,
+        "explicacion": "<p><code>force = true</code> and <code>mergeSchema = true</code> are independent options; setting one does not affect the other.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO FORCE risk"
+    ]
+  },
+  {
+    "pregunta": "Which file formats are supported as sources for COPY INTO?",
+    "opciones": [
+      {
+        "texto_opcion": "CSV, JSON, PARQUET, AVRO, ORC, TEXT, BINARYFILE",
+        "es_correcta": true,
+        "explicacion": "Databricks COPY INTO supports all of these formats natively as source file types."
+      },
+      {
+        "texto_opcion": "CSV, JSON, and PARQUET only",
+        "es_correcta": false,
+        "explicacion": "COPY INTO supports additional formats beyond these three, including AVRO, ORC, TEXT, and BINARYFILE."
+      },
+      {
+        "texto_opcion": "Delta, Parquet, and ORC only",
+        "es_correcta": false,
+        "explicacion": "COPY INTO is designed to ingest raw files (CSV, JSON, Parquet, etc.) into a Delta table — it does not take Delta as a source format."
+      },
+      {
+        "texto_opcion": "CSV, JSON, PARQUET, AVRO, and XML",
+        "es_correcta": false,
+        "explicacion": "XML is not a supported COPY INTO source format. Supported formats include CSV, JSON, PARQUET, AVRO, ORC, TEXT, and BINARYFILE."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO supported formats"
+    ]
+  },
+  {
+    "pregunta": "A data engineer sets up COPY INTO without specifying inline credentials for an S3 path in a Unity Catalog-enabled workspace. Under what condition will the command succeed without explicit credentials?",
+    "opciones": [
+      {
+        "texto_opcion": "When the S3 path is covered by a Unity Catalog external location that the engineer has READ FILES permission on, or when the cluster has an IAM instance profile granting access to the bucket.",
+        "es_correcta": true,
+        "explicacion": "<p>In Unity Catalog workspaces, access is granted via external locations or storage credentials managed in UC. In non-UC workspaces, an IAM instance profile attached to the cluster is sufficient. Both approaches allow COPY INTO to run without inline credentials.</p>"
+      },
+      {
+        "texto_opcion": "When the S3 bucket is in the same AWS region as the Databricks workspace.",
+        "es_correcta": false,
+        "explicacion": "<p>Same-region co-location does not grant access; authentication via IAM role, external location, or explicit credentials is always required.</p>"
+      },
+      {
+        "texto_opcion": "COPY INTO always requires explicit inline credentials; there is no way to use implicit authentication.",
+        "es_correcta": false,
+        "explicacion": "<p>Instance profiles (IAM roles) and Unity Catalog external locations both allow COPY INTO to run without inline credential keys.</p>"
+      },
+      {
+        "texto_opcion": "When the bucket is publicly readable.",
+        "es_correcta": false,
+        "explicacion": "<p>While a public bucket would technically allow access, using public buckets in production is a security antipattern and is not the intended mechanism.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO cloud credentials"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to load only a specific subfolder of files from a larger S3 prefix. The target subfolder path is `s3://bucket/events/2024/03/`. Which COPY INTO syntax correctly scopes the load to that subfolder?",
+    "opciones": [
+      {
+        "texto_opcion": "`COPY INTO tbl FROM 's3://bucket/events/2024/03/' FILEFORMAT = JSON;`",
+        "es_correcta": true,
+        "explicacion": "<p>COPY INTO accepts any valid cloud storage path prefix, including nested subfolders. Specifying the exact subfolder URI directly in the FROM clause scopes ingestion to that folder only.</p>"
+      },
+      {
+        "texto_opcion": "`COPY INTO tbl FROM 's3://bucket/events/' WHERE path LIKE '2024/03/%' FILEFORMAT = JSON;`",
+        "es_correcta": false,
+        "explicacion": "<p>COPY INTO does not support a <code>WHERE path</code> clause. Use the specific subfolder path directly in the FROM clause.</p>"
+      },
+      {
+        "texto_opcion": "`COPY INTO tbl FROM 's3://bucket/events/' PATTERN = '2024/03/*' FILEFORMAT = JSON;`",
+        "es_correcta": false,
+        "explicacion": "<p><code>PATTERN</code> matches file names within the given path, not directory structure. To scope by subfolder, pass the subfolder path directly in the FROM clause.</p>"
+      },
+      {
+        "texto_opcion": "`COPY INTO tbl FROM 's3://bucket/events/' PARTITION BY ('year=2024', 'month=03') FILEFORMAT = JSON;`",
+        "es_correcta": false,
+        "explicacion": "<p><code>PARTITION BY</code> is not a valid COPY INTO clause. Use the direct subfolder path in FROM to scope ingestion.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO path scoping"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs COPY INTO on a Delta table and observes that rows from a file processed two weeks ago appear again in the table after the latest run. What most likely caused this?",
+    "opciones": [
+      {
+        "texto_opcion": "The source file was overwritten or re-uploaded at the same path in cloud storage.",
+        "es_correcta": true,
+        "explicacion": "COPY INTO tracks files by path and metadata (size/modification time). If a file is overwritten at the same path, COPY INTO may detect it as a new or changed file and re-ingest it, producing duplicates in the target table."
+      },
+      {
+        "texto_opcion": "COPY INTO automatically re-ingests files older than seven days.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO has no time-based re-ingestion policy. Files are skipped based on load history tracked in the Delta transaction log, regardless of age."
+      },
+      {
+        "texto_opcion": "The table's COPY INTO history was reset when VACUUM removed old Delta log files.",
+        "es_correcta": false,
+        "explicacion": "VACUUM removes orphaned data files (Parquet), not Delta transaction log files. Log retention is controlled separately by delta.logRetentionDuration and delta.enableExpiredLogCleanup — not by VACUUM."
+      },
+      {
+        "texto_opcion": "A second COPY INTO command with FORCE = TRUE was accidentally run.",
+        "es_correcta": false,
+        "explicacion": "FORCE = TRUE would cause re-ingestion, but it is an explicit deliberate option. The question describes an unintended re-ingestion, making an accidental file overwrite a more likely root cause than an explicitly set flag."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO idempotency"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following statement on a Delta table with Unity Catalog:\n\n```sql\nCOPY INTO main.sales.orders\nFROM 's3://bucket/orders/'\nFILEFORMAT = CSV\nFORMAT_OPTIONS ('header' = 'true', 'inferSchema' = 'true');\n```\n\nWhat is the risk of using `inferSchema = true` in production?",
+    "opciones": [
+      {
+        "texto_opcion": "Schema inference reads a sample of files and may infer incorrect types, causing write failures or silent type coercions.",
+        "es_correcta": true,
+        "explicacion": "<p>Inferred types depend on the sampled data and can change between runs (e.g., a column inferred as <code>INT</code> in one run may be inferred as <code>LONG</code> in another). Explicitly defining the schema is safer for production pipelines.</p>"
+      },
+      {
+        "texto_opcion": "COPY INTO does not support `inferSchema`; the command will fail.",
+        "es_correcta": false,
+        "explicacion": "<p><code>inferSchema</code> is a valid <code>FORMAT_OPTIONS</code> key for CSV in COPY INTO and will not cause a syntax error.</p>"
+      },
+      {
+        "texto_opcion": "Schema inference forces COPY INTO to reload all files regardless of prior history.",
+        "es_correcta": false,
+        "explicacion": "<p>Schema inference has no effect on the file-tracking mechanism; previously loaded files are still skipped.</p>"
+      },
+      {
+        "texto_opcion": "Using `inferSchema = true` automatically enables `mergeSchema`.",
+        "es_correcta": false,
+        "explicacion": "<p><code>inferSchema</code> and <code>mergeSchema</code> are independent options; enabling one does not activate the other.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO schema inference"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to provide external credentials so COPY INTO can read from an Azure Data Lake Storage Gen2 container. Which approach is supported in Databricks?",
+    "opciones": [
+      {
+        "texto_opcion": "Reference a Unity Catalog external location or storage credential that wraps the ADLS access keys.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog storage credentials and external locations are the recommended way to manage cloud access centrally; COPY INTO resolves them automatically when the path matches."
+      },
+      {
+        "texto_opcion": "Pass the storage account key inline as a `CREDENTIAL` clause in the COPY INTO statement.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO does not have a `CREDENTIAL` clause. Credentials should be managed through Databricks secrets or Unity Catalog external locations."
+      },
+      {
+        "texto_opcion": "Store the SAS token as a Spark config on the cluster and set it in `FORMAT_OPTIONS`.",
+        "es_correcta": false,
+        "explicacion": "Spark config is one method to supply ADLS credentials, but they are not passed via `FORMAT_OPTIONS`. Unity Catalog external locations are the preferred approach."
+      },
+      {
+        "texto_opcion": "Set the credentials in `COPY_OPTIONS ('azure_sas_token' = '…')`.",
+        "es_correcta": false,
+        "explicacion": "`azure_sas_token` is not a valid key in `COPY_OPTIONS`. Credential management is handled outside the COPY INTO statement itself."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO cloud credentials"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following and gets an error:\n\n```sql\nCOPY INTO raw.sensor_data\nFROM 's3://bucket/sensors/'\nFILEFORMAT = TYPE = 'JSON';\n```\n\nWhat is wrong with this statement?",
+    "opciones": [
+      {
+        "texto_opcion": "The `FILEFORMAT` clause has invalid syntax; it should be `FILEFORMAT = JSON` with no parentheses and no `TYPE =` key.",
+        "es_correcta": true,
+        "explicacion": "<p>The correct syntax is simply <code>FILEFORMAT = JSON</code>. Neither parentheses nor a <code>TYPE =</code> key are part of the documented COPY INTO syntax.</p>"
+      },
+      {
+        "texto_opcion": "JSON is not a supported format for COPY INTO.",
+        "es_correcta": false,
+        "explicacion": "<p>JSON is fully supported by COPY INTO. The error is purely syntactic.</p>"
+      },
+      {
+        "texto_opcion": "The table `raw.sensor_data` must be created with `CREATE TABLE AS SELECT` before using COPY INTO.",
+        "es_correcta": false,
+        "explicacion": "<p>COPY INTO requires the target table to exist, but <code>CTAS</code> is not required. A plain <code>CREATE TABLE IF NOT EXISTS</code> is sufficient.</p>"
+      },
+      {
+        "texto_opcion": "S3 paths require the `s3a://` prefix, not `s3://`.",
+        "es_correcta": false,
+        "explicacion": "<p>Databricks COPY INTO accepts both <code>s3://</code> and <code>s3a://</code>. The syntax error in the FILEFORMAT clause is the actual problem.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO syntax"
+    ]
+  },
+  {
+    "pregunta": "Which of the following is true about COPY INTO and the Delta transaction log?",
+    "opciones": [
+      {
+        "texto_opcion": "COPY INTO records each loaded file in the Delta transaction log, enabling idempotent re-runs.",
+        "es_correcta": true,
+        "explicacion": "The list of ingested files is stored as part of the Delta commit metadata, which is how COPY INTO knows which files to skip on subsequent runs."
+      },
+      {
+        "texto_opcion": "COPY INTO bypasses the Delta transaction log and writes directly to Parquet files.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO always writes through the Delta transaction log, ensuring ACID guarantees on every run."
+      },
+      {
+        "texto_opcion": "COPY INTO creates a separate checkpoint file outside the Delta log to track ingested files.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO does not maintain a separate checkpoint file. File tracking is embedded in the Delta transaction log itself."
+      },
+      {
+        "texto_opcion": "COPY INTO does not support ACID transactions because it loads external files.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO fully participates in Delta ACID semantics; each run is an atomic commit in the transaction log."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO Delta transaction log"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is designing a daily batch pipeline to land new CSV files from GCS into a Delta table. There are typically 50–200 new files per day. Which tool is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "COPY INTO — it is purpose-built for batch, idempotent file ingestion at this scale.",
+        "es_correcta": true,
+        "explicacion": "For predictable, moderate-volume daily batch loads, COPY INTO provides idempotency and simplicity without the overhead of setting up Auto Loader streaming infrastructure."
+      },
+      {
+        "texto_opcion": "Auto Loader with `trigger(once=True)` — it is always faster than COPY INTO.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader with `trigger(once=True)` is a valid approach but is not *always* faster. For simple batch use cases, COPY INTO is simpler and appropriate."
+      },
+      {
+        "texto_opcion": "spark.read.csv() followed by df.write.mode('append') — it is more flexible than COPY INTO.",
+        "es_correcta": false,
+        "explicacion": "This approach has no built-in file tracking and would require custom deduplication logic to achieve idempotency, making it more complex than COPY INTO for this use case."
+      },
+      {
+        "texto_opcion": "Delta MERGE INTO — it handles new files and deduplication in a single statement.",
+        "es_correcta": false,
+        "explicacion": "`MERGE INTO` operates on rows in an existing Delta table, not on ingesting raw files from cloud storage."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO use case"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs COPY INTO and notices that after 90 days, files that were already ingested are being reloaded. The team runs `VACUUM` weekly. What configuration change prevents this?",
+    "opciones": [
+      {
+        "texto_opcion": "Increase the Delta table's `delta.logRetentionDuration` to retain transaction log history beyond 90 days.",
+        "es_correcta": true,
+        "explicacion": "COPY INTO load metadata is stored in the Delta log. The default log retention is 30 days; setting `delta.logRetentionDuration` to a longer period (e.g., `interval 180 days`) preserves the file-tracking history."
+      },
+      {
+        "texto_opcion": "Set `VACUUM RETAIN 90 DAYS` to preserve the Parquet data files.",
+        "es_correcta": false,
+        "explicacion": "VACUUM retention governs data file cleanup, not the transaction log. The log retention is controlled by `delta.logRetentionDuration`."
+      },
+      {
+        "texto_opcion": "Use Auto Loader instead, which has unlimited file-tracking history.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader checkpoints stored in cloud storage can also be affected by retention policies. The correct fix is to increase log retention on the Delta table."
+      },
+      {
+        "texto_opcion": "Add `COPY_OPTIONS ('retainHistory' = 'true')` to the COPY INTO statement.",
+        "es_correcta": false,
+        "explicacion": "`retainHistory` is not a valid COPY INTO option. Log retention is a table property set via `ALTER TABLE … SET TBLPROPERTIES`."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO VACUUM retention"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to ingest only files added to S3 in the past 24 hours using COPY INTO. How should this be implemented?",
+    "opciones": [
+      {
+        "texto_opcion": "This is not directly supported by COPY INTO; use Auto Loader with a watermark or filter the file list in a preceding step.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader is better suited for continuous streaming ingestion. COPY INTO actually does support time-based filtering natively via FORMAT_OPTIONS."
+      },
+      {
+        "texto_opcion": "`COPY INTO … COPY_OPTIONS ('since' = '-24 hours')`",
+        "es_correcta": false,
+        "explicacion": "'since' is not a valid COPY INTO option. The correct FORMAT_OPTIONS keys for time-based filtering are 'modifiedAfter' and 'modifiedBefore'."
+      },
+      {
+        "texto_opcion": "`COPY INTO … FORMAT_OPTIONS ('modifiedAfter' = '2024-03-01T00:00:00')`",
+        "es_correcta": true,
+        "explicacion": "COPY INTO supports time-based file filtering via 'modifiedAfter' and 'modifiedBefore' as FORMAT_OPTIONS keys. Passing a timestamp to 'modifiedAfter' will restrict ingestion to only files modified after that point, making it suitable for a 24-hour ingestion window."
+      },
+      {
+        "texto_opcion": "`COPY INTO … PATTERN = 'last_24h_*.json'`",
+        "es_correcta": false,
+        "explicacion": "PATTERN filters by file name using glob expressions, not by modification time. Time-based filtering requires 'modifiedAfter' or 'modifiedBefore' inside FORMAT_OPTIONS."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO file filtering"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs COPY INTO on a Delta table but the target table does not yet exist. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "COPY INTO can succeed if the table is first created as an empty schemaless table with `CREATE TABLE IF NOT EXISTS table_name`; schema is then inferred from the source files.",
+        "es_correcta": true,
+        "explicacion": "<p>Per the official docs, COPY INTO supports schemaless Delta tables. The engineer creates an empty table with <code>CREATE TABLE IF NOT EXISTS table_name</code> (no schema defined), and COPY INTO infers and populates the schema on first run. If the table does not exist at all, the command fails.</p>"
+      },
+      {
+        "texto_opcion": "COPY INTO automatically creates and populates the Delta table without any prior setup.",
+        "es_correcta": false,
+        "explicacion": "<p>COPY INTO does not auto-create tables. The target table must exist before running the command, even if it is an empty schemaless table.</p>"
+      },
+      {
+        "texto_opcion": "COPY INTO creates an external Delta table at the source path.",
+        "es_correcta": false,
+        "explicacion": "<p>COPY INTO does not create any table. The source path is read-only; data is written to the pre-existing target table.</p>"
+      },
+      {
+        "texto_opcion": "COPY INTO raises an error regardless of any setup; a full schema must always be defined on the target table first.",
+        "es_correcta": false,
+        "explicacion": "<p>A full schema is not required. COPY INTO supports schemaless Delta tables created with <code>CREATE TABLE IF NOT EXISTS table_name</code>, where schema is inferred on first load.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO target table"
+    ]
+  },
+  {
+    "pregunta": "A data engineer loads JSON data with COPY INTO and the source files contain a nested field `metadata.source`. How can this field be extracted and stored as a top-level column in the ingested Delta table?",
+    "opciones": [
+      {
+        "texto_opcion": "Use a SELECT subquery in the FROM clause with dot notation: `SELECT metadata.source AS source_name FROM 's3://…'`.",
+        "es_correcta": true,
+        "explicacion": "<p>COPY INTO's FROM subquery supports standard Spark SQL expressions. For a JSON field ingested as a struct, dot notation (<code>metadata.source</code>) correctly accesses the nested field and aliases it as a top-level column.</p>"
+      },
+      {
+        "texto_opcion": "COPY INTO automatically flattens all nested JSON fields into top-level columns.",
+        "es_correcta": false,
+        "explicacion": "<p>COPY INTO does not auto-flatten nested structures. Nested JSON fields are stored as STRUCT unless explicitly projected in a SELECT subquery.</p>"
+      },
+      {
+        "texto_opcion": "Add `FORMAT_OPTIONS ('flattenNested' = 'true')` to enable automatic flattening.",
+        "es_correcta": false,
+        "explicacion": "<p><code>flattenNested</code> is not a supported <code>FORMAT_OPTIONS</code> key. Flattening must be done manually via a SELECT subquery.</p>"
+      },
+      {
+        "texto_opcion": "Nested JSON fields are not supported by COPY INTO; the source files must be pre-processed.",
+        "es_correcta": false,
+        "explicacion": "<p>COPY INTO fully supports nested JSON. Fields can be accessed and transformed using a SELECT subquery in the FROM clause.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO nested JSON"
+    ]
+  },
+  {
+    "pregunta": "Which SQL command resets the COPY INTO load history for a Delta table so all source files will be re-ingested on the next run without using `COPY_OPTIONS ('force' = 'true')`?",
+    "opciones": [
+      {
+        "texto_opcion": "There is no SQL command; dropping and recreating the Delta table is the only way to permanently reset load history.",
+        "es_correcta": true,
+        "explicacion": "<p>COPY INTO load history is stored in the Delta transaction log. There is no <code>RESET COPY HISTORY</code> command. Dropping and recreating the table clears the log entirely. <code>COPY_OPTIONS ('force' = 'true')</code> bypasses history per-run but does not erase it.</p>"
+      },
+      {
+        "texto_opcion": "`TRUNCATE TABLE <table_name>`",
+        "es_correcta": false,
+        "explicacion": "<p><code>TRUNCATE TABLE</code> deletes all rows but does not reset the COPY INTO file-tracking metadata stored in the Delta transaction log.</p>"
+      },
+      {
+        "texto_opcion": "`ALTER TABLE <table_name> RESET COPY HISTORY`",
+        "es_correcta": false,
+        "explicacion": "<p><code>RESET COPY HISTORY</code> is not a valid SQL command in Databricks.</p>"
+      },
+      {
+        "texto_opcion": "`DELETE FROM <table_name>` removes both the data and the load history.",
+        "es_correcta": false,
+        "explicacion": "<p><code>DELETE FROM</code> removes rows but does not affect the COPY INTO file-tracking metadata in the Delta log.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO load history reset"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following COPY INTO command:\n\n```sql\nCOPY INTO catalog.bronze.events\nFROM 's3://bucket/events/'\nFILEFORMAT = PARQUET\nCOPY_OPTIONS ('mergeSchema' = 'true');\n```\n\nA new Parquet file arrives with an additional column `event_version`. What happens after COPY INTO runs?",
+    "opciones": [
+      {
+        "texto_opcion": "The `event_version` column is added to the Delta table and NULL-filled for previously loaded rows.",
+        "es_correcta": true,
+        "explicacion": "<p>With <code>mergeSchema = true</code> in <code>COPY_OPTIONS</code>, COPY INTO adds new columns from incoming files to the Delta schema. Existing rows receive <code>NULL</code> for the new column.</p>"
+      },
+      {
+        "texto_opcion": "The new file is skipped because its schema does not match the existing table schema.",
+        "es_correcta": false,
+        "explicacion": "<p>Without <code>mergeSchema</code>, a schema mismatch would cause an error. Since <code>mergeSchema = true</code> is set, the schema is evolved automatically and the file is not skipped.</p>"
+      },
+      {
+        "texto_opcion": "The `event_version` column is silently dropped and the file loads without it.",
+        "es_correcta": false,
+        "explicacion": "<p>With <code>mergeSchema = true</code>, new columns are preserved and added to the table schema, not dropped.</p>"
+      },
+      {
+        "texto_opcion": "COPY INTO raises an error because schema changes require `COPY_OPTIONS ('force' = 'true')`.",
+        "es_correcta": false,
+        "explicacion": "<p><code>force = true</code> controls file re-ingestion regardless of prior history. Schema evolution is handled independently by <code>mergeSchema = true</code>.</p>"
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO schema evolution"
+    ]
+  },
+  {
+    "pregunta": "A data engineer loads data into a Delta table using COPY INTO in a Unity Catalog-enabled workspace. Which privilege does the engineer need on the target table?",
+    "opciones": [
+      {
+        "texto_opcion": "`MODIFY` on the target table and `READ FILES` on the external location.",
+        "es_correcta": true,
+        "explicacion": "Writing to a Delta table via COPY INTO requires `MODIFY` (or `ALL PRIVILEGES`) on the table. Reading from cloud storage requires `READ FILES` on the matching Unity Catalog external location."
+      },
+      {
+        "texto_opcion": "`SELECT` on the target table.",
+        "es_correcta": false,
+        "explicacion": "`SELECT` grants read access; COPY INTO writes data, so `MODIFY` is required on the target table."
+      },
+      {
+        "texto_opcion": "`CREATE TABLE` on the schema is sufficient.",
+        "es_correcta": false,
+        "explicacion": "`CREATE TABLE` allows creating new tables; to write into an existing table, `MODIFY` is required."
+      },
+      {
+        "texto_opcion": "No special privileges are needed if the engineer owns the table.",
+        "es_correcta": false,
+        "explicacion": "Table ownership grants all table privileges, but `READ FILES` on the external location must still be granted separately for cloud storage access."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO Unity Catalog privileges"
+    ]
+  },
+  {
+    "pregunta": "A data engineer examines the following two statements:\n\n**Statement 1:** COPY INTO can load files from multiple cloud storage paths in a single command.\n\n**Statement 2:** COPY INTO can load files from multiple file formats in a single command.\n\nWhich is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Statement 1 is false; Statement 2 is false.",
+        "es_correcta": true,
+        "explicacion": "COPY INTO accepts a single source path and a single file format per command. To load from multiple paths or formats, multiple COPY INTO statements must be run."
+      },
+      {
+        "texto_opcion": "Statement 1 is true; Statement 2 is false.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO supports only one source path per command. Multiple paths require separate COPY INTO calls."
+      },
+      {
+        "texto_opcion": "Statement 1 is false; Statement 2 is true.",
+        "es_correcta": false,
+        "explicacion": "COPY INTO supports only one `FILEFORMAT` per command. Mixed-format ingestion in a single statement is not supported."
+      },
+      {
+        "texto_opcion": "Both statements are true.",
+        "es_correcta": false,
+        "explicacion": "Neither is true. COPY INTO is scoped to one path and one format per execution."
+      }
+    ],
+    "tags": [
+      "2.3",
+      "COPY INTO limitations"
+    ]
+  }
+]

@@ -1,0 +1,872 @@
+[
+  {
+    "pregunta": "A data engineer is designing a Lakeflow Job with the following tasks:\n- `ingest`: loads raw data (no dependencies)\n- `validate`: depends on `ingest`\n- `transform`: depends on `ingest`\n- `load`: depends on `validate` AND `transform`\n\nWhich statement best describes how Databricks will execute this job?",
+    "opciones": [
+      {
+        "texto_opcion": "`ingest` runs first, then `validate` and `transform` run in parallel, then `load` runs last.",
+        "es_correcta": true,
+        "explicacion": "Databricks executes upstream tasks before downstream tasks and runs as many tasks in parallel as possible. `validate` and `transform` both depend only on `ingest`, so they can run concurrently."
+      },
+      {
+        "texto_opcion": "`ingest` → `validate` → `transform` → `load` all run sequentially.",
+        "es_correcta": false,
+        "explicacion": "Databricks parallelizes tasks when their dependencies allow it. `validate` and `transform` have no dependency on each other, so they run concurrently."
+      },
+      {
+        "texto_opcion": "All four tasks run in parallel since Lakeflow Jobs maximizes concurrency.",
+        "es_correcta": false,
+        "explicacion": "Tasks can only run in parallel if their upstream dependencies have already completed. `validate` and `transform` must wait for `ingest`."
+      },
+      {
+        "texto_opcion": "`load` runs first to reserve the target table, then the other tasks execute.",
+        "es_correcta": false,
+        "explicacion": "Databricks always runs upstream tasks before downstream tasks. `load` cannot execute until both `validate` and `transform` complete."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "DAG execution order"
+    ]
+  },
+  {
+    "pregunta": "Which of the following correctly describes a DAG in the context of Lakeflow Jobs?",
+    "opciones": [
+      {
+        "texto_opcion": "A directed acyclic graph where nodes represent tasks and edges represent execution order dependencies.",
+        "es_correcta": true,
+        "explicacion": "In Lakeflow Jobs, each node in the DAG is a task and edges show which tasks must complete before others can start. Cycles are not permitted."
+      },
+      {
+        "texto_opcion": "A directed cyclic graph that allows tasks to loop back to previous stages for retries.",
+        "es_correcta": false,
+        "explicacion": "DAGs are acyclic — no cycles are allowed. Retry logic is handled via retry settings on individual tasks, not by creating cycles in the graph."
+      },
+      {
+        "texto_opcion": "A sequential list of tasks that always runs one at a time in a fixed order.",
+        "es_correcta": false,
+        "explicacion": "A DAG supports parallel execution when tasks have no mutual dependency. It is not limited to sequential, single-threaded execution."
+      },
+      {
+        "texto_opcion": "A graph where edges represent data flows between Delta tables, not task ordering.",
+        "es_correcta": false,
+        "explicacion": "In Lakeflow Jobs, DAG edges represent task execution dependencies (which tasks must finish before others start), not data lineage between tables."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "DAG definition"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants a `cleanup` task to run even when an upstream `load` task fails. Which `run_if` condition should be configured on `cleanup`?",
+    "opciones": [
+      {
+        "texto_opcion": "`ALL_DONE`",
+        "es_correcta": true,
+        "explicacion": "`ALL_DONE` runs the task regardless of whether upstream tasks succeeded or failed, making it ideal for cleanup operations."
+      },
+      {
+        "texto_opcion": "`ALL_SUCCESS`",
+        "es_correcta": false,
+        "explicacion": "`ALL_SUCCESS` only runs the task if all upstream tasks succeeded. The cleanup would be skipped if `load` fails."
+      },
+      {
+        "texto_opcion": "`NONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`NONE_FAILED` requires that no upstream task has failed. It would skip `cleanup` if `load` failed."
+      },
+      {
+        "texto_opcion": "`AT_LEAST_ONE_SUCCEEDED`",
+        "es_correcta": false,
+        "explicacion": "`AT_LEAST_ONE_SUCCEEDED` requires at least one upstream task to have succeeded. If `load` fails and is the only upstream, `cleanup` would be skipped."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "run_if conditions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer defines this YAML for a Lakeflow Job:\n\n```yaml\ntasks:\n  - task_key: extract\n    notebook_task:\n      notebook_path: ./extract.py\n  - task_key: load\n    depends_on:\n      - task_key: extract\n    run_if: ALL_SUCCESS\n    notebook_task:\n      notebook_path: ./load.py\n```\n\nWhat happens if the `extract` task fails?",
+    "opciones": [
+      {
+        "texto_opcion": "The `load` task is skipped because `run_if: ALL_SUCCESS` requires all upstream tasks to succeed.",
+        "es_correcta": true,
+        "explicacion": "`ALL_SUCCESS` is the default condition and requires all upstream dependencies to succeed. A failing `extract` task will prevent `load` from running."
+      },
+      {
+        "texto_opcion": "The `load` task runs anyway because Databricks retries failed upstream tasks automatically.",
+        "es_correcta": false,
+        "explicacion": "Automatic retries are configured separately per task. Without a retry setting, a failed `extract` simply causes `load` to be skipped under `ALL_SUCCESS`."
+      },
+      {
+        "texto_opcion": "The entire job is cancelled immediately with no further task evaluation.",
+        "es_correcta": false,
+        "explicacion": "Databricks evaluates each task's `run_if` condition independently. Other tasks not depending on `extract` may still run."
+      },
+      {
+        "texto_opcion": "The `load` task runs because `depends_on` only controls ordering, not execution gating.",
+        "es_correcta": false,
+        "explicacion": "`depends_on` combined with `run_if` gates execution. `ALL_SUCCESS` explicitly prevents downstream tasks from running if any upstream task failed."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "run_if ALL_SUCCESS"
+    ]
+  },
+  {
+    "pregunta": "Which YAML field is used to specify that a task should only execute after two other tasks have completed?",
+    "opciones": [
+      {
+        "texto_opcion": "`depends_on` with a list of upstream `task_key` values.",
+        "es_correcta": true,
+        "explicacion": "`depends_on` accepts a list of `task_key` references. All listed tasks must satisfy the `run_if` condition before the downstream task executes."
+      },
+      {
+        "texto_opcion": "`requires` with a list of upstream task names.",
+        "es_correcta": false,
+        "explicacion": "`requires` is not a valid Lakeflow Jobs YAML field. The correct field is `depends_on`."
+      },
+      {
+        "texto_opcion": "`after` with a list of upstream `task_key` values.",
+        "es_correcta": false,
+        "explicacion": "`after` is not a valid Lakeflow Jobs YAML field. Use `depends_on` to specify upstream task dependencies."
+      },
+      {
+        "texto_opcion": "`prerequisites` listing the task names that must finish first.",
+        "es_correcta": false,
+        "explicacion": "`prerequisites` is not a valid YAML field in Lakeflow Jobs. The correct key is `depends_on`."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "depends_on YAML"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to conditionally run a transformation task only when an upstream ingestion task adds new data. Which Lakeflow Jobs feature enables this?",
+    "opciones": [
+      {
+        "texto_opcion": "An **If/else condition task** that evaluates a boolean expression to branch the DAG.",
+        "es_correcta": true,
+        "explicacion": "The If/else condition task evaluates a boolean expression and routes execution to different branches of the DAG, allowing conditional execution of downstream tasks."
+      },
+      {
+        "texto_opcion": "A **For each condition task** that iterates over the ingested records.",
+        "es_correcta": false,
+        "explicacion": "The For each task is for looping over an input array, not for conditional branching based on a boolean expression."
+      },
+      {
+        "texto_opcion": "Setting `run_if: AT_LEAST_ONE_SUCCEEDED` on the transformation task.",
+        "es_correcta": false,
+        "explicacion": "`AT_LEAST_ONE_SUCCEEDED` gates on upstream success status, not on data-level conditions like whether new rows were ingested."
+      },
+      {
+        "texto_opcion": "A **trigger** of type `file_arrival` on the transformation task.",
+        "es_correcta": false,
+        "explicacion": "File arrival is a job-level trigger type, not a mechanism for conditional branching within a running job's DAG."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "If/else condition task"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following YAML bundle:\n\n```yaml\ntasks:\n  - task_key: job_a\n    notebook_task:\n      notebook_path: ./a.py\n  - task_key: job_b\n    notebook_task:\n      notebook_path: ./b.py\n  - task_key: job_c\n    depends_on:\n      - task_key: job_a\n      - task_key: job_b\n    run_if: ALL_FAILED\n    notebook_task:\n      notebook_path: ./c.py\n```\n\n`job_a` fails and `job_b` succeeds. Does `job_c` run?",
+    "opciones": [
+      {
+        "texto_opcion": "No — `ALL_FAILED` requires every upstream task to have failed, but `job_b` succeeded.",
+        "es_correcta": true,
+        "explicacion": "`ALL_FAILED` only triggers the task when ALL upstream dependencies have failed. Since `job_b` succeeded, the condition is not met and `job_c` is skipped."
+      },
+      {
+        "texto_opcion": "Yes — because at least one upstream task (`job_a`) failed.",
+        "es_correcta": false,
+        "explicacion": "That would be `AT_LEAST_ONE_FAILED`, not `ALL_FAILED`. `ALL_FAILED` requires every listed upstream task to have failed."
+      },
+      {
+        "texto_opcion": "Yes — `ALL_DONE` and `ALL_FAILED` behave identically.",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` runs regardless of upstream outcome. `ALL_FAILED` only runs when every upstream task has failed — these are distinct conditions."
+      },
+      {
+        "texto_opcion": "No — tasks with `run_if: ALL_FAILED` are only valid when there is a single upstream dependency.",
+        "es_correcta": false,
+        "explicacion": "`ALL_FAILED` works with any number of upstream dependencies. It simply requires all of them to have failed, regardless of count."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "run_if ALL_FAILED"
+    ]
+  },
+  {
+    "pregunta": "What is the default `run_if` condition when a task has upstream dependencies in a Lakeflow Job?",
+    "opciones": [
+      {
+        "texto_opcion": "`ALL_SUCCESS`",
+        "es_correcta": true,
+        "explicacion": "`ALL_SUCCESS` is the default condition. A downstream task only runs when all its upstream dependencies have completed successfully."
+      },
+      {
+        "texto_opcion": "`ALL_DONE`",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` runs regardless of upstream success or failure and must be explicitly configured. It is not the default."
+      },
+      {
+        "texto_opcion": "`NONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`NONE_FAILED` must be explicitly set. The default behavior requires all upstreams to succeed, which is `ALL_SUCCESS`."
+      },
+      {
+        "texto_opcion": "`AT_LEAST_ONE_SUCCEEDED`",
+        "es_correcta": false,
+        "explicacion": "`AT_LEAST_ONE_SUCCEEDED` is not the default. Tasks default to `ALL_SUCCESS`, meaning every upstream dependency must succeed."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "run_if default"
+    ]
+  },
+  {
+    "pregunta": "A Lakeflow Job has three parallel tasks (`branch_a`, `branch_b`, `branch_c`) all feeding a final `report` task. The engineer wants `report` to run as long as at least one branch succeeds, even if others fail. Which `run_if` condition should be set on `report`?",
+    "opciones": [
+      {
+        "texto_opcion": "`AT_LEAST_ONE_SUCCEEDED`",
+        "es_correcta": true,
+        "explicacion": "`AT_LEAST_ONE_SUCCEEDED` allows the downstream task to run when at least one upstream dependency completes successfully, even if others fail."
+      },
+      {
+        "texto_opcion": "`ALL_SUCCESS`",
+        "es_correcta": false,
+        "explicacion": "`ALL_SUCCESS` would prevent `report` from running if any single branch failed, which does not meet the requirement."
+      },
+      {
+        "texto_opcion": "`NONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`NONE_FAILED` requires that no upstream task failed. Since some branches may fail, this condition would block `report`."
+      },
+      {
+        "texto_opcion": "`ALL_DONE`",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` works but is overly permissive — it would also run `report` even if all branches failed. `AT_LEAST_ONE_SUCCEEDED` is the precise fit."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "run_if AT_LEAST_ONE_SUCCEEDED"
+    ]
+  },
+  {
+    "pregunta": "Which of the following task types is NOT natively supported in a Lakeflow Jobs DAG?",
+    "opciones": [
+      {
+        "texto_opcion": "Apache Kafka consumer task",
+        "es_correcta": true,
+        "explicacion": "Kafka consumer tasks are not a native Lakeflow Jobs task type. Kafka ingestion is typically handled inside notebooks or streaming pipelines, not as a standalone DAG task type."
+      },
+      {
+        "texto_opcion": "Notebook task",
+        "es_correcta": false,
+        "explicacion": "Notebook tasks are a core native task type in Lakeflow Jobs."
+      },
+      {
+        "texto_opcion": "dbt task",
+        "es_correcta": false,
+        "explicacion": "dbt is a supported native task type in Lakeflow Jobs."
+      },
+      {
+        "texto_opcion": "Python script task",
+        "es_correcta": false,
+        "explicacion": "Python script tasks are natively supported in Lakeflow Jobs alongside notebooks, SQL, dbt, and pipeline tasks."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "task types"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to apply a transformation to each element of a dynamically generated list returned by an upstream task. Which Lakeflow Jobs feature should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "A **For each condition task** that loops over the input array.",
+        "es_correcta": true,
+        "explicacion": "The For each task adds looping logic to another task based on an input array, which can be manually specified or dynamically generated by an upstream task."
+      },
+      {
+        "texto_opcion": "An **If/else condition task** with multiple branches.",
+        "es_correcta": false,
+        "explicacion": "If/else is for conditional branching based on a boolean expression, not for iterating over a list of values."
+      },
+      {
+        "texto_opcion": "Multiple parallel notebook tasks, each hardcoded with a different element.",
+        "es_correcta": false,
+        "explicacion": "Hardcoded tasks cannot handle a dynamically generated list. The For each task is designed specifically for this dynamic iteration pattern."
+      },
+      {
+        "texto_opcion": "Setting `run_if: ALL_DONE` on each transformation task.",
+        "es_correcta": false,
+        "explicacion": "`run_if` controls execution conditions, not iteration logic. `ALL_DONE` has no relationship to looping over a list."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "For each task"
+    ]
+  },
+  {
+    "pregunta": "In a Lakeflow Job YAML definition, what is the purpose of `task_key`?",
+    "opciones": [
+      {
+        "texto_opcion": "It is a unique identifier for the task within the job, used to reference it in `depends_on` lists.",
+        "es_correcta": true,
+        "explicacion": "`task_key` uniquely identifies each task in the job definition and is the value referenced in other tasks' `depends_on` arrays to establish DAG edges."
+      },
+      {
+        "texto_opcion": "It is the encryption key used to secure task output data.",
+        "es_correcta": false,
+        "explicacion": "`task_key` is a string identifier for task referencing within the DAG, not an encryption or security concept."
+      },
+      {
+        "texto_opcion": "It maps the task to a specific Unity Catalog table key.",
+        "es_correcta": false,
+        "explicacion": "`task_key` is a DAG-level identifier for task ordering. It has no relationship to Unity Catalog table keys or schemas."
+      },
+      {
+        "texto_opcion": "It defines the execution priority of the task relative to sibling tasks.",
+        "es_correcta": false,
+        "explicacion": "Execution priority in Lakeflow Jobs is determined by dependency structure, not `task_key` values. `task_key` is simply a unique label."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "task_key YAML"
+    ]
+  },
+  {
+    "pregunta": "A data engineer reviews this YAML snippet:\n\n```yaml\n- task_key: notify\n  depends_on:\n    - task_key: load\n  run_if: NONE_FAILED\n  notebook_task:\n    notebook_path: ./notify.py\n```\n\n`load` was skipped because its upstream dependency failed. Does `notify` run?",
+    "opciones": [
+      {
+        "texto_opcion": "No — a skipped task counts as not having run, and `NONE_FAILED` requires at least one upstream task to have run (and none to have failed).",
+        "es_correcta": true,
+        "explicacion": "`NONE_FAILED` requires that no upstream failed AND at least one ran. A skipped `load` means it did not run, so the condition is not satisfied."
+      },
+      {
+        "texto_opcion": "Yes — `NONE_FAILED` only checks that no upstream task explicitly failed, and a skipped task is not a failure.",
+        "es_correcta": false,
+        "explicacion": "`NONE_FAILED` requires at least one upstream task to have actually run. A skipped task did not run, so the condition is not met."
+      },
+      {
+        "texto_opcion": "Yes — skipped tasks are treated as successful by the Lakeflow Jobs scheduler.",
+        "es_correcta": false,
+        "explicacion": "Skipped tasks are not treated as successful. They are in a SKIPPED state which does not satisfy `ALL_SUCCESS` or `NONE_FAILED`."
+      },
+      {
+        "texto_opcion": "No — any skipped upstream task triggers `AT_LEAST_ONE_FAILED` behavior automatically.",
+        "es_correcta": false,
+        "explicacion": "Skipped tasks are in a distinct SKIPPED state, not a FAILED state. They do not trigger `AT_LEAST_ONE_FAILED`."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "run_if NONE_FAILED"
+    ]
+  },
+  {
+    "pregunta": "Which of the following is a valid use case for a **Run Job** task type within a Lakeflow Jobs DAG?",
+    "opciones": [
+      {
+        "texto_opcion": "Triggering a separate, independently defined job within the same workspace as part of a larger orchestration DAG.",
+        "es_correcta": true,
+        "explicacion": "The Run Job task type allows one job to trigger another job within the workspace, enabling modular pipeline composition within a DAG."
+      },
+      {
+        "texto_opcion": "Restarting the current job from the beginning without creating a new run.",
+        "es_correcta": false,
+        "explicacion": "Run Job triggers a different job, not the current one. Self-restart is not a supported DAG pattern."
+      },
+      {
+        "texto_opcion": "Running a SQL query stored in Unity Catalog.",
+        "es_correcta": false,
+        "explicacion": "Running a SQL query is handled by a SQL task type, not a Run Job task."
+      },
+      {
+        "texto_opcion": "Spawning a new cluster for a specific notebook task.",
+        "es_correcta": false,
+        "explicacion": "Cluster configuration is set at the task or job level, not through a Run Job task type."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "Run Job task type"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to configure a task so it only runs when ALL of its upstream dependencies have failed. Which `run_if` value should be used?",
+    "opciones": [
+      {
+        "texto_opcion": "`ALL_FAILED`",
+        "es_correcta": true,
+        "explicacion": "`ALL_FAILED` triggers a task only when every upstream dependency has failed, useful for error-handling or fallback tasks."
+      },
+      {
+        "texto_opcion": "`AT_LEAST_ONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`AT_LEAST_ONE_FAILED` runs when any single upstream fails, not necessarily all of them."
+      },
+      {
+        "texto_opcion": "`NONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`NONE_FAILED` is nearly the opposite — it runs when no upstream task failed."
+      },
+      {
+        "texto_opcion": "`ALL_DONE`",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` runs regardless of success or failure. It does not specifically require all tasks to have failed."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "run_if ALL_FAILED"
+    ]
+  },
+  {
+    "pregunta": "In the Lakeflow Jobs UI, what visual element represents a task dependency between two tasks in the DAG?",
+    "opciones": [
+      {
+        "texto_opcion": "A directed line (edge) drawn from the upstream task to the downstream task.",
+        "es_correcta": true,
+        "explicacion": "Dependencies are visually represented in the job DAG as directed lines between tasks, showing execution flow from upstream to downstream."
+      },
+      {
+        "texto_opcion": "A shared color coding applied to tasks in the same dependency group.",
+        "es_correcta": false,
+        "explicacion": "Colors in the UI reflect task status (running, succeeded, failed), not dependency grouping."
+      },
+      {
+        "texto_opcion": "A numbering prefix on each task indicating its execution layer.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Jobs does not use numeric prefixes to represent dependencies. Edges (lines) between task nodes represent dependencies."
+      },
+      {
+        "texto_opcion": "A dashed border around tasks that share a cluster configuration.",
+        "es_correcta": false,
+        "explicacion": "Dashed borders are not used for dependency representation in the Lakeflow Jobs DAG UI."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "DAG visualization"
+    ]
+  },
+  {
+    "pregunta": "A data engineer adds a new task to a Lakeflow Job with no `depends_on` field. How does Databricks treat this task?",
+    "opciones": [
+      {
+        "texto_opcion": "As a root task with no upstream dependencies — it can run immediately when the job starts.",
+        "es_correcta": true,
+        "explicacion": "Tasks without `depends_on` are root tasks in the DAG. They have no upstream dependencies and are eligible to run as soon as the job is triggered."
+      },
+      {
+        "texto_opcion": "As the last task to run since it has no defined position in the DAG.",
+        "es_correcta": false,
+        "explicacion": "Tasks without dependencies run first, not last. They are root nodes in the DAG."
+      },
+      {
+        "texto_opcion": "As an orphaned task that will be skipped during every job run.",
+        "es_correcta": false,
+        "explicacion": "Tasks without `depends_on` are valid root tasks and will execute; they are not skipped or orphaned."
+      },
+      {
+        "texto_opcion": "Databricks raises a validation error because every task must have at least one dependency.",
+        "es_correcta": false,
+        "explicacion": "Root tasks with no `depends_on` are explicitly supported. Jobs can have multiple root tasks, all of which can start in parallel."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "root task no dependencies"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to ensure a `send_alert` task runs only when at least one of three upstream aggregation tasks has failed. Which condition should be configured?",
+    "opciones": [
+      {
+        "texto_opcion": "`AT_LEAST_ONE_FAILED`",
+        "es_correcta": true,
+        "explicacion": "`AT_LEAST_ONE_FAILED` triggers the downstream task when any single upstream dependency has a failed status, making it ideal for alerting on partial failures."
+      },
+      {
+        "texto_opcion": "`ALL_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`ALL_FAILED` would only trigger `send_alert` if every aggregation task failed. The engineer wants to alert on any failure, not just complete failure."
+      },
+      {
+        "texto_opcion": "`NONE_FAILED`",
+        "es_correcta": false,
+        "explicacion": "`NONE_FAILED` is the opposite of what's needed — it runs when no upstream has failed."
+      },
+      {
+        "texto_opcion": "`ALL_DONE`",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` would always run `send_alert` regardless of whether any task failed, generating false alerts on successful runs."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "run_if AT_LEAST_ONE_FAILED"
+    ]
+  },
+  {
+    "pregunta": "Which of the following statements about Lakeflow Jobs is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "A Job is the primary resource for coordinating, scheduling, and running operations; Tasks are the individual units of work within a Job.",
+        "es_correcta": true,
+        "explicacion": "In Lakeflow Jobs, a Job is the top-level orchestration resource and Tasks are the nodes in the DAG that perform the actual work."
+      },
+      {
+        "texto_opcion": "A Task is the primary resource and a Job is a sub-unit that groups related pipelines.",
+        "es_correcta": false,
+        "explicacion": "The hierarchy is inverted. A Job contains one or more Tasks; not the other way around."
+      },
+      {
+        "texto_opcion": "Triggers and Tasks are the same concept — both refer to the unit of work in a DAG.",
+        "es_correcta": false,
+        "explicacion": "A Trigger is a mechanism that initiates a Job run based on conditions. A Task is a unit of work within the Job. They are distinct concepts."
+      },
+      {
+        "texto_opcion": "Lakeflow Jobs only supports notebook tasks; other task types require a separate orchestrator.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Jobs supports many task types natively: notebooks, SQL, Python scripts, dbt, Spark Declarative Pipelines, ML, and Run Job tasks."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "Lakeflow Jobs concepts"
+    ]
+  },
+  {
+    "pregunta": "Review this YAML task definition:\n\n```yaml\n- task_key: audit_log\n  depends_on:\n    - task_key: transform_silver\n    - task_key: load_gold\n  run_if: AT_LEAST_ONE_SUCCEEDED\n  notebook_task:\n    notebook_path: ./audit.py\n```\n\n`transform_silver` succeeds and `load_gold` fails. Does `audit_log` run?",
+    "opciones": [
+      {
+        "texto_opcion": "Yes — `AT_LEAST_ONE_SUCCEEDED` is satisfied because `transform_silver` succeeded.",
+        "es_correcta": true,
+        "explicacion": "`AT_LEAST_ONE_SUCCEEDED` only requires a single upstream dependency to have completed successfully. `transform_silver` succeeding satisfies this condition."
+      },
+      {
+        "texto_opcion": "No — `load_gold` failed, which blocks all downstream tasks from running.",
+        "es_correcta": false,
+        "explicacion": "Only `ALL_SUCCESS` would block here. `AT_LEAST_ONE_SUCCEEDED` explicitly allows downstream execution when at least one upstream succeeds."
+      },
+      {
+        "texto_opcion": "No — `run_if: AT_LEAST_ONE_SUCCEEDED` requires the majority of upstreams to succeed.",
+        "es_correcta": false,
+        "explicacion": "`AT_LEAST_ONE_SUCCEEDED` means any single success is sufficient. There is no majority or quorum requirement."
+      },
+      {
+        "texto_opcion": "Yes — but only because `load_gold` failed; the failed task triggers the condition.",
+        "es_correcta": false,
+        "explicacion": "The condition is triggered by the success of `transform_silver`, not by `load_gold` failing. A failed task does not contribute to `AT_LEAST_ONE_SUCCEEDED`."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "run_if AT_LEAST_ONE_SUCCEEDED"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is building a Lakeflow Job with tasks A, B, C, and D. They need C to run only if A succeeded, but D should run after B regardless of B's outcome. What is the correct configuration?",
+    "opciones": [
+      {
+        "texto_opcion": "Set `run_if: ALL_SUCCESS` on C (depends on A), and `run_if: ALL_DONE` on D (depends on B).",
+        "es_correcta": true,
+        "explicacion": "`ALL_SUCCESS` gates C on A succeeding. `ALL_DONE` ensures D runs after B regardless of B's outcome."
+      },
+      {
+        "texto_opcion": "Set `run_if: ALL_SUCCESS` on both C and D.",
+        "es_correcta": false,
+        "explicacion": "Setting `ALL_SUCCESS` on D would block it from running if B failed, which contradicts the requirement for D to always run after B."
+      },
+      {
+        "texto_opcion": "Set `run_if: ALL_DONE` on both C and D.",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` on C would allow it to run even if A failed. The requirement states C must only run when A succeeds."
+      },
+      {
+        "texto_opcion": "Set `run_if: AT_LEAST_ONE_SUCCEEDED` on C and `run_if: NONE_FAILED` on D.",
+        "es_correcta": false,
+        "explicacion": "`NONE_FAILED` on D would block it if B fails, which contradicts the requirement. `ALL_DONE` is the correct choice for D."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "mixed run_if configuration"
+    ]
+  },
+  {
+    "pregunta": "What is the relationship between **Declarative Automation Bundles (DABs)** and Lakeflow Jobs DAGs?",
+    "opciones": [
+      {
+        "texto_opcion": "DABs let engineers define Lakeflow Jobs, tasks, and their DAG dependencies in YAML files for version-controlled, as-code deployment.",
+        "es_correcta": true,
+        "explicacion": "Declarative Automation Bundles (formerly Databricks Asset Bundles) allow the full job DAG — including tasks, dependencies, and `run_if` conditions — to be defined in `databricks.yml` and deployed via the Databricks CLI."
+      },
+      {
+        "texto_opcion": "DABs are used only for Unity Catalog schema management and have no relationship to job orchestration.",
+        "es_correcta": false,
+        "explicacion": "DABs are the primary as-code framework for defining and deploying Lakeflow Jobs, pipelines, and other Databricks resources — not just Unity Catalog schemas."
+      },
+      {
+        "texto_opcion": "DABs replace the Lakeflow Jobs UI entirely; jobs can only be created via YAML after enabling DABs.",
+        "es_correcta": false,
+        "explicacion": "DABs provide an as-code alternative to the UI. Both the UI and DABs can be used to create and manage Lakeflow Jobs."
+      },
+      {
+        "texto_opcion": "DABs are a Python SDK for programmatically submitting individual tasks, not defining DAGs.",
+        "es_correcta": false,
+        "explicacion": "DABs use YAML configuration files, not Python SDK calls, and they define entire jobs including their full DAG structure."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "DABs and DAG as-code"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to split a Lakeflow Job into a reusable module that other jobs can call. Which task type achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "A **Run Job** task that triggers the module job by reference within the workspace.",
+        "es_correcta": true,
+        "explicacion": "The Run Job task type triggers a separately defined job within the workspace, enabling modular, reusable pipeline composition within a parent job's DAG."
+      },
+      {
+        "texto_opcion": "An **If/else condition task** that references the other job's task keys.",
+        "es_correcta": false,
+        "explicacion": "If/else is for branching logic within a single job's DAG, not for calling external jobs."
+      },
+      {
+        "texto_opcion": "A **For each task** that iterates over the target job's run history.",
+        "es_correcta": false,
+        "explicacion": "For each is for looping over data arrays, not for invoking other jobs."
+      },
+      {
+        "texto_opcion": "A **SQL task** that executes a stored procedure in the target job's schema.",
+        "es_correcta": false,
+        "explicacion": "SQL tasks run queries and stored procedures; they cannot trigger another Lakeflow Job."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "Run Job task modular orchestration"
+    ]
+  },
+  {
+    "pregunta": "In the Lakeflow Jobs UI, a data engineer wants to add a dependency between two existing tasks. Which UI action accomplishes this?",
+    "opciones": [
+      {
+        "texto_opcion": "Select the downstream task, use the **Depends on** field to add the upstream task, then click **Save task**.",
+        "es_correcta": true,
+        "explicacion": "The UI workflow is: select the downstream task → use the Depends on field → add the upstream task → choose a Run if condition → Save task."
+      },
+      {
+        "texto_opcion": "Select the upstream task and drag it onto the downstream task icon.",
+        "es_correcta": false,
+        "explicacion": "Drag-and-drop between task icons is not the documented method for configuring dependencies in the Lakeflow Jobs UI. Dependencies are set via the Depends on field."
+      },
+      {
+        "texto_opcion": "Right-click the DAG canvas and select 'Add edge' between the two tasks.",
+        "es_correcta": false,
+        "explicacion": "A right-click 'Add edge' action is not documented for the Lakeflow Jobs UI. Dependencies are configured through the task's Depends on field."
+      },
+      {
+        "texto_opcion": "Edit the job's JSON config directly from the canvas view to add the dependency.",
+        "es_correcta": false,
+        "explicacion": "While JSON editing is possible via the API/CLI, the standard UI approach is to use the Depends on field within the task configuration panel."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "UI dependency configuration"
+    ]
+  },
+  {
+    "pregunta": "Which statement correctly describes what happens to tasks B and C in this DAG when task A (which B and C both depend on) succeeds, but task B then fails?\n\n`A → B → D`\n`A → C → D`\n\n`D` has `run_if: ALL_SUCCESS` and depends on both B and C.",
+    "opciones": [
+      {
+        "texto_opcion": "C runs (B's failure doesn't affect C), but D is skipped because B failed and `ALL_SUCCESS` requires all upstreams to succeed.",
+        "es_correcta": true,
+        "explicacion": "C only depends on A, so it runs independently of B's outcome. D depends on both B and C — because B failed, `ALL_SUCCESS` is not satisfied and D is skipped."
+      },
+      {
+        "texto_opcion": "C is skipped because B failed, and D is also skipped.",
+        "es_correcta": false,
+        "explicacion": "C depends only on A (which succeeded), not on B. C is unaffected by B's failure and will run normally."
+      },
+      {
+        "texto_opcion": "D runs because C succeeded and `AT_LEAST_ONE_SUCCEEDED` is satisfied.",
+        "es_correcta": false,
+        "explicacion": "D's condition is `ALL_SUCCESS`, not `AT_LEAST_ONE_SUCCEEDED`. With B failing, `ALL_SUCCESS` is not met and D is skipped."
+      },
+      {
+        "texto_opcion": "The entire job stops immediately when B fails, cancelling C and D.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Jobs evaluates each task's conditions independently. A task failure does not immediately cancel all other tasks — only tasks that cannot satisfy their `run_if` conditions are skipped."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "DAG downstream propagation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer defines the following YAML:\n\n```yaml\ntasks:\n  - task_key: source_a\n    notebook_task:\n      notebook_path: ./source_a.py\n  - task_key: source_b\n    notebook_task:\n      notebook_path: ./source_b.py\n  - task_key: merge\n    depends_on:\n      - task_key: source_a\n      - task_key: source_b\n    notebook_task:\n      notebook_path: ./merge.py\n```\n\nNo `run_if` is specified for `merge`. Which tasks run in parallel?",
+    "opciones": [
+      {
+        "texto_opcion": "`source_a` and `source_b` run in parallel; `merge` runs after both complete.",
+        "es_correcta": true,
+        "explicacion": "`source_a` and `source_b` are both root tasks with no dependencies, so they run concurrently. `merge` waits for both, using the default `ALL_SUCCESS` condition."
+      },
+      {
+        "texto_opcion": "`source_a` runs, then `source_b`, then `merge` — all sequentially.",
+        "es_correcta": false,
+        "explicacion": "Since `source_a` and `source_b` have no mutual dependency, Databricks runs them in parallel, not sequentially."
+      },
+      {
+        "texto_opcion": "`source_a`, `source_b`, and `merge` all run in parallel.",
+        "es_correcta": false,
+        "explicacion": "`merge` cannot run in parallel with its upstream tasks. It must wait for both `source_a` and `source_b` to complete."
+      },
+      {
+        "texto_opcion": "Only `source_a` runs because it is listed first in the YAML.",
+        "es_correcta": false,
+        "explicacion": "YAML ordering does not control execution order. Dependency structure determines which tasks run first and which can run in parallel."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "parallel execution DAG"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs a `notification` task to run after a `process` task, but only when `process` did NOT fail (it may have been skipped or succeeded). Which condition satisfies this requirement?",
+    "opciones": [
+      {
+        "texto_opcion": "`NONE_FAILED`",
+        "es_correcta": true,
+        "explicacion": "`NONE_FAILED` triggers when no upstream task has failed, allowing the task to run after successes and even skipped tasks, but blocking it when any upstream fails."
+      },
+      {
+        "texto_opcion": "`ALL_SUCCESS`",
+        "es_correcta": false,
+        "explicacion": "`ALL_SUCCESS` would block `notification` if `process` was skipped. The requirement allows the task to run even after a skip."
+      },
+      {
+        "texto_opcion": "`ALL_DONE`",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` would allow `notification` to run even when `process` failed, which is not desired."
+      },
+      {
+        "texto_opcion": "`AT_LEAST_ONE_SUCCEEDED`",
+        "es_correcta": false,
+        "explicacion": "`AT_LEAST_ONE_SUCCEEDED` requires at least one upstream to have explicitly succeeded. If `process` was skipped (not succeeded), this condition would not be met."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "run_if NONE_FAILED"
+    ]
+  },
+  {
+    "pregunta": "Which of the following correctly describes the structure of a Lakeflow Job as defined in a Declarative Automation Bundle (`databricks.yml`)?",
+    "opciones": [
+      {
+        "texto_opcion": "Jobs are defined under `resources.jobs`, each containing a `tasks` list where each task has a `task_key`, optional `depends_on`, and a task type definition.",
+        "es_correcta": true,
+        "explicacion": "In DABs, the hierarchy is `bundle → resources → jobs → [job_name] → tasks → [task_key, depends_on, run_if, task_type]`."
+      },
+      {
+        "texto_opcion": "Jobs are defined under `pipelines.workflows` and tasks are nested under `steps`.",
+        "es_correcta": false,
+        "explicacion": "`pipelines.workflows` and `steps` are not valid DAB YAML keys for Lakeflow Jobs. The correct path is `resources.jobs`."
+      },
+      {
+        "texto_opcion": "Tasks are top-level keys in `databricks.yml` and jobs are inferred automatically from task dependencies.",
+        "es_correcta": false,
+        "explicacion": "Tasks are always nested within a job definition under `resources.jobs`. Jobs are not inferred — they must be explicitly defined."
+      },
+      {
+        "texto_opcion": "Jobs are defined under `orchestration.dag` and each node maps to a task via a `node_id` field.",
+        "es_correcta": false,
+        "explicacion": "`orchestration.dag` and `node_id` are not valid DAB YAML keys. Use `resources.jobs` and `task_key`."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "DAB YAML structure"
+    ]
+  },
+  {
+    "pregunta": "A Lakeflow Job has tasks where `task_b` and `task_c` both depend on `task_a`. The engineer sets `run_if: ALL_DONE` on both `task_b` and `task_c`. `task_a` fails. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "Both `task_b` and `task_c` run because `ALL_DONE` triggers regardless of upstream outcome.",
+        "es_correcta": true,
+        "explicacion": "`ALL_DONE` means the task runs once its upstream dependencies are finished — regardless of whether they succeeded, failed, or were skipped."
+      },
+      {
+        "texto_opcion": "Both `task_b` and `task_c` are skipped because a failed upstream prevents any downstream execution.",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` is explicitly designed to run even when upstreams fail. This is the key difference from `ALL_SUCCESS`."
+      },
+      {
+        "texto_opcion": "`task_b` runs but `task_c` is skipped because only one branch can execute after a failure.",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` applies independently to each task. Both `task_b` and `task_c` will run — there is no branch limitation."
+      },
+      {
+        "texto_opcion": "Databricks raises an error because `ALL_DONE` cannot be used when there is only one upstream dependency.",
+        "es_correcta": false,
+        "explicacion": "`ALL_DONE` is valid with any number of upstream dependencies, including just one. No error is raised."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "ALL_DONE with failed upstream"
+    ]
+  },
+  {
+    "pregunta": "Which statement about cycles in a Lakeflow Jobs DAG is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Cycles are not allowed — if task A depends on task B and task B also depends on task A, Databricks will reject the configuration.",
+        "es_correcta": true,
+        "explicacion": "A DAG is by definition acyclic. Databricks enforces this constraint and will fail to save or validate any job configuration containing a dependency cycle."
+      },
+      {
+        "texto_opcion": "Cycles are allowed between tasks in the same cluster to enable iterative ML training loops.",
+        "es_correcta": false,
+        "explicacion": "No cycles are permitted in Lakeflow Jobs DAGs regardless of cluster configuration. Iterative logic is handled by the For each task, not by DAG cycles."
+      },
+      {
+        "texto_opcion": "Cycles are allowed if both tasks use `run_if: ALL_DONE`.",
+        "es_correcta": false,
+        "explicacion": "`run_if` conditions do not override the acyclic constraint. Cycles are never permitted in a DAG regardless of conditions."
+      },
+      {
+        "texto_opcion": "Cycles between notebook tasks are allowed but cycles between SQL tasks are not.",
+        "es_correcta": false,
+        "explicacion": "The acyclic constraint applies uniformly to all task types. Task type has no bearing on whether cycles are allowed."
+      }
+    ],
+    "tags": [
+      "4.1",
+      "DAG acyclic constraint"
+    ]
+  }
+]

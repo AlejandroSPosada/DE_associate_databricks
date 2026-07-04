@@ -1,0 +1,437 @@
+[
+  {
+    "pregunta": "A data engineer wants to identify all downstream tables, jobs, and dashboards that depend on a table before deleting it.\n\nWhich Unity Catalog feature should be used?",
+    "opciones": [
+      {
+        "texto_opcion": "Data lineage",
+        "es_correcta": true,
+        "explicacion": "Lineage shows upstream sources and downstream consumers, enabling impact analysis before changes."
+      },
+      {
+        "texto_opcion": "Delta Sharing",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing is used to share data across organizations, not to trace dependencies."
+      },
+      {
+        "texto_opcion": "Table history (DESCRIBE HISTORY)",
+        "es_correcta": false,
+        "explicacion": "Table history shows past versions/operations on a single table, not cross-object dependencies."
+      },
+      {
+        "texto_opcion": "System.information_schema",
+        "es_correcta": false,
+        "explicacion": "information_schema exposes metadata about objects, not lineage relationships, and is excluded from lineage capture."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Lineage Overview"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to view lineage for a table in Catalog Explorer but receives an error that no lineage information is available, even though queries have run against it recently.\n\nWhich requirement is most likely missing?",
+    "opciones": [
+      {
+        "texto_opcion": "The table must be registered in a Unity Catalog metastore",
+        "es_correcta": true,
+        "explicacion": "Lineage is only captured for tables registered in a UC metastore; non-UC tables won't show lineage unless added as external metadata."
+      },
+      {
+        "texto_opcion": "The cluster must be running Databricks Runtime 7.3 LTS",
+        "es_correcta": false,
+        "explicacion": "Streaming lineage requires DBR 11.3 LTS+, not 7.3 LTS, and this isn't the general requirement for lineage capture."
+      },
+      {
+        "texto_opcion": "The table must use the Parquet format",
+        "es_correcta": false,
+        "explicacion": "File format has no bearing on whether lineage is captured."
+      },
+      {
+        "texto_opcion": "The workspace must be on the Premium tier",
+        "es_correcta": false,
+        "explicacion": "Lineage availability depends on UC registration and permissions, not workspace pricing tier alone."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Requirements"
+    ]
+  },
+  {
+    "pregunta": "A user has only `SELECT` on a table `finance.sales.orders` but no `BROWSE` privilege on the `finance` catalog.\n\nWhat happens when they view the lineage graph involving this table?",
+    "opciones": [
+      {
+        "texto_opcion": "The table appears fully expanded with all downstream nodes visible",
+        "es_correcta": false,
+        "explicacion": "Without BROWSE on the catalog, the user cannot expand or see downstream connections from the table."
+      },
+      {
+        "texto_opcion": "The table appears as a masked node that cannot be expanded",
+        "es_correcta": true,
+        "explicacion": "A table the user can SELECT but lacks BROWSE on the parent catalog for appears masked in the lineage graph and cannot be expanded."
+      },
+      {
+        "texto_opcion": "An error is thrown and the entire lineage graph fails to load",
+        "es_correcta": false,
+        "explicacion": "The graph still loads; only the specific node is masked rather than causing a total failure."
+      },
+      {
+        "texto_opcion": "The table is removed entirely from the graph",
+        "es_correcta": false,
+        "explicacion": "The node still appears, but masked, rather than being removed."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Permissions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following query:\n\n```sql\nCREATE OR REPLACE TABLE car_features\nAS SELECT *, in1 + in2 AS premium_feature_set\nFROM car_features_exterior\nJOIN car_features_interior\nUSING (id, model);\n```\n\nWhich statement about the resulting column lineage is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`premium_feature_set` will record both `in1` and `in2` as source columns",
+        "es_correcta": true,
+        "explicacion": "Column lineage tracks every source column that contributed to a derived target column, so both in1 and in2 are recorded."
+      },
+      {
+        "texto_opcion": "Only `in1` will be recorded as a source column since it appears first in the expression",
+        "es_correcta": false,
+        "explicacion": "Both contributing columns are tracked, not just the first one referenced."
+      },
+      {
+        "texto_opcion": "No column lineage will be captured because the query uses a JOIN",
+        "es_correcta": false,
+        "explicacion": "Joins are supported; column lineage is captured normally for queries combining tables this way."
+      },
+      {
+        "texto_opcion": "Column lineage will only be captured at the table level, not per column",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog captures lineage down to the individual column level for queries like this."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Column-Level Lineage"
+    ]
+  },
+  {
+    "pregunta": "Which of the following scenarios will NOT be captured in Unity Catalog column-level lineage?",
+    "opciones": [
+      {
+        "texto_opcion": "A column derived through a user-defined function (UDF)",
+        "es_correcta": true,
+        "explicacion": "UDFs can obscure the source-to-target column mapping, so column lineage is not captured for transformations using them."
+      },
+      {
+        "texto_opcion": "A column copied directly via SELECT * from one UC table to another",
+        "es_correcta": false,
+        "explicacion": "Direct column copies via SELECT between registered UC tables are captured normally."
+      },
+      {
+        "texto_opcion": "A column computed using a SQL CASE expression referencing other columns",
+        "es_correcta": false,
+        "explicacion": "Standard SQL expressions referencing columns are tracked, unlike opaque UDF logic."
+      },
+      {
+        "texto_opcion": "A column produced by a JOIN between two UC tables",
+        "es_correcta": false,
+        "explicacion": "Joins between registered UC tables are supported and lineage is captured."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Column-Level Lineage Limitations"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to ask, in natural language, \"What tables depend on revenue_fact?\" directly inside Catalog Explorer without writing SQL against system tables.\n\nWhich feature should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "Genie Code with the `/getTableLineages` command",
+        "es_correcta": true,
+        "explicacion": "Genie Code is the AI assistant in Catalog Explorer that answers natural-language lineage questions using commands like /getTableLineages."
+      },
+      {
+        "texto_opcion": "The Databricks SQL Editor's autocomplete feature",
+        "es_correcta": false,
+        "explicacion": "Autocomplete assists with writing SQL syntax; it does not answer lineage questions in natural language."
+      },
+      {
+        "texto_opcion": "The `DESCRIBE LINEAGE` SQL command",
+        "es_correcta": false,
+        "explicacion": "There is no such SQL command for lineage; lineage is viewed via the UI, system tables, or Genie Code."
+      },
+      {
+        "texto_opcion": "Unity Catalog ABAC policy editor",
+        "es_correcta": false,
+        "explicacion": "ABAC policies govern access control based on attributes, unrelated to querying lineage in natural language."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Genie Code"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to programmatically find all tables that have read from `main.finance.revenue_raw` in the last 90 days.\n\nWhich approach should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "Query `system.access.table_lineage` filtering on `source_table_full_name` and `event_date`",
+        "es_correcta": true,
+        "explicacion": "table_lineage records each read/write event with source and target table names and an event_date partition column, ideal for this filter."
+      },
+      {
+        "texto_opcion": "Query `system.information_schema.tables`",
+        "es_correcta": false,
+        "explicacion": "information_schema describes table metadata (columns, types) but does not record lineage relationships."
+      },
+      {
+        "texto_opcion": "Run `DESCRIBE HISTORY main.finance.revenue_raw`",
+        "es_correcta": false,
+        "explicacion": "DESCRIBE HISTORY shows the table's own version history, not which downstream tables consumed it."
+      },
+      {
+        "texto_opcion": "Query `system.access.audit`",
+        "es_correcta": false,
+        "explicacion": "The audit log tracks general account-level actions, not structured table-to-table lineage relationships."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Lineage System Tables"
+    ]
+  },
+  {
+    "pregunta": "In `system.access.table_lineage`, a row has `source_table_full_name` populated but `target_table_full_name` is NULL.\n\nWhat type of event does this row represent?",
+    "opciones": [
+      {
+        "texto_opcion": "A read-only event",
+        "es_correcta": true,
+        "explicacion": "When source_type is NOT NULL and target_type is NULL, the row represents a read-only event on the source table."
+      },
+      {
+        "texto_opcion": "A write-only event",
+        "es_correcta": false,
+        "explicacion": "Write-only events have target populated and source NULL — the opposite of this row."
+      },
+      {
+        "texto_opcion": "A combined read-and-write event",
+        "es_correcta": false,
+        "explicacion": "Read-and-write events have both source and target populated, which is not the case here."
+      },
+      {
+        "texto_opcion": "An invalid/corrupted lineage record",
+        "es_correcta": false,
+        "explicacion": "This is a normal, valid pattern documenting a read-only operation, not a corrupted record."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "System Tables Schema"
+    ]
+  },
+  {
+    "pregunta": "A team runs `INSERT INTO sales_summary VALUES (101, 'East', 4500)` to load a record.\n\nWhat will be true of the corresponding row in `system.access.column_lineage`?",
+    "opciones": [
+      {
+        "texto_opcion": "No column lineage will be captured because the INSERT uses explicit literal values with no source",
+        "es_correcta": true,
+        "explicacion": "Column lineage only records events with a source; explicit VALUES inserts have no source column, so nothing is captured."
+      },
+      {
+        "texto_opcion": "Column lineage will be captured with `source_column_name` set to the literal values",
+        "es_correcta": false,
+        "explicacion": "Literal values are not source columns, so they cannot populate source_column_name."
+      },
+      {
+        "texto_opcion": "Column lineage will be captured but only at the table level",
+        "es_correcta": false,
+        "explicacion": "Table-level lineage in table_lineage may still differ, but the question specifically concerns column_lineage, which requires a source column."
+      },
+      {
+        "texto_opcion": "The entire transaction will fail validation",
+        "es_correcta": false,
+        "explicacion": "The INSERT executes successfully; lineage capture simply does not apply to this event."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "System Tables Schema"
+    ]
+  },
+  {
+    "pregunta": "A company ingests data from Salesforce into a Unity Catalog table using a custom notebook (not Lakeflow Connect), and the data is later consumed by a Tableau dashboard.\n\nWhich statement about capturing this end-to-end lineage is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "External metadata objects must be manually created for Salesforce and Tableau, then linked via lineage relationships",
+        "es_correcta": true,
+        "explicacion": "Since the ingestion isn't via Lakeflow Connect, the external systems must be manually registered as external metadata objects and connected through lineage relationships via UI, API, or SDK."
+      },
+      {
+        "texto_opcion": "Unity Catalog automatically detects Salesforce and Tableau without any configuration",
+        "es_correcta": false,
+        "explicacion": "Automatic detection of external systems only happens through Lakeflow Connect managed ingestion pipelines, not custom notebooks."
+      },
+      {
+        "texto_opcion": "External lineage cannot be captured unless data passes through a Lakeflow Spark Declarative Pipeline",
+        "es_correcta": false,
+        "explicacion": "External lineage can be added manually via UI, REST API, or SDK regardless of pipeline type."
+      },
+      {
+        "texto_opcion": "External lineage requires enabling Delta Sharing first",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing is unrelated to creating external metadata objects or lineage relationships."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "External Lineage"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to create a downstream lineage relationship from a Unity Catalog table to a newly registered external metadata object representing a Power BI report.\n\nWhich privilege is required on the source UC table to do this?",
+    "opciones": [
+      {
+        "texto_opcion": "SELECT",
+        "es_correcta": true,
+        "explicacion": "Creating a downstream relationship from a UC table requires SELECT (read) privilege on that table."
+      },
+      {
+        "texto_opcion": "MODIFY",
+        "es_correcta": false,
+        "explicacion": "MODIFY is required for creating an upstream relationship (where the table is a write target), not downstream."
+      },
+      {
+        "texto_opcion": "CREATE EXTERNAL METADATA",
+        "es_correcta": false,
+        "explicacion": "CREATE EXTERNAL METADATA on the metastore is needed to create the external metadata object itself, not to link an existing UC table downstream."
+      },
+      {
+        "texto_opcion": "BROWSE",
+        "es_correcta": false,
+        "explicacion": "BROWSE allows viewing lineage graphs but is not sufficient to create a new lineage relationship."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "External Lineage Permissions"
+    ]
+  },
+  {
+    "pregunta": "An auditor needs to query historical lineage events that occurred 14 months ago for a compliance review.\n\nWhich limitation applies if they try to query `system.access.table_lineage`?",
+    "opciones": [
+      {
+        "texto_opcion": "The records will be missing because system tables only retain a rolling 1-year window",
+        "es_correcta": true,
+        "explicacion": "Lineage system tables maintain only a rolling 1-year retention window; events older than that are removed."
+      },
+      {
+        "texto_opcion": "The records will be missing because system tables only retain 30 days of history",
+        "es_correcta": false,
+        "explicacion": "The retention window for lineage system tables is 1 year, not 30 days."
+      },
+      {
+        "texto_opcion": "The records will still be fully available since system tables retain data indefinitely",
+        "es_correcta": false,
+        "explicacion": "Unlike Catalog Explorer and the Lineage API, system tables do not retain lineage indefinitely — only for 1 year."
+      },
+      {
+        "texto_opcion": "The query will fail entirely because system tables cannot be queried for historical data",
+        "es_correcta": false,
+        "explicacion": "The query will run, but rows older than the 1-year retention window simply won't be present."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Retention"
+    ]
+  },
+  {
+    "pregunta": "Which of the following accurately describes lineage data retention in Catalog Explorer versus the Lineage system tables?",
+    "opciones": [
+      {
+        "texto_opcion": "Catalog Explorer retains lineage indefinitely from September 1, 2024, while system tables retain only a rolling 1-year window",
+        "es_correcta": true,
+        "explicacion": "Catalog Explorer and the Lineage API keep lineage indefinitely from Sep 1, 2024, while system tables roll off events older than 1 year."
+      },
+      {
+        "texto_opcion": "Both Catalog Explorer and system tables retain lineage indefinitely",
+        "es_correcta": false,
+        "explicacion": "System tables are limited to a rolling 1-year window, unlike Catalog Explorer's indefinite retention."
+      },
+      {
+        "texto_opcion": "Both Catalog Explorer and system tables retain only the last 1 year of lineage",
+        "es_correcta": false,
+        "explicacion": "Only system tables are limited to 1 year; Catalog Explorer keeps lineage indefinitely from Sep 1, 2024."
+      },
+      {
+        "texto_opcion": "Catalog Explorer retains 1 year, while system tables retain lineage indefinitely",
+        "es_correcta": false,
+        "explicacion": "This reverses the actual retention behavior of the two interfaces."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Retention"
+    ]
+  },
+  {
+    "pregunta": "A schema named `sales_data` is renamed to `sales_data_v2`, and several downstream jobs continue reading from the renamed schema.\n\nWhat happens to the previously captured lineage for tables in this schema?",
+    "opciones": [
+      {
+        "texto_opcion": "The lineage is not preserved across the rename and historical lineage links are broken",
+        "es_correcta": true,
+        "explicacion": "Lineage is explicitly not preserved when catalogs, schemas, tables, views, or columns are renamed."
+      },
+      {
+        "texto_opcion": "The lineage automatically updates to reflect the new schema name with no data loss",
+        "es_correcta": false,
+        "explicacion": "Renaming breaks lineage continuity; it does not automatically remap historical lineage to the new name."
+      },
+      {
+        "texto_opcion": "The rename operation is blocked until lineage is manually migrated",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog does not block renames for lineage reasons; lineage is simply not preserved."
+      },
+      {
+        "texto_opcion": "Only column-level lineage breaks; table-level lineage remains intact",
+        "es_correcta": false,
+        "explicacion": "The rename limitation applies broadly to catalogs, schemas, tables, views, and columns, not just columns."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Limitations"
+    ]
+  },
+  {
+    "pregunta": "A job runs using `databricks jobs runs submit` (rather than a scheduled job definition) to execute a notebook that writes to a Unity Catalog table.\n\nWhich statement about the resulting lineage is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Table and column lineage is still captured, but the run will not appear linked in lineage views",
+        "es_correcta": true,
+        "explicacion": "For runs submitted via runs submit (or spark-submit), the underlying table/column lineage is still captured, but the job run itself does not appear in lineage views."
+      },
+      {
+        "texto_opcion": "No lineage of any kind is captured for runs submit jobs",
+        "es_correcta": false,
+        "explicacion": "Table and column lineage are still captured; only the job-run link in lineage views is missing."
+      },
+      {
+        "texto_opcion": "Lineage capture fails and the job run is rolled back",
+        "es_correcta": false,
+        "explicacion": "Lineage limitations do not cause job failures or rollbacks; the job completes normally."
+      },
+      {
+        "texto_opcion": "Lineage is fully captured including the job run link, identical to a scheduled job",
+        "es_correcta": false,
+        "explicacion": "Unlike scheduled job runs, runs submit jobs do not show the job run link in lineage views, even though table/column lineage is captured."
+      }
+    ],
+    "tags": [
+      "7.5",
+      "Limitations"
+    ]
+  }
+]

@@ -1,0 +1,727 @@
+[
+  {
+    "pregunta": "A data engineer has a DataFrame `orders_df` and runs:\n\n```python\norders_df = orders_df.withColumn(\"tax\", col(\"amount\") * 0.08)\n```\n\nWhat happens if a column named `tax` already exists in `orders_df`?",
+    "opciones": [
+      {
+        "texto_opcion": "The existing `tax` column is replaced with the new computed values.",
+        "es_correcta": true,
+        "explicacion": "`withColumn` replaces a column if the name already exists, rather than throwing an error or creating a duplicate."
+      },
+      {
+        "texto_opcion": "Spark throws an `AnalysisException` for a duplicate column name.",
+        "es_correcta": false,
+        "explicacion": "An exception only occurs if you try to create two columns with the same name in a single `select`, not with `withColumn`."
+      },
+      {
+        "texto_opcion": "A second column named `tax` is appended, resulting in two columns with the same name.",
+        "es_correcta": false,
+        "explicacion": "`withColumn` overwrites existing columns by name; it does not create duplicates."
+      },
+      {
+        "texto_opcion": "The new column is silently ignored and the original `tax` column is kept.",
+        "es_correcta": false,
+        "explicacion": "The opposite occurs — the new computed column overwrites the original."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to remove the `internal_notes` and `debug_flag` columns from `df` in a single operation.\n\nWhich code accomplishes this?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.drop(\"internal_notes\", \"debug_flag\")`",
+        "es_correcta": true,
+        "explicacion": "`drop()` accepts multiple column names as separate string arguments and removes them all in one call."
+      },
+      {
+        "texto_opcion": "`df.dropColumns([\"internal_notes\", \"debug_flag\"])`",
+        "es_correcta": false,
+        "explicacion": "There is no `dropColumns` method on a PySpark DataFrame."
+      },
+      {
+        "texto_opcion": "`df.remove(\"internal_notes\").remove(\"debug_flag\")`",
+        "es_correcta": false,
+        "explicacion": "DataFrames do not have a `remove` method; `drop` is the correct method."
+      },
+      {
+        "texto_opcion": "`df.filter(\"internal_notes\", \"debug_flag\")`",
+        "es_correcta": false,
+        "explicacion": "`filter` operates on rows based on a condition, not on removing columns."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to rename `cust_id` to `customer_id` in `df` without affecting any other columns.\n\nWhich code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.withColumnRenamed(\"cust_id\", \"customer_id\")`",
+        "es_correcta": true,
+        "explicacion": "`withColumnRenamed` renames a single column by name and leaves all other columns unchanged."
+      },
+      {
+        "texto_opcion": "`df.rename(\"cust_id\", \"customer_id\")`",
+        "es_correcta": false,
+        "explicacion": "PySpark DataFrames do not have a `rename` method."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"customer_id\", \"cust_id\")`",
+        "es_correcta": false,
+        "explicacion": "This creates a new literal-string column named `customer_id`; it does not rename `cust_id` and the original column remains."
+      },
+      {
+        "texto_opcion": "`df.alias(\"cust_id\", \"customer_id\")`",
+        "es_correcta": false,
+        "explicacion": "`alias` is used to rename a DataFrame or column reference in expressions, not to rename a column in place."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A table `sales` contains:\n\n| order_id | region | amount |\n|----------|--------|--------|\n| 1        | West   | 250    |\n| 2        | East   | null   |\n| 3        | West   | 100    |\n\nWhich code returns only the rows where `amount` is not null?",
+    "opciones": [
+      {
+        "texto_opcion": "`sales.filter(col(\"amount\").isNotNull())`",
+        "es_correcta": true,
+        "explicacion": "`isNotNull()` correctly excludes rows where `amount` is null, returning order_id 1 and 3."
+      },
+      {
+        "texto_opcion": "`sales.filter(col(\"amount\") != \"null\")`",
+        "es_correcta": false,
+        "explicacion": "Comparing to the string `\"null\"` does not match SQL/Spark NULL semantics and will not filter null values correctly."
+      },
+      {
+        "texto_opcion": "`sales.where(col(\"amount\").isNull())`",
+        "es_correcta": false,
+        "explicacion": "This returns the opposite — only the rows where `amount` IS null."
+      },
+      {
+        "texto_opcion": "`sales.dropna()`",
+        "es_correcta": false,
+        "explicacion": "`dropna()` drops rows with nulls in any column by default, which works here but is not as targeted as filtering on `amount` specifically and is not the code shown as the direct equivalent of the intended filter."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Row manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following code on a DataFrame containing a column `tags` of type `array<string>`:\n\n```python\ndf2 = df.withColumn(\"tag\", explode(col(\"tags\")))\n```\n\nIf a row has `tags = [\"a\", \"b\", \"c\"]`, what is the result in `df2`?",
+    "opciones": [
+      {
+        "texto_opcion": "The row is expanded into three rows, each with one value from the array in the `tag` column.",
+        "es_correcta": true,
+        "explicacion": "`explode()` creates a new row for each element of the array, duplicating all other column values across the new rows."
+      },
+      {
+        "texto_opcion": "The array is converted into a single comma-separated string in the `tag` column.",
+        "es_correcta": false,
+        "explicacion": "That behavior describes `concat_ws`, not `explode`."
+      },
+      {
+        "texto_opcion": "Only the first element of the array is kept in the `tag` column.",
+        "es_correcta": false,
+        "explicacion": "`explode()` keeps all elements, generating one row per element rather than truncating to the first."
+      },
+      {
+        "texto_opcion": "The original `tags` column is dropped and replaced with the array's length.",
+        "es_correcta": false,
+        "explicacion": "That describes `size(col(\"tags\"))`, not `explode`."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Explode arrays"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to split a column `full_name` (e.g., `\"Jane Doe\"`) into `first_name` and `last_name` columns.\n\nWhich code achieves this correctly?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.withColumn(\"first_name\", split(col(\"full_name\"), \" \")[0]).withColumn(\"last_name\", split(col(\"full_name\"), \" \")[1])`",
+        "es_correcta": true,
+        "explicacion": "`split()` returns an array of substrings; indexing `[0]` and `[1]` correctly extracts the first and last name parts."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"first_name\", \"last_name\", split(col(\"full_name\"), \" \"))`",
+        "es_correcta": false,
+        "explicacion": "`withColumn` only accepts one column name and one Column expression as arguments; this syntax is invalid."
+      },
+      {
+        "texto_opcion": "`df.split(\"full_name\", \" \", [\"first_name\", \"last_name\"])`",
+        "es_correcta": false,
+        "explicacion": "There is no `split` method on DataFrame; `split` is a column function used inside `withColumn` or `select`."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"first_name\", explode(split(col(\"full_name\"), \" \")))`",
+        "es_correcta": false,
+        "explicacion": "`explode` would create multiple rows per name instead of two separate columns, which is not the desired result."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Split columns"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to keep only rows from `transactions_df` where `status` equals `'completed'` OR `'pending'`.\n\nWhich code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`transactions_df.filter(col(\"status\").isin(\"completed\", \"pending\"))`",
+        "es_correcta": true,
+        "explicacion": "`isin()` checks membership in a list of values, correctly matching rows with either status."
+      },
+      {
+        "texto_opcion": "`transactions_df.filter(col(\"status\") == \"completed\" or \"pending\")`",
+        "es_correcta": false,
+        "explicacion": "Python's `or` operator does not work as intended with Column expressions and will not produce the correct filter logic."
+      },
+      {
+        "texto_opcion": "`transactions_df.filter(col(\"status\") == [\"completed\", \"pending\"])`",
+        "es_correcta": false,
+        "explicacion": "Comparing a column directly to a list with `==` is not valid for membership testing in PySpark."
+      },
+      {
+        "texto_opcion": "`transactions_df.where(col(\"status\").contains(\"completed\", \"pending\"))`",
+        "es_correcta": false,
+        "explicacion": "`contains()` checks for a substring within a single string value and does not accept multiple arguments for membership testing."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Row filtering"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```python\ndf2 = df.select(\"id\", \"name\", \"amount\")\n```\n\nWhat is the effect on the resulting DataFrame `df2` compared to `df`?",
+    "opciones": [
+      {
+        "texto_opcion": "`df2` contains only the `id`, `name`, and `amount` columns; all other columns are excluded.",
+        "es_correcta": true,
+        "explicacion": "`select()` returns a new DataFrame with only the specified columns, dropping any columns not listed."
+      },
+      {
+        "texto_opcion": "`df2` contains all original columns plus the three listed columns duplicated.",
+        "es_correcta": false,
+        "explicacion": "`select()` does not preserve unlisted columns; it returns only the columns explicitly specified."
+      },
+      {
+        "texto_opcion": "`df2` is identical to `df` since `select` does not change column structure.",
+        "es_correcta": false,
+        "explicacion": "`select()` does change column structure — it limits the result to only the specified columns."
+      },
+      {
+        "texto_opcion": "An error is raised because `select` requires at least one transformation function.",
+        "es_correcta": false,
+        "explicacion": "`select()` works fine with plain column names; no transformation function is required."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A DataFrame `events_df` has a column `event_time` of type timestamp. A data engineer wants to add a new column `event_date` containing only the date portion.\n\nWhich code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`events_df.withColumn(\"event_date\", to_date(col(\"event_time\")))`",
+        "es_correcta": true,
+        "explicacion": "`to_date()` extracts the date portion from a timestamp column, which is exactly what's needed."
+      },
+      {
+        "texto_opcion": "`events_df.withColumn(\"event_date\", col(\"event_time\").date())`",
+        "es_correcta": false,
+        "explicacion": "Column objects do not have a `.date()` method in PySpark."
+      },
+      {
+        "texto_opcion": "`events_df.withColumn(\"event_date\", date_format(col(\"event_time\")))`",
+        "es_correcta": false,
+        "explicacion": "`date_format()` requires a format string argument and returns a string, not a date type, so this call is incomplete and incorrect as written."
+      },
+      {
+        "texto_opcion": "`events_df.dropColumn(\"event_time\").addColumn(\"event_date\")`",
+        "es_correcta": false,
+        "explicacion": "Neither `dropColumn` nor `addColumn` are valid PySpark DataFrame methods."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "Given a DataFrame `products_df` with a column `price`, a data engineer runs:\n\n```python\nproducts_df.filter(col(\"price\") > 100).count()\n```\n\nWhat does this code return?",
+    "opciones": [
+      {
+        "texto_opcion": "An integer representing the number of rows where `price` is greater than 100.",
+        "es_correcta": true,
+        "explicacion": "`filter()` returns a DataFrame of matching rows, and `count()` returns the number of rows in that result as an integer."
+      },
+      {
+        "texto_opcion": "A new DataFrame containing rows where `price` is greater than 100.",
+        "es_correcta": false,
+        "explicacion": "The `.count()` action converts the filtered DataFrame into a single integer value, not a DataFrame."
+      },
+      {
+        "texto_opcion": "The sum of all `price` values greater than 100.",
+        "es_correcta": false,
+        "explicacion": "`count()` returns the number of rows, not a sum; `sum()` would be needed for a total."
+      },
+      {
+        "texto_opcion": "A boolean indicating whether any row has `price` greater than 100.",
+        "es_correcta": false,
+        "explicacion": "That behavior describes methods like `.isEmpty()`, not `.count()`, which returns a row count."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Row filtering"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has a column `raw_json` of type string containing JSON-formatted text. The engineer wants to add new columns `user_id` and `action` extracted from this JSON.\n\nWhich approach correctly adds both columns?",
+    "opciones": [
+      {
+        "texto_opcion": "Parse `raw_json` with `from_json()` into a struct, then use `withColumn` with dot notation to extract `user_id` and `action`.",
+        "es_correcta": true,
+        "explicacion": "`from_json()` converts a JSON string into a structured column according to a schema, after which fields can be extracted with dot notation, e.g. `col(\"parsed.user_id\")`."
+      },
+      {
+        "texto_opcion": "Use `df.withColumn(\"user_id\", \"action\", raw_json)` to extract both fields in one call.",
+        "es_correcta": false,
+        "explicacion": "`withColumn` only accepts a single column name and a single Column expression, not multiple names."
+      },
+      {
+        "texto_opcion": "Call `df.json(\"raw_json\")` to automatically expand all JSON fields into columns.",
+        "es_correcta": false,
+        "explicacion": "There is no `.json()` method on a DataFrame for this purpose; `from_json` with an explicit schema is required."
+      },
+      {
+        "texto_opcion": "Use `explode(col(\"raw_json\"))` to convert the JSON string into separate columns.",
+        "es_correcta": false,
+        "explicacion": "`explode()` operates on array or map columns to produce multiple rows, not on JSON strings to produce columns."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A table `inventory` contains:\n\n| sku  | warehouse | qty |\n|------|-----------|-----|\n| A100 | NYC       | 50  |\n| A100 | LA        | 0   |\n| B200 | NYC       | 0   |\n\nA data engineer runs:\n\n```python\ndf.filter(col(\"qty\") == 0).drop(\"warehouse\")\n```\n\nWhat does this return?",
+    "opciones": [
+      {
+        "texto_opcion": "A DataFrame with the rows for A100/LA and B200/NYC, containing only the `sku` and `qty` columns.",
+        "es_correcta": true,
+        "explicacion": "`filter` first keeps only rows where `qty` equals 0 (A100/LA and B200/NYC), then `drop` removes the `warehouse` column from those rows."
+      },
+      {
+        "texto_opcion": "A DataFrame with all three rows but only `sku` and `qty` columns.",
+        "es_correcta": false,
+        "explicacion": "The `filter(col(\"qty\") == 0)` step removes rows where `qty` is not zero, so the A100/NYC row is excluded."
+      },
+      {
+        "texto_opcion": "A DataFrame with the row for A100/NYC only, with all original columns retained.",
+        "es_correcta": false,
+        "explicacion": "A100/NYC has `qty = 50`, so it does not satisfy `qty == 0` and is excluded; also `drop` removes the `warehouse` column."
+      },
+      {
+        "texto_opcion": "An error, because `drop` cannot be chained after `filter`.",
+        "es_correcta": false,
+        "explicacion": "Chaining DataFrame transformations like `filter` followed by `drop` is valid and commonly used in PySpark."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Row and column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to add a column `is_high_value` that is `True` when `amount > 1000` and `False` otherwise.\n\nWhich code correctly implements this?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.withColumn(\"is_high_value\", when(col(\"amount\") > 1000, True).otherwise(False))`",
+        "es_correcta": true,
+        "explicacion": "`when().otherwise()` is the standard PySpark pattern for conditional column logic, correctly producing a boolean flag."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"is_high_value\", if col(\"amount\") > 1000: True else: False)`",
+        "es_correcta": false,
+        "explicacion": "Python `if/else` statements cannot be used inline as a Column expression in this way; this is invalid syntax."
+      },
+      {
+        "texto_opcion": "`df.filter(\"is_high_value\", col(\"amount\") > 1000)`",
+        "es_correcta": false,
+        "explicacion": "`filter()` is used to remove rows based on a condition, not to add a new column."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"is_high_value\", col(\"amount\") > 1000, True, False)`",
+        "es_correcta": false,
+        "explicacion": "`withColumn` only accepts two arguments — a column name and a Column expression — so this call signature is invalid."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following on a DataFrame `df` containing a `region` column with values `'us'`, `'eu'`, and `null`:\n\n```python\ndf.na.fill(\"unknown\", subset=[\"region\"])\n```\n\nWhat is the effect of this code?",
+    "opciones": [
+      {
+        "texto_opcion": "All null values in the `region` column are replaced with the string `\"unknown\"`.",
+        "es_correcta": true,
+        "explicacion": "`na.fill()` with a `subset` parameter replaces null values only in the specified column(s), here filling nulls in `region` with `\"unknown\"`."
+      },
+      {
+        "texto_opcion": "All rows with null `region` are dropped from the DataFrame.",
+        "es_correcta": false,
+        "explicacion": "Dropping rows with nulls is the behavior of `na.drop()`, not `na.fill()`."
+      },
+      {
+        "texto_opcion": "Every value in the `region` column, null or not, is overwritten with `\"unknown\"`.",
+        "es_correcta": false,
+        "explicacion": "`na.fill()` only replaces null values; existing non-null values like `'us'` and `'eu'` remain unchanged."
+      },
+      {
+        "texto_opcion": "An error occurs because `fill` requires a numeric replacement value.",
+        "es_correcta": false,
+        "explicacion": "`na.fill()` accepts string replacement values for string-type columns; no error occurs."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Row manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to deduplicate rows based on the `email` column, keeping only one row per unique email regardless of values in other columns.\n\nWhich code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.dropDuplicates([\"email\"])`",
+        "es_correcta": true,
+        "explicacion": "`dropDuplicates` with a column list removes duplicate rows based only on the specified column(s), keeping one row per unique `email`."
+      },
+      {
+        "texto_opcion": "`df.distinct(\"email\")`",
+        "es_correcta": false,
+        "explicacion": "`distinct()` does not accept column arguments; it removes duplicates considering all columns in the row."
+      },
+      {
+        "texto_opcion": "`df.filter(col(\"email\").isDistinct())`",
+        "es_correcta": false,
+        "explicacion": "There is no `isDistinct()` method on a Column in PySpark."
+      },
+      {
+        "texto_opcion": "`df.groupBy(\"email\").first()`",
+        "es_correcta": false,
+        "explicacion": "`groupBy` followed by `first()` is not valid syntax for retrieving deduplicated rows; `groupBy` requires an aggregation function."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Row manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is working with a DataFrame `df` that has a column `scores` of type `array<int>`. They run:\n\n```python\ndf.withColumn(\"num_scores\", size(col(\"scores\")))\n```\n\nWhat does the new `num_scores` column contain?",
+    "opciones": [
+      {
+        "texto_opcion": "The number of elements in the `scores` array for each row.",
+        "es_correcta": true,
+        "explicacion": "`size()` returns the count of elements in an array (or map) column."
+      },
+      {
+        "texto_opcion": "The sum of all values in the `scores` array.",
+        "es_correcta": false,
+        "explicacion": "Summing array elements requires `aggregate()` or `expr(\"array_sum(scores)\")`-style logic, not `size()`."
+      },
+      {
+        "texto_opcion": "The maximum value in the `scores` array.",
+        "es_correcta": false,
+        "explicacion": "Finding the maximum requires `array_max()`, not `size()`."
+      },
+      {
+        "texto_opcion": "A new row for every element in the `scores` array.",
+        "es_correcta": false,
+        "explicacion": "Producing one row per array element is the behavior of `explode()`, not `size()`."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Explode arrays"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to reorder columns in `df` so that `customer_id` appears first, followed by all remaining columns in their original order.\n\nWhich code achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.select(\"customer_id\", *[c for c in df.columns if c != \"customer_id\"])`",
+        "es_correcta": true,
+        "explicacion": "This selects `customer_id` first, then unpacks the remaining column names in their original order, achieving the desired reordering."
+      },
+      {
+        "texto_opcion": "`df.reorder(\"customer_id\")`",
+        "es_correcta": false,
+        "explicacion": "There is no `reorder` method on a PySpark DataFrame."
+      },
+      {
+        "texto_opcion": "`df.sort(\"customer_id\")`",
+        "es_correcta": false,
+        "explicacion": "`sort()` reorders rows based on column values, not the order of columns themselves."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"customer_id\", first(\"customer_id\"))`",
+        "es_correcta": false,
+        "explicacion": "`withColumn` with `first()` is an aggregate operation and does not change column ordering."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A table `users` contains:\n\n| user_id | signup_date | country |\n|---------|-------------|---------|\n| u1      | 2024-01-10  | US      |\n| u2      | 2024-02-15  | null    |\n| u3      | 2024-03-20  | CA      |\n\nA data engineer runs `users_df.na.drop(subset=[\"country\"])`. How many rows remain?",
+    "opciones": [
+      {
+        "texto_opcion": "2 rows — u1 and u3, since u2 has a null `country` value.",
+        "es_correcta": true,
+        "explicacion": "`na.drop(subset=[\"country\"])` removes rows where `country` is null, eliminating only the u2 row."
+      },
+      {
+        "texto_opcion": "3 rows — `na.drop` with `subset` only flags nulls without removing rows.",
+        "es_correcta": false,
+        "explicacion": "`na.drop()` actively removes rows with nulls in the specified subset; it does not just flag them."
+      },
+      {
+        "texto_opcion": "0 rows — `na.drop` removes all rows if any null exists anywhere in the DataFrame.",
+        "es_correcta": false,
+        "explicacion": "With `subset` specified, only nulls in that column are considered, not the entire DataFrame."
+      },
+      {
+        "texto_opcion": "1 row — only rows with no nulls anywhere are kept.",
+        "es_correcta": false,
+        "explicacion": "Since `subset=[\"country\"]` is specified, only nulls in `country` matter, not nulls in any other column."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Row manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to cast the `amount` column in `df` from string to double.\n\nWhich code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.withColumn(\"amount\", col(\"amount\").cast(\"double\"))`",
+        "es_correcta": true,
+        "explicacion": "`.cast()` on a Column converts its type, and reassigning it via `withColumn` updates the `amount` column to type double."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"amount\", double(col(\"amount\")))`",
+        "es_correcta": false,
+        "explicacion": "There is no `double()` function in `pyspark.sql.functions`; `.cast(\"double\")` is the correct approach."
+      },
+      {
+        "texto_opcion": "`df.convertColumn(\"amount\", \"double\")`",
+        "es_correcta": false,
+        "explicacion": "`convertColumn` is not a valid PySpark DataFrame method."
+      },
+      {
+        "texto_opcion": "`df.amount.astype(\"double\")`",
+        "es_correcta": false,
+        "explicacion": "`.astype()` is a pandas method, not a PySpark Column or DataFrame method."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```python\ndf2 = df.select(col(\"amount\").alias(\"total\"))\n```\n\nWhat columns does `df2` contain?",
+    "opciones": [
+      {
+        "texto_opcion": "Only one column, named `total`, containing the values from `amount`.",
+        "es_correcta": true,
+        "explicacion": "`select` with a single aliased column returns a DataFrame with only that column, renamed via `.alias()`."
+      },
+      {
+        "texto_opcion": "Two columns: `amount` and `total`, both with the same values.",
+        "es_correcta": false,
+        "explicacion": "`select()` returns only the columns explicitly listed; the original `amount` column name is not preserved alongside the alias."
+      },
+      {
+        "texto_opcion": "All original columns from `df`, with `amount` renamed to `total`.",
+        "es_correcta": false,
+        "explicacion": "`select()` discards any columns not explicitly listed, so only `total` remains."
+      },
+      {
+        "texto_opcion": "An empty DataFrame, since `alias` cannot be used inside `select`.",
+        "es_correcta": false,
+        "explicacion": "Using `.alias()` inside `select()` is a standard and valid PySpark pattern."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to filter rows in `df` where the `description` column contains the substring `'urgent'`, case-insensitively.\n\nWhich code correctly implements this?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.filter(lower(col(\"description\")).contains(\"urgent\"))`",
+        "es_correcta": true,
+        "explicacion": "Converting the column to lowercase with `lower()` before checking `contains(\"urgent\")` ensures the match is case-insensitive."
+      },
+      {
+        "texto_opcion": "`df.filter(col(\"description\").contains(\"urgent\"))`",
+        "es_correcta": false,
+        "explicacion": "`contains()` alone is case-sensitive and would miss values like `\"Urgent\"` or `\"URGENT\"`."
+      },
+      {
+        "texto_opcion": "`df.filter(col(\"description\") == \"urgent\")`",
+        "es_correcta": false,
+        "explicacion": "This checks for exact equality to the string `\"urgent\"`, not a substring match."
+      },
+      {
+        "texto_opcion": "`df.filter(col(\"description\").ignoreCase(\"urgent\"))`",
+        "es_correcta": false,
+        "explicacion": "Column objects do not have an `ignoreCase()` method in PySpark."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Row filtering"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following on a DataFrame with a `metadata` column of type `map<string,string>`:\n\n```python\ndf.withColumn(\"owner\", col(\"metadata\")[\"owner\"])\n```\n\nWhat is the result if a row's `metadata` map does not contain the key `\"owner\"`?",
+    "opciones": [
+      {
+        "texto_opcion": "The `owner` column for that row is `null`.",
+        "es_correcta": true,
+        "explicacion": "When a map lookup key is missing, PySpark returns `null` for that row rather than raising an error."
+      },
+      {
+        "texto_opcion": "The entire query fails with a `KeyError`.",
+        "es_correcta": false,
+        "explicacion": "PySpark map indexing does not raise a `KeyError` for missing keys; it returns null instead."
+      },
+      {
+        "texto_opcion": "The row is automatically dropped from the result.",
+        "es_correcta": false,
+        "explicacion": "Missing map keys do not cause row removal; the row remains with a null value in the new column."
+      },
+      {
+        "texto_opcion": "The `owner` column defaults to an empty string `\"\"`.",
+        "es_correcta": false,
+        "explicacion": "The default for a missing map key is `null`, not an empty string."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has a DataFrame `df` with columns `first_name` and `last_name` and wants to add a `full_name` column that concatenates them with a space.\n\nWhich code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.withColumn(\"full_name\", concat_ws(\" \", col(\"first_name\"), col(\"last_name\")))`",
+        "es_correcta": true,
+        "explicacion": "`concat_ws()` concatenates multiple columns with the specified separator, here producing `\"first last\"`."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"full_name\", col(\"first_name\") + \" \" + col(\"last_name\"))`",
+        "es_correcta": false,
+        "explicacion": "The `+` operator performs arithmetic addition on Columns, not string concatenation, and will not produce the expected result on string types."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"full_name\", merge(col(\"first_name\"), col(\"last_name\")))`",
+        "es_correcta": false,
+        "explicacion": "There is no `merge()` function in `pyspark.sql.functions` for string concatenation."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"full_name\", join(col(\"first_name\"), col(\"last_name\")))`",
+        "es_correcta": false,
+        "explicacion": "`join()` is used to combine DataFrames, not to concatenate string column values."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Column manipulation"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to keep rows from `df` where `created_at` is between `'2024-01-01'` and `'2024-01-31'` inclusive.\n\nWhich code correctly implements this?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.filter(col(\"created_at\").between(\"2024-01-01\", \"2024-01-31\"))`",
+        "es_correcta": true,
+        "explicacion": "`.between()` performs an inclusive range check, correctly selecting rows where `created_at` falls within the given dates."
+      },
+      {
+        "texto_opcion": "`df.filter(col(\"created_at\") > \"2024-01-01\" and col(\"created_at\") < \"2024-01-31\")`",
+        "es_correcta": false,
+        "explicacion": "Python's `and` does not work correctly with Column expressions; the `&` operator with parentheses would be required, and this also excludes the boundary dates."
+      },
+      {
+        "texto_opcion": "`df.filter(col(\"created_at\").range(\"2024-01-01\", \"2024-01-31\"))`",
+        "es_correcta": false,
+        "explicacion": "There is no `.range()` method on a Column in PySpark."
+      },
+      {
+        "texto_opcion": "`df.where(\"created_at\" in [\"2024-01-01\", \"2024-01-31\"])`",
+        "es_correcta": false,
+        "explicacion": "This Python `in` check only matches the two exact boundary strings, not the full date range in between."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Row filtering"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```python\ndf.select(\"order_id\", explode(col(\"items\")).alias(\"item\"))\n```\n\non a DataFrame where `items` is `array<struct<sku:string, qty:int>>`. What does the resulting DataFrame look like?",
+    "opciones": [
+      {
+        "texto_opcion": "One row per array element, with `order_id` and a struct column `item` containing `sku` and `qty`.",
+        "es_correcta": true,
+        "explicacion": "`explode` on an array of structs produces one row per struct element, preserving the struct fields as a single nested column named `item`."
+      },
+      {
+        "texto_opcion": "One row per array element, with separate top-level columns `sku` and `qty` automatically created.",
+        "es_correcta": false,
+        "explicacion": "`explode` alone keeps the struct intact as one column; flattening struct fields into top-level columns requires an additional `select(\"item.*\")` step."
+      },
+      {
+        "texto_opcion": "A single row per `order_id` with the `items` array unchanged.",
+        "es_correcta": false,
+        "explicacion": "`explode` expands the array into multiple rows; it does not leave the array column unchanged."
+      },
+      {
+        "texto_opcion": "An error, because `explode` cannot operate on arrays of structs.",
+        "es_correcta": false,
+        "explicacion": "`explode` works correctly on arrays of any element type, including structs."
+      }
+    ],
+    "tags": [
+      "3.4",
+      "Explode arrays"
+    ]
+  }
+]

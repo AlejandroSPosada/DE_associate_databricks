@@ -1,0 +1,202 @@
+{
+  "temario": [
+    {
+      "seccion_numero": "1",
+      "seccion_titulo": "Databricks Intelligence Platform",
+      "subtemas": [
+        {
+          "numero": "1.1",
+          "titulo": "Databricks Data Intelligence Platform architecture (Lakehouse, control plane vs. data plane, workspace)"
+        },
+        {
+          "numero": "1.2",
+          "titulo": "Delta Lake core concepts (ACID, time travel, transaction log, file format)"
+        },
+        {
+          "numero": "1.3",
+          "titulo": "Unity Catalog architecture overview (metastore, catalog-schema-table hierarchy)"
+        },
+        {
+          "numero": "1.4",
+          "titulo": "Compute services — types, characteristics, cost models (all-purpose, job, SQL warehouse, serverless)"
+        }
+      ]
+    },
+    {
+      "seccion_numero": "2",
+      "seccion_titulo": "Data Ingestion and Loading",
+      "subtemas": [
+        {
+          "numero": "2.1",
+          "titulo": "Batch vs. streaming vs. incremental loading patterns"
+        },
+        {
+          "numero": "2.2",
+          "titulo": "Auto Loader — schema enforcement & evolution (directory listing vs. file notification modes, cloudFiles syntax, checkpointing)"
+        },
+        {
+          "numero": "2.3",
+          "titulo": "COPY INTO — syntax, idempotency, cloud storage (ADLS / S3 / GCS, FORMAT options, COPY_OPTIONS)"
+        },
+        {
+          "numero": "2.4",
+          "titulo": "Lakeflow Connect — standard & managed connectors (configuration, supported sources, governance)"
+        },
+        {
+          "numero": "2.5",
+          "titulo": "JDBC / ODBC ingestion in notebooks"
+        },
+        {
+          "numero": "2.6",
+          "titulo": "Semi-structured & unstructured data ingestion (JSON, nested data, variant types)"
+        },
+        {
+          "numero": "2.7",
+          "titulo": "Choosing the right ingestion method (decision matrix: volume, frequency, type, governance)"
+        }
+      ]
+    },
+    {
+      "seccion_numero": "3",
+      "seccion_titulo": "Data Transformation and Modeling",
+      "subtemas": [
+        {
+          "numero": "3.1",
+          "titulo": "Medallion Architecture (Bronze / Silver / Gold) (purpose of each layer, design decisions)"
+        },
+        {
+          "numero": "3.2",
+          "titulo": "Reading Bronze & cleaning to Silver (nulls, types)"
+        },
+        {
+          "numero": "3.3",
+          "titulo": "DataFrame joins (inner, left, broadcast, cross, multiple keys, union)"
+        },
+        {
+          "numero": "3.4",
+          "titulo": "Column & row manipulation (add, drop, rename, filter, split, explode arrays)"
+        },
+        {
+          "numero": "3.5",
+          "titulo": "Aggregations & deduplication (groupBy, count, approx_count_distinct, mean, summary, dropDuplicates, window functions)"
+        },
+        {
+          "numero": "3.6",
+          "titulo": "Spark tuning parameters (shuffle.partitions, parallelism, memory, autoBroadcastJoinThreshold)"
+        },
+        {
+          "numero": "3.7",
+          "titulo": "Gold layer objects (materialized views, views, streaming tables, regular tables — when to use each)"
+        },
+        {
+          "numero": "3.8",
+          "titulo": "Data quality checks & validation rules (expectations, constraints, DQ frameworks)"
+        }
+      ]
+    },
+    {
+      "seccion_numero": "4",
+      "seccion_titulo": "Working with Lakeflow Jobs",
+      "subtemas": [
+        {
+          "numero": "4.1",
+          "titulo": "DAG-based task graphs & task dependencies"
+        },
+        {
+          "numero": "4.2",
+          "titulo": "Common task types (notebook, SQL query, dashboard, pipeline tasks)"
+        },
+        {
+          "numero": "4.3",
+          "titulo": "Control flow — retries, branching, looping"
+        },
+        {
+          "numero": "4.4",
+          "titulo": "Trigger types (scheduled, file arrival, table update)"
+        },
+        {
+          "numero": "4.5",
+          "titulo": "Time-based vs. data-driven trigger selection"
+        },
+        {
+          "numero": "4.6",
+          "titulo": "Serverless compute for jobs"
+        }
+      ]
+    },
+    {
+      "seccion_numero": "5",
+      "seccion_titulo": "Implementing CI/CD",
+      "subtemas": [
+        {
+          "numero": "5.1",
+          "titulo": "Databricks Git integration & Repos (branches, commits, pull requests, merge)"
+        },
+        {
+          "numero": "5.2",
+          "titulo": "Declarative Automation Bundles (DABs) (structure, variables, overrides, dev/test/prod targets)"
+        },
+        {
+          "numero": "5.3",
+          "titulo": "Databricks CLI (validate, deploy, manage assets, CI/CD workflows)"
+        },
+        {
+          "numero": "5.4",
+          "titulo": "Promoting pipelines across environments (environment-specific config, bundle promotion)"
+        }
+      ]
+    },
+    {
+      "seccion_numero": "6",
+      "seccion_titulo": "Troubleshooting, Monitoring & Optimization",
+      "subtemas": [
+        {
+          "numero": "6.1",
+          "titulo": "Lakeflow Jobs run history & performance trends"
+        },
+        {
+          "numero": "6.2",
+          "titulo": "Monitoring with the Lakeflow Jobs UI (job statuses, DAG view, failure rates)"
+        },
+        {
+          "numero": "6.3",
+          "titulo": "Spark UI — stage metrics, skew, shuffle, disk spill"
+        },
+        {
+          "numero": "6.4",
+          "titulo": "Liquid Clustering & predictive optimization"
+        },
+        {
+          "numero": "6.5",
+          "titulo": "Cluster diagnostics (startup failures, library conflicts, OOM errors)"
+        }
+      ]
+    },
+    {
+      "seccion_numero": "7",
+      "seccion_titulo": "Governance and Security",
+      "subtemas": [
+        {
+          "numero": "7.1",
+          "titulo": "Managed vs. external tables (create, modify, delete, convert)"
+        },
+        {
+          "numero": "7.2",
+          "titulo": "GRANT / REVOKE / DENY — users, groups, service principals"
+        },
+        {
+          "numero": "7.3",
+          "titulo": "Column-level masking & row-level security"
+        },
+        {
+          "numero": "7.4",
+          "titulo": "Unity Catalog ABAC policies"
+        },
+        {
+          "numero": "7.5",
+          "titulo": "Lineage features in Unity Catalog"
+        }
+      ]
+    }
+  ]
+}

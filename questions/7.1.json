@@ -1,0 +1,600 @@
+[
+  {
+    "pregunta": "A data engineer runs `DROP TABLE catalog.schema.orders`. The table was created without a `LOCATION` clause. What happens to the underlying data files?",
+    "opciones": [
+      {
+        "texto_opcion": "Both the metadata **and** the data files are deleted — this is a managed table, so Unity Catalog controls the data lifecycle and removes files from cloud storage.",
+        "es_correcta": true,
+        "explicacion": "Managed tables (created without a `LOCATION` clause) give Unity Catalog full control over the data lifecycle. `DROP TABLE` removes both the catalog metadata and the underlying Parquet/Delta files from managed storage."
+      },
+      {
+        "texto_opcion": "Only the metadata is removed — the data files remain in cloud storage at the original path.",
+        "es_correcta": false,
+        "explicacion": "That is the behavior for external tables. Managed tables delete both metadata and data files when dropped."
+      },
+      {
+        "texto_opcion": "The table is moved to a Trash catalog and preserved for 30 days before permanent deletion.",
+        "es_correcta": false,
+        "explicacion": "Databricks does not have a Trash catalog for managed tables. The table enters a recovery window (UNDROP available for 7 days) before files are permanently deleted after the 8-day retention window."
+      },
+      {
+        "texto_opcion": "The operation fails — managed tables cannot be dropped without the `FORCE` keyword.",
+        "es_correcta": false,
+        "explicacion": "There is no `FORCE` keyword requirement for dropping managed tables. `DROP TABLE` works directly on managed tables and deletes both metadata and data."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Managed Tables",
+      "DROP"
+    ]
+  },
+  {
+    "pregunta": "A data engineer creates an external table:\n\n```sql\nCREATE TABLE catalog.schema.raw_events\nUSING DELTA\nLOCATION 'abfss://raw@myaccount.dfs.core.windows.net/events/';\n```\n\nLater, they run `DROP TABLE catalog.schema.raw_events`. What is the state of the data?",
+    "opciones": [
+      {
+        "texto_opcion": "The catalog metadata is removed but the data files at `abfss://raw@myaccount.dfs.core.windows.net/events/` **remain intact** — external tables do not delete data on DROP.",
+        "es_correcta": true,
+        "explicacion": "External tables only register a pointer to data managed by the user. `DROP TABLE` removes the Unity Catalog registration but leaves the actual files in cloud storage untouched."
+      },
+      {
+        "texto_opcion": "Both the metadata and the data files are deleted — the table is external, so UC deletes all associated files.",
+        "es_correcta": false,
+        "explicacion": "That is the behavior for managed tables. External tables preserve data files on DROP — only the metadata is removed."
+      },
+      {
+        "texto_opcion": "The data files are moved to the UC trash location but preserved for 7 days.",
+        "es_correcta": false,
+        "explicacion": "UC does not move external table files on DROP. Files stay exactly where they were — at the original `LOCATION` path."
+      },
+      {
+        "texto_opcion": "The DROP command fails unless the external location is first deregistered.",
+        "es_correcta": false,
+        "explicacion": "Dropping an external table does not require deregistering the external location. The DROP only removes the table metadata from the catalog."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "External Tables",
+      "DROP"
+    ]
+  },
+  {
+    "pregunta": "What distinguishes a **managed table** from an **external table** in Unity Catalog at creation time?",
+    "opciones": [
+      {
+        "texto_opcion": "Managed tables are created **without** a `LOCATION` clause; external tables are created **with** a `LOCATION` clause pointing to a user-managed cloud storage path.",
+        "es_correcta": true,
+        "explicacion": "The presence or absence of the `LOCATION` clause is what determines table type at creation. Without `LOCATION`, Unity Catalog assigns storage automatically (managed). With `LOCATION`, the table points to user-specified storage (external)."
+      },
+      {
+        "texto_opcion": "Managed tables use `USING MANAGED` and external tables use `USING EXTERNAL` in the CREATE statement.",
+        "es_correcta": false,
+        "explicacion": "These are not valid Spark SQL keywords. The distinction is made by the `LOCATION` clause, not by a `USING MANAGED/EXTERNAL` keyword."
+      },
+      {
+        "texto_opcion": "Managed tables must be Delta format; external tables can only be Parquet or CSV.",
+        "es_correcta": false,
+        "explicacion": "Both managed and external tables can use Delta format. External tables can also reference non-Delta formats (Parquet, CSV), but Delta is the recommended format for both."
+      },
+      {
+        "texto_opcion": "Managed tables require admin permissions to create; external tables can be created by any user.",
+        "es_correcta": false,
+        "explicacion": "Both table types require `CREATE TABLE` privilege on the schema. Managed tables do not require admin permissions."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Managed vs External"
+    ]
+  },
+  {
+    "pregunta": "A data engineer accidentally runs `DROP TABLE catalog.finance.revenue`. The table was a managed table. How can they recover the data within the allowed window?",
+    "opciones": [
+      {
+        "texto_opcion": "`UNDROP TABLE catalog.finance.revenue;` — Unity Catalog supports recovering managed tables within a **7-day window** after DROP, provided VACUUM has not run.",
+        "es_correcta": true,
+        "explicacion": "UC's UNDROP feature allows recovering dropped managed tables within 7 days. After 7 days (or after VACUUM runs), files are permanently deleted and cannot be recovered."
+      },
+      {
+        "texto_opcion": "`RESTORE TABLE catalog.finance.revenue TO VERSION AS OF 0;` — restoring to version 0 recovers the table.",
+        "es_correcta": false,
+        "explicacion": "`RESTORE` requires the table to exist in the catalog. Since the table was dropped, `RESTORE` cannot be used — `UNDROP` must be used first to restore the table to the catalog."
+      },
+      {
+        "texto_opcion": "Contact Databricks Support — dropped managed tables can only be recovered by Databricks engineers.",
+        "es_correcta": false,
+        "explicacion": "UNDROP is a self-service SQL command available to users with appropriate privileges. No support ticket is needed within the 7-day window."
+      },
+      {
+        "texto_opcion": "`UNDROP TABLE` is not supported for managed tables — only external tables can be recovered.",
+        "es_correcta": false,
+        "explicacion": "UNDROP is specifically for managed tables — not for external tables. External tables cannot be UNDROPped because their data files were never deleted."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "UNDROP",
+      "Managed Tables"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to create an external table in Unity Catalog pointing to `abfss://landing@corp.dfs.core.windows.net/raw/`. What is a prerequisite for this to succeed?",
+    "opciones": [
+      {
+        "texto_opcion": "An **External Location** must be registered in Unity Catalog for the path `abfss://landing@corp.dfs.core.windows.net/raw/` (or a parent path), with a valid Storage Credential.",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog requires all external table paths to be covered by a registered External Location with an associated Storage Credential. Without this, the CREATE TABLE fails with an access error."
+      },
+      {
+        "texto_opcion": "The data files must be in Delta Lake format before creating the external table.",
+        "es_correcta": false,
+        "explicacion": "External tables can reference non-Delta formats (Parquet, CSV, ORC). The format requirement is based on the `USING` clause, not the External Location registration."
+      },
+      {
+        "texto_opcion": "The user must have `MODIFY` privilege on the storage account in Azure Active Directory.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog abstracts cloud permissions through Storage Credentials and External Locations. Databricks users don't need direct Azure AD permissions — they use UC-registered credentials."
+      },
+      {
+        "texto_opcion": "The schema must be created with a matching `MANAGED LOCATION` before external tables can reference it.",
+        "es_correcta": false,
+        "explicacion": "`MANAGED LOCATION` on a schema is for managed table storage. External tables use External Locations, which are separate UC objects registered by admins."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "External Tables",
+      "External Location"
+    ]
+  },
+  {
+    "pregunta": "A data engineer changes the managed storage location for an existing catalog:\n\n```sql\nALTER CATALOG prod_catalog\nSET MANAGED LOCATION 'abfss://new@account.dfs.core.windows.net/';\n```\n\nHow does this affect existing managed tables in `prod_catalog`?",
+    "opciones": [
+      {
+        "texto_opcion": "Existing tables are **not affected** — they remain at their current storage location. Only **new** managed tables and volumes created after this change use the new location.",
+        "es_correcta": true,
+        "explicacion": "`ALTER CATALOG SET MANAGED LOCATION` is prospective — it sets where new objects will be stored. Existing tables remain at their current storage path and are not automatically migrated."
+      },
+      {
+        "texto_opcion": "All existing managed tables are immediately moved to the new location — the command triggers a background migration.",
+        "es_correcta": false,
+        "explicacion": "The command only sets the default storage path for future objects. It does not migrate existing tables. Manual migration (via `SET MANAGED` or `DEEP CLONE`) is needed to move existing tables."
+      },
+      {
+        "texto_opcion": "The command fails — catalog-level managed location can only be set during catalog creation.",
+        "es_correcta": false,
+        "explicacion": "`ALTER CATALOG SET MANAGED LOCATION` is a valid command and can be run at any time. It is not restricted to catalog creation."
+      },
+      {
+        "texto_opcion": "All tables in the catalog are inaccessible until the migration completes.",
+        "es_correcta": false,
+        "explicacion": "`ALTER CATALOG SET MANAGED LOCATION` is a metadata-only change affecting future storage. It does not affect access to existing tables."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Storage Location",
+      "Managed Tables"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```sql\nALTER TABLE catalog.schema.raw_events SET MANAGED;\n```\n\nAfter the command succeeds, what should they do to avoid double storage costs?",
+    "opciones": [
+      {
+        "texto_opcion": "**Manually delete** the original files from the external storage location — `SET MANAGED` copies data to UC managed storage but does not remove files from the original external path.",
+        "es_correcta": true,
+        "explicacion": "`ALTER TABLE SET MANAGED` moves data to UC-managed storage but leaves the original files at the external location. Both copies exist until the user manually deletes the files from the original path."
+      },
+      {
+        "texto_opcion": "Run `VACUUM catalog.schema.raw_events RETAIN 0 HOURS` — VACUUM removes the original external files.",
+        "es_correcta": false,
+        "explicacion": "VACUUM removes old versions of Delta files within the managed table's storage — it does not delete files from the original external location."
+      },
+      {
+        "texto_opcion": "Run `DROP EXTERNAL LOCATION raw_data_location` — dropping the external location deletes all files.",
+        "es_correcta": false,
+        "explicacion": "Dropping an external location removes the UC registration but does not delete the actual files in cloud storage."
+      },
+      {
+        "texto_opcion": "Nothing — the original files are automatically deleted after 7 days by Unity Catalog's retention policy.",
+        "es_correcta": false,
+        "explicacion": "UC retention policies apply to managed table data files, not to external storage locations. Files at the original external path are the user's responsibility to clean up."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Conversion",
+      "SET MANAGED"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to convert an external Delta table to a managed table while preserving the full Delta history and minimizing downtime. Which command is recommended?",
+    "opciones": [
+      {
+        "texto_opcion": "`ALTER TABLE catalog.schema.raw_events SET MANAGED;` — this is the recommended in-place conversion that preserves Delta history, permissions, and minimizes write downtime.",
+        "es_correcta": true,
+        "explicacion": "`ALTER TABLE SET MANAGED` is the preferred conversion method as of 2026. It preserves the full Delta history, existing permissions, tags, and comments. It requires only a brief downtime window for writes."
+      },
+      {
+        "texto_opcion": "`CREATE TABLE catalog.schema.raw_events_managed AS SELECT * FROM catalog.schema.raw_events;` — CTAS creates a new managed table.",
+        "es_correcta": false,
+        "explicacion": "CTAS does not preserve Delta history, permissions, or comments. It creates a new table that requires renaming, which adds complexity. `SET MANAGED` is preferred."
+      },
+      {
+        "texto_opcion": "`CREATE TABLE catalog.schema.raw_events_managed DEEP CLONE catalog.schema.raw_events;` — DEEP CLONE preserves history.",
+        "es_correcta": false,
+        "explicacion": "DEEP CLONE preserves Delta history but creates a separate copy under a different name, requiring additional renaming steps. `SET MANAGED` does the conversion in-place with less complexity."
+      },
+      {
+        "texto_opcion": "`ALTER TABLE catalog.schema.raw_events UNSET LOCATION;` — removing the LOCATION converts it to managed.",
+        "es_correcta": false,
+        "explicacion": "There is no `UNSET LOCATION` command. The correct in-place conversion command is `ALTER TABLE SET MANAGED`."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Conversion",
+      "SET MANAGED"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to check whether a specific table is managed or external. Which SQL command shows this information?",
+    "opciones": [
+      {
+        "texto_opcion": "`DESCRIBE TABLE EXTENDED catalog.schema.orders;` — the output includes a `Type` row showing `MANAGED` or `EXTERNAL`.",
+        "es_correcta": true,
+        "explicacion": "`DESCRIBE TABLE EXTENDED` provides detailed metadata including the table type (`MANAGED` or `EXTERNAL`), the storage location, and other properties."
+      },
+      {
+        "texto_opcion": "`SHOW TABLE EXTENDED IN catalog.schema LIKE 'orders';` — this shows the table type.",
+        "es_correcta": false,
+        "explicacion": "`SHOW TABLE EXTENDED` shows basic table info but `DESCRIBE TABLE EXTENDED` is the command that displays the full metadata including table type."
+      },
+      {
+        "texto_opcion": "`SELECT table_type FROM information_schema.tables WHERE table_name = 'orders';`",
+        "es_correcta": false,
+        "explicacion": "While `information_schema.tables` does have a `table_type` column, it typically shows `BASE TABLE` — not `MANAGED` vs `EXTERNAL`. `DESCRIBE TABLE EXTENDED` is the definitive source."
+      },
+      {
+        "texto_opcion": "`SHOW CREATE TABLE catalog.schema.orders;` — the presence of LOCATION in the output indicates an external table.",
+        "es_correcta": false,
+        "explicacion": "While `SHOW CREATE TABLE` does show the `LOCATION` clause for external tables (and no `LOCATION` for managed tables), `DESCRIBE TABLE EXTENDED` explicitly shows `Type = MANAGED` or `Type = EXTERNAL` and is the clearest way to check."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Managed vs External"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to change the storage location of an existing external table from one cloud storage path to another. Which command achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "`ALTER TABLE catalog.schema.raw_events SET LOCATION 'abfss://new@account.dfs.core.windows.net/events/';` — changes the storage pointer without moving files.",
+        "es_correcta": true,
+        "explicacion": "`ALTER TABLE SET LOCATION` changes where the external table reads data from. It only updates the metadata pointer — it does not move the actual data files."
+      },
+      {
+        "texto_opcion": "`ALTER TABLE catalog.schema.raw_events MOVE TO 'abfss://new@account.dfs.core.windows.net/events/';` — moves both metadata and files.",
+        "es_correcta": false,
+        "explicacion": "`MOVE TO` is not a valid Databricks SQL command for tables. Use `ALTER TABLE SET LOCATION` to change the pointer, or `DEEP CLONE` to copy files to a new location."
+      },
+      {
+        "texto_opcion": "`SET LOCATION` is not supported for external tables — use `DROP TABLE` and `CREATE TABLE` at the new path.",
+        "es_correcta": false,
+        "explicacion": "`ALTER TABLE SET LOCATION` is fully supported for external tables. It is the standard way to change an external table's storage pointer."
+      },
+      {
+        "texto_opcion": "`ALTER TABLE catalog.schema.raw_events SET MANAGED LOCATION 'abfss://new@account.dfs.core.windows.net/events/';`",
+        "es_correcta": false,
+        "explicacion": "`SET MANAGED LOCATION` is used on catalogs and schemas to set where new managed objects are stored — not on tables. Use `SET LOCATION` for external table pointer changes."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "External Tables",
+      "ALTER TABLE"
+    ]
+  },
+  {
+    "pregunta": "After running `ALTER TABLE catalog.schema.raw_events SET LOCATION 'abfss://new@account.dfs.core.windows.net/events/'`, what happens to the data at the OLD location?",
+    "opciones": [
+      {
+        "texto_opcion": "The data at the old location **remains untouched** — `SET LOCATION` only changes the metadata pointer. No files are moved or deleted.",
+        "es_correcta": true,
+        "explicacion": "`ALTER TABLE SET LOCATION` is a metadata-only operation. It updates the catalog's pointer to the storage path but has no effect on the physical files at either the old or new location."
+      },
+      {
+        "texto_opcion": "The data is moved from the old location to the new location automatically.",
+        "es_correcta": false,
+        "explicacion": "`SET LOCATION` does not move files. Only the metadata pointer is updated. Files must be moved separately (e.g., via `dbutils.fs.cp` or cloud storage tools)."
+      },
+      {
+        "texto_opcion": "The old location is deleted — Databricks cleans up the previous external path.",
+        "es_correcta": false,
+        "explicacion": "Databricks does not manage external storage. Files at the old location remain until manually deleted by the user."
+      },
+      {
+        "texto_opcion": "The old location data becomes inaccessible immediately to all users.",
+        "es_correcta": false,
+        "explicacion": "The data at the old location is still accessible via direct cloud storage access. The Databricks table, however, now reads from the new location."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "External Tables",
+      "ALTER TABLE"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to use `CTAS` to create a managed table from an external table. What important limitation should they be aware of?",
+    "opciones": [
+      {
+        "texto_opcion": "CTAS does **not** preserve the Delta table history, existing permissions, or table comments from the source table.",
+        "es_correcta": true,
+        "explicacion": "CTAS creates a brand-new table — it copies the data (as of the current snapshot) but not Delta history (time travel), existing GRANT/REVOKE permissions, or metadata like comments and tags."
+      },
+      {
+        "texto_opcion": "CTAS fails if the source table is an external table — it only works with managed-to-managed copies.",
+        "es_correcta": false,
+        "explicacion": "CTAS works with any SELECT query, including queries against external tables. The limitation is that it doesn't preserve history/permissions, not that it's incompatible with external tables."
+      },
+      {
+        "texto_opcion": "CTAS automatically copies the `CLUSTER BY` and `PARTITIONED BY` settings from the source table.",
+        "es_correcta": false,
+        "explicacion": "CTAS creates a plain table without clustering or partitioning unless explicitly specified in the CTAS statement. Storage layout must be re-declared."
+      },
+      {
+        "texto_opcion": "CTAS is not supported in Unity Catalog — use `DEEP CLONE` instead.",
+        "es_correcta": false,
+        "explicacion": "CTAS is fully supported in Unity Catalog. Its limitation is loss of history/permissions compared to `SET MANAGED`, not incompatibility with UC."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Conversion",
+      "CTAS"
+    ]
+  },
+  {
+    "pregunta": "An external table's files were updated by an external ETL tool that added new Parquet files to the storage path. The table in Databricks does not reflect the new files. Which command updates the metadata?",
+    "opciones": [
+      {
+        "texto_opcion": "`MSCK REPAIR TABLE catalog.schema.external_table SYNC METADATA;` — this updates Unity Catalog's metadata to reflect files added by external tools.",
+        "es_correcta": true,
+        "explicacion": "When external tools modify an external table's files without going through Databricks SQL, Unity Catalog metadata may become stale. `MSCK REPAIR TABLE SYNC METADATA` refreshes the metadata to reflect the current state of the storage path."
+      },
+      {
+        "texto_opcion": "`REFRESH TABLE catalog.schema.external_table;` — REFRESH updates the table cache.",
+        "es_correcta": false,
+        "explicacion": "`REFRESH TABLE` clears the Spark SQL cache for that table (forcing a re-read of metadata). While it may help in some cases, `MSCK REPAIR TABLE SYNC METADATA` is the specific command for syncing UC metadata with external file changes."
+      },
+      {
+        "texto_opcion": "`ANALYZE TABLE catalog.schema.external_table COMPUTE STATISTICS;` — this scans new files and updates statistics.",
+        "es_correcta": false,
+        "explicacion": "`ANALYZE TABLE` updates column-level statistics for the query optimizer. It does not repair metadata inconsistencies caused by external file additions."
+      },
+      {
+        "texto_opcion": "`ALTER TABLE catalog.schema.external_table SET LOCATION 'same/path/';` — re-setting the location triggers a file rescan.",
+        "es_correcta": false,
+        "explicacion": "Re-setting the same LOCATION does not trigger a file rescan. `MSCK REPAIR TABLE SYNC METADATA` is the correct command for this scenario."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "External Tables",
+      "MSCK REPAIR"
+    ]
+  },
+  {
+    "pregunta": "Which of the following scenarios is the **best justification** for using an external table instead of a managed table?",
+    "opciones": [
+      {
+        "texto_opcion": "The data is also accessed by Apache Hive on EMR and must remain at a specific S3 path that both systems can read directly.",
+        "es_correcta": true,
+        "explicacion": "External tables are ideal when data must be co-owned or co-accessed by non-Databricks systems. The fixed `LOCATION` ensures both Databricks and external tools read from the same path."
+      },
+      {
+        "texto_opcion": "The team wants Predictive Optimization to automatically OPTIMIZE and VACUUM the table.",
+        "es_correcta": false,
+        "explicacion": "Predictive Optimization only applies to Unity Catalog managed tables. If automated maintenance is desired, use a managed table."
+      },
+      {
+        "texto_opcion": "The team wants DROP TABLE to automatically clean up data files.",
+        "es_correcta": false,
+        "explicacion": "Automatic data file cleanup on DROP is a managed table behavior, not an external table behavior. Use a managed table if you want DROP to clean up files."
+      },
+      {
+        "texto_opcion": "The table needs to use Delta format for ACID transactions.",
+        "es_correcta": false,
+        "explicacion": "Both managed and external tables can use Delta format. The format choice is not a reason to prefer external over managed tables."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Managed vs External",
+      "Use Cases"
+    ]
+  },
+  {
+    "pregunta": "A data engineer creates a managed table using:\n\n```sql\nCREATE TABLE catalog.analytics.monthly_sales\nAS SELECT * FROM catalog.raw.orders\nWHERE YEAR(order_date) = 2024;\n```\n\nWhere does Unity Catalog store the data files for `monthly_sales`?",
+    "opciones": [
+      {
+        "texto_opcion": "In the managed storage location configured for the `analytics` catalog or schema — Unity Catalog determines the path automatically (e.g., `abfss://managed@.../analytics/monthly_sales/`).",
+        "es_correcta": true,
+        "explicacion": "CTAS without a `LOCATION` clause creates a managed table. UC assigns the storage path based on the catalog/schema managed location hierarchy. The path is fully UC-managed."
+      },
+      {
+        "texto_opcion": "At `dbfs:/user/hive/warehouse/catalog.analytics/monthly_sales/` — UC uses the Hive warehouse as default storage.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog managed tables use the UC metastore's cloud storage (Azure Data Lake Storage, S3, or GCS), not the Hive warehouse path `dbfs:/user/hive/warehouse`."
+      },
+      {
+        "texto_opcion": "At the same location as `catalog.raw.orders` — CTAS inherits the source table's storage path.",
+        "es_correcta": false,
+        "explicacion": "CTAS creates a new, independent table. It does not share or inherit the source table's storage path."
+      },
+      {
+        "texto_opcion": "In `/tmp/` on the driver node — the table is created in memory and must be explicitly saved.",
+        "es_correcta": false,
+        "explicacion": "SQL `CREATE TABLE AS SELECT` creates a persistent Delta table in cloud storage, not in temporary driver memory."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Managed Tables",
+      "Storage Location"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs `UNDROP TABLE catalog.schema.orders` but receives an error. Which of the following explains why UNDROP might fail?",
+    "opciones": [
+      {
+        "texto_opcion": "The table was dropped more than **7 days ago** and VACUUM has already deleted the underlying data files.",
+        "es_correcta": true,
+        "explicacion": "UNDROP has a 7-day recovery window. If more than 7 days have passed or if VACUUM ran after the DROP, the underlying data files are permanently deleted and UNDROP fails."
+      },
+      {
+        "texto_opcion": "The table was an external table — UNDROP only works for managed tables, but the user forgot which type it was.",
+        "es_correcta": false,
+        "explicacion": "While external tables cannot be UNDROPped, the error in this question specifically asks why UNDROP might fail for a table that WAS managed. The 7-day window and VACUUM are the primary failure reasons."
+      },
+      {
+        "texto_opcion": "UNDROP requires the `SYSADMIN` role — regular users cannot recover dropped tables.",
+        "es_correcta": false,
+        "explicacion": "UNDROP requires ownership of the table or `CREATE TABLE` privilege on the schema — not a special `SYSADMIN` role."
+      },
+      {
+        "texto_opcion": "UNDROP is not supported for Delta tables — only Parquet tables can be recovered.",
+        "es_correcta": false,
+        "explicacion": "UNDROP is specifically designed for Delta managed tables in Unity Catalog. There is no format restriction."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "UNDROP",
+      "Managed Tables"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses `DEEP CLONE` to create a copy of a Delta table. How does `DEEP CLONE` differ from `ALTER TABLE SET MANAGED` for converting an external table to managed?",
+    "opciones": [
+      {
+        "texto_opcion": "`DEEP CLONE` creates a **copy under a new table name** (history preserved, but requires renaming); `SET MANAGED` converts **in-place** preserving name, permissions, and history without extra steps.",
+        "es_correcta": true,
+        "explicacion": "`DEEP CLONE` is best for cross-catalog copies or sandbox creation — it produces a separate table. `SET MANAGED` is the in-place conversion that preserves the original table identity, avoiding the complexity of renaming."
+      },
+      {
+        "texto_opcion": "`DEEP CLONE` is faster than `SET MANAGED` because it uses metadata-only operations.",
+        "es_correcta": false,
+        "explicacion": "DEEP CLONE involves copying all data files, which is time-consuming for large tables. `SET MANAGED` is generally faster for in-place conversion."
+      },
+      {
+        "texto_opcion": "`DEEP CLONE` deletes the source external table after cloning; `SET MANAGED` keeps both copies.",
+        "es_correcta": false,
+        "explicacion": "`DEEP CLONE` does not modify or delete the source table. Both methods result in data existing in two places until the user manually cleans up the original."
+      },
+      {
+        "texto_opcion": "Both commands produce identical results with no differences in behavior or outcome.",
+        "es_correcta": false,
+        "explicacion": "There are significant differences: `DEEP CLONE` creates a new separate table; `SET MANAGED` converts the existing table in-place preserving its identity and permissions."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Conversion",
+      "DEEP CLONE"
+    ]
+  },
+  {
+    "pregunta": "A data engineering team creates all production tables as **managed tables** in Unity Catalog. A junior engineer asks: \"What prevents accidental data loss from DROP TABLE?\" Which feature addresses this concern?",
+    "opciones": [
+      {
+        "texto_opcion": "**UNDROP TABLE** — dropped managed tables can be recovered within 7 days, as long as VACUUM has not run and permanently deleted the files.",
+        "es_correcta": true,
+        "explicacion": "UNDROP provides a safety net for accidental DROP on managed tables. The 7-day retention window allows recovery. This is a key governance advantage of managed tables."
+      },
+      {
+        "texto_opcion": "Managed tables cannot be dropped — `DROP TABLE` only works on external tables.",
+        "es_correcta": false,
+        "explicacion": "`DROP TABLE` works on both managed and external tables. The protection comes from UNDROP's recovery capability, not from preventing the DROP."
+      },
+      {
+        "texto_opcion": "Managed tables automatically backup data to a secondary location before any DROP operation.",
+        "es_correcta": false,
+        "explicacion": "There is no automatic backup on DROP. Protection comes from the UNDROP command and the 7-day file retention window."
+      },
+      {
+        "texto_opcion": "Unity Catalog requires a two-step `STAGE DROP` followed by `CONFIRM DROP` for managed tables.",
+        "es_correcta": false,
+        "explicacion": "There is no two-step DROP confirmation mechanism in Unity Catalog. A single `DROP TABLE` removes the table. UNDROP is the recovery mechanism."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Managed Tables",
+      "UNDROP"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```sql\nALTER SCHEMA catalog.prod_schema\nSET MANAGED LOCATION 'abfss://new@account.dfs.core.windows.net/prod/';\n```\n\nWhich of the following is true after this command?",
+    "opciones": [
+      {
+        "texto_opcion": "New managed tables created in `prod_schema` will store data at `abfss://new@account.dfs.core.windows.net/prod/`; existing tables are **not moved**.",
+        "es_correcta": true,
+        "explicacion": "`ALTER SCHEMA SET MANAGED LOCATION` sets the default storage for future managed objects. It is not retroactive — existing tables remain at their current storage paths."
+      },
+      {
+        "texto_opcion": "All existing managed tables in `prod_schema` are immediately migrated to the new location.",
+        "es_correcta": false,
+        "explicacion": "The schema managed location change is prospective only. Existing tables require explicit migration (e.g., `SET MANAGED` or `DEEP CLONE`)."
+      },
+      {
+        "texto_opcion": "All external tables in `prod_schema` now point to the new location.",
+        "es_correcta": false,
+        "explicacion": "`SET MANAGED LOCATION` only affects **managed** table storage defaults — not external tables, which always use their explicit `LOCATION` path."
+      },
+      {
+        "texto_opcion": "The command fails unless the new location is empty — an existing storage path cannot be used as a managed location.",
+        "es_correcta": false,
+        "explicacion": "The managed location path does not need to be empty. Unity Catalog creates subdirectories within the managed location path for each table."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Storage Location",
+      "Managed Tables"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has a managed table `catalog.staging.events`. They want to create a copy with the complete Delta history for use in a different catalog, and want the copy to be a managed table. Which approach is best?",
+    "opciones": [
+      {
+        "texto_opcion": "`CREATE TABLE other_catalog.schema.events_copy DEEP CLONE catalog.staging.events;` — DEEP CLONE creates a full copy with Delta history as a new managed table in the target catalog.",
+        "es_correcta": true,
+        "explicacion": "`DEEP CLONE` copies all data files and Delta log history. Without a `LOCATION` clause, the result is a managed table in the target catalog. This is the recommended approach for cross-catalog copies requiring history preservation."
+      },
+      {
+        "texto_opcion": "`ALTER TABLE catalog.staging.events SET MANAGED;` — this moves the table to the other catalog.",
+        "es_correcta": false,
+        "explicacion": "`SET MANAGED` converts between external and managed types within the same table. It cannot move a table to a different catalog."
+      },
+      {
+        "texto_opcion": "`CREATE TABLE other_catalog.schema.events_copy AS SELECT * FROM catalog.staging.events;` — CTAS copies the data and history.",
+        "es_correcta": false,
+        "explicacion": "CTAS does not copy Delta history — it only captures the current data snapshot. `DEEP CLONE` is required to preserve history."
+      },
+      {
+        "texto_opcion": "`ALTER TABLE catalog.staging.events RENAME TO other_catalog.schema.events_copy;` — RENAME moves the table across catalogs.",
+        "es_correcta": false,
+        "explicacion": "`RENAME TO` does not support cross-catalog renaming in Unity Catalog. Tables can only be renamed within the same catalog."
+      }
+    ],
+    "tags": [
+      "7.1",
+      "Conversion",
+      "DEEP CLONE"
+    ]
+  }
+]

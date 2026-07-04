@@ -1,0 +1,901 @@
+[
+  {
+    "pregunta": "A data engineer defines the following expectation in a Lakeflow SDP pipeline:\n\n```python\nfrom pyspark import pipelines as dp\n\n@dp.table()\n@dp.expect(\"valid_price\", \"price >= 0\")\ndef products():\n    return spark.readStream.table(\"raw.products\")\n```\n\nWhat happens to records where `price` is negative?",
+    "opciones": [
+      {
+        "texto_opcion": "They are written to the target table, and the violation is tracked in metrics.",
+        "es_correcta": true,
+        "explicacion": "`@dp.expect` is the WARN action (default). Invalid records are retained and violations are logged in the pipeline event log."
+      },
+      {
+        "texto_opcion": "They are silently dropped before writing.",
+        "es_correcta": false,
+        "explicacion": "Silent dropping requires `@dp.expect_or_drop`. The plain `@dp.expect` decorator never removes records."
+      },
+      {
+        "texto_opcion": "The pipeline update fails immediately.",
+        "es_correcta": false,
+        "explicacion": "Failing on violation requires `@dp.expect_or_fail`. `@dp.expect` only tracks violations without stopping the pipeline."
+      },
+      {
+        "texto_opcion": "An exception is raised at definition time because the constraint references a column name.",
+        "es_correcta": false,
+        "explicacion": "Constraints are standard SQL boolean expressions evaluated at runtime per record, not at definition time."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Expectations - WARN action"
+    ]
+  },
+  {
+    "pregunta": "Which Python import statement is required to use Lakeflow SDP expectation decorators?",
+    "opciones": [
+      {
+        "texto_opcion": "`from pyspark import pipelines as dp`",
+        "es_correcta": true,
+        "explicacion": "The Lakeflow SDP Python interface lives in `pyspark.pipelines`, conventionally aliased as `dp`. The legacy `dlt` module is deprecated."
+      },
+      {
+        "texto_opcion": "`import databricks.dlt as dp`",
+        "es_correcta": false,
+        "explicacion": "This refers to the old DLT module. Databricks now recommends `pyspark.pipelines` for all new pipelines."
+      },
+      {
+        "texto_opcion": "`from pyspark.sql import pipelines as dp`",
+        "es_correcta": false,
+        "explicacion": "The module path is `pyspark.pipelines`, not `pyspark.sql.pipelines`."
+      },
+      {
+        "texto_opcion": "`import lakeflow.sdp as dp`",
+        "es_correcta": false,
+        "explicacion": "No such module exists. The correct module is `pyspark.pipelines`."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "pyspark.pipelines module"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to ensure that records missing a `customer_id` are **never written** to the Silver table. Which decorator achieves this?\n\n```python\nfrom pyspark import pipelines as dp\n\n@dp.table()\n@dp.???  (\"non_null_customer\", \"customer_id IS NOT NULL\")\ndef silver_orders():\n    return spark.readStream.table(\"bronze.orders\")\n```",
+    "opciones": [
+      {
+        "texto_opcion": "`@dp.expect_or_drop`",
+        "es_correcta": true,
+        "explicacion": "`expect_or_drop` removes violating records before writing. The count of dropped records is logged in pipeline metrics."
+      },
+      {
+        "texto_opcion": "`@dp.expect`",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect` is the WARN action — it retains invalid records and only tracks the violation."
+      },
+      {
+        "texto_opcion": "`@dp.expect_or_fail`",
+        "es_correcta": false,
+        "explicacion": "`expect_or_fail` stops the entire pipeline update on the first violation, rather than just dropping the bad record."
+      },
+      {
+        "texto_opcion": "`@dp.expect_or_quarantine`",
+        "es_correcta": false,
+        "explicacion": "There is no `expect_or_quarantine` decorator. Quarantining is an advanced pattern implemented manually, not a built-in action."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Expectations - DROP action"
+    ]
+  },
+  {
+    "pregunta": "A payment pipeline processes critical financial records. If any record contains a `NULL` transaction amount, the pipeline must stop immediately and require manual intervention. Which decorator should be used?",
+    "opciones": [
+      {
+        "texto_opcion": "`@dp.expect_or_fail(\"non_null_amount\", \"amount IS NOT NULL\")`",
+        "es_correcta": true,
+        "explicacion": "`expect_or_fail` causes the pipeline update to fail when a violating record is detected, requiring manual intervention before reprocessing."
+      },
+      {
+        "texto_opcion": "`@dp.expect_or_drop(\"non_null_amount\", \"amount IS NOT NULL\")`",
+        "es_correcta": false,
+        "explicacion": "`expect_or_drop` silently removes the bad record. For financial data requiring full integrity, the pipeline should stop instead."
+      },
+      {
+        "texto_opcion": "`@dp.expect(\"non_null_amount\", \"amount IS NOT NULL\")`",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect` logs the violation but continues writing the invalid record to the target table."
+      },
+      {
+        "texto_opcion": "`@dp.expect_all_or_drop({\"non_null_amount\": \"amount IS NOT NULL\"})`",
+        "es_correcta": false,
+        "explicacion": "`expect_all_or_drop` drops violating records across multiple rules but does not stop the pipeline update."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Expectations - FAIL action"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes the following SQL pipeline definition:\n\n```sql\nCREATE OR REFRESH STREAMING TABLE clean_events (\n  CONSTRAINT valid_ts EXPECT (event_ts > '2020-01-01') ON VIOLATION DROP ROW\n)\nAS SELECT * FROM STREAM(raw.events);\n```\n\nWhat is the effect of `ON VIOLATION DROP ROW`?",
+    "opciones": [
+      {
+        "texto_opcion": "Records where `event_ts <= '2020-01-01'` are excluded from `clean_events` and the count is logged.",
+        "es_correcta": true,
+        "explicacion": "`ON VIOLATION DROP ROW` is the SQL equivalent of `@dp.expect_or_drop`. Violating records are filtered out and metrics are tracked."
+      },
+      {
+        "texto_opcion": "The pipeline fails when any record with an invalid timestamp is encountered.",
+        "es_correcta": false,
+        "explicacion": "Failing requires `ON VIOLATION FAIL UPDATE`. `DROP ROW` only removes the record, it does not stop the pipeline."
+      },
+      {
+        "texto_opcion": "Invalid records are written with a warning flag column added automatically.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow SDP does not add flag columns automatically. Warning behavior (WARN) simply retains records and logs metrics — no extra column is added."
+      },
+      {
+        "texto_opcion": "The statement fails at parse time because `ON VIOLATION` is not valid SQL syntax in SDP.",
+        "es_correcta": false,
+        "explicacion": "`ON VIOLATION DROP ROW` and `ON VIOLATION FAIL UPDATE` are valid SQL clauses in Lakeflow SDP for specifying expectation actions."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "SQL Expectations - DROP ROW"
+    ]
+  },
+  {
+    "pregunta": "Which SQL clause stops a pipeline update when any record violates a constraint?",
+    "opciones": [
+      {
+        "texto_opcion": "`ON VIOLATION FAIL UPDATE`",
+        "es_correcta": true,
+        "explicacion": "`ON VIOLATION FAIL UPDATE` is the SQL equivalent of `@dp.expect_or_fail`. It halts the pipeline update and requires manual reprocessing."
+      },
+      {
+        "texto_opcion": "`ON VIOLATION DROP ROW`",
+        "es_correcta": false,
+        "explicacion": "`ON VIOLATION DROP ROW` silently removes invalid records without stopping the pipeline."
+      },
+      {
+        "texto_opcion": "`ON VIOLATION RAISE ERROR`",
+        "es_correcta": false,
+        "explicacion": "This clause does not exist in Lakeflow SDP SQL syntax. The correct clause is `ON VIOLATION FAIL UPDATE`."
+      },
+      {
+        "texto_opcion": "Omitting the `ON VIOLATION` clause",
+        "es_correcta": false,
+        "explicacion": "Omitting `ON VIOLATION` applies the default WARN behavior, which retains invalid records without stopping the pipeline."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "SQL Expectations - FAIL UPDATE"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to enforce two quality rules on a streaming table and **drop** any record that fails either rule. Which Python approach is correct?\n\n```python\nfrom pyspark import pipelines as dp\n```",
+    "opciones": [
+      {
+        "texto_opcion": "```python\n@dp.table()\n@dp.expect_all_or_drop({\n    \"valid_id\": \"id IS NOT NULL\",\n    \"positive_qty\": \"quantity > 0\"\n})\ndef clean_orders():\n    return spark.readStream.table(\"bronze.orders\")\n```",
+        "es_correcta": true,
+        "explicacion": "`@dp.expect_all_or_drop` accepts a dict of `{name: constraint}` pairs and drops any record that fails at least one rule."
+      },
+      {
+        "texto_opcion": "```python\n@dp.table()\n@dp.expect_or_drop(\"valid_id\", \"id IS NOT NULL\")\n@dp.expect_or_drop(\"positive_qty\", \"quantity > 0\")\ndef clean_orders():\n    return spark.readStream.table(\"bronze.orders\")\n```",
+        "es_correcta": false,
+        "explicacion": "While stacking `@dp.expect_or_drop` decorators is possible, `@dp.expect_all_or_drop` is the idiomatic and cleaner way to apply multiple DROP rules."
+      },
+      {
+        "texto_opcion": "```python\n@dp.table()\n@dp.expect_all({\"valid_id\": \"id IS NOT NULL\", \"positive_qty\": \"quantity > 0\"})\ndef clean_orders():\n    return spark.readStream.table(\"bronze.orders\")\n```",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect_all` applies the WARN action, not DROP. Violating records would still be written to the target."
+      },
+      {
+        "texto_opcion": "```python\n@dp.table()\n@dp.expect_or_drop([\"id IS NOT NULL\", \"quantity > 0\"])\ndef clean_orders():\n    return spark.readStream.table(\"bronze.orders\")\n```",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect_or_drop` requires exactly two string arguments (name, constraint), not a list. Use `@dp.expect_all_or_drop` for multiple rules."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "expect_all_or_drop"
+    ]
+  },
+  {
+    "pregunta": "What is a **requirement** for a constraint clause in a Lakeflow SDP expectation?",
+    "opciones": [
+      {
+        "texto_opcion": "It must be a standard SQL boolean expression that evaluates to `true` or `false` for each record.",
+        "es_correcta": true,
+        "explicacion": "SDP evaluates constraints as SQL boolean expressions per record. They cannot include custom Python functions, external calls, or subqueries referencing other tables."
+      },
+      {
+        "texto_opcion": "It must reference at least two columns to be valid.",
+        "es_correcta": false,
+        "explicacion": "Single-column constraints like `price >= 0` or `id IS NOT NULL` are perfectly valid."
+      },
+      {
+        "texto_opcion": "It can include subqueries referencing lookup tables for richer validation.",
+        "es_correcta": false,
+        "explicacion": "Subqueries referencing other tables are explicitly not allowed in expectation constraints."
+      },
+      {
+        "texto_opcion": "It must be written in Python even when using the SQL pipeline interface.",
+        "es_correcta": false,
+        "explicacion": "SQL pipelines use SQL constraint syntax (`CONSTRAINT name EXPECT (expression)`); no Python is needed."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Expectation constraints - rules"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes the following code:\n\n```python\nfrom pyspark import pipelines as dp\n\n@dp.table()\n@dp.expect_all_or_fail({\n    \"non_null_id\":   \"order_id IS NOT NULL\",\n    \"valid_status\":  \"status IN ('OPEN','CLOSED','PENDING')\"\n})\ndef critical_orders():\n    return spark.readStream.table(\"silver.orders\")\n```\n\nAn incoming record has `order_id = NULL` and `status = 'OPEN'`. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "The pipeline update fails because `non_null_id` is violated.",
+        "es_correcta": true,
+        "explicacion": "`expect_all_or_fail` stops the pipeline update when any single rule in the dict is violated. The record failing `non_null_id` triggers the failure."
+      },
+      {
+        "texto_opcion": "Only the `non_null_id` rule triggers; the record is dropped but the pipeline continues.",
+        "es_correcta": false,
+        "explicacion": "The `_or_fail` action does not drop records — it fails the entire pipeline update on the first violation."
+      },
+      {
+        "texto_opcion": "Both rules are evaluated; the pipeline fails only if both are violated simultaneously.",
+        "es_correcta": false,
+        "explicacion": "`expect_all_or_fail` fails on the first violation of any rule, not on all rules being violated at once."
+      },
+      {
+        "texto_opcion": "The record is written with a warning because `status` passes validation.",
+        "es_correcta": false,
+        "explicacion": "With `_or_fail`, passing some rules is irrelevant. Any single violation stops the pipeline update."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "expect_all_or_fail"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses the following SQL definition:\n\n```sql\nCREATE OR REFRESH STREAMING TABLE orders_silver (\n  CONSTRAINT valid_amount   EXPECT (amount > 0),\n  CONSTRAINT valid_category EXPECT (category IN ('A','B','C')) ON VIOLATION DROP ROW\n)\nAS SELECT * FROM STREAM(bronze.orders);\n```\n\nA record has `amount = -5` and `category = 'A'`. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "The record is written to `orders_silver` and the `valid_amount` violation is logged as a warning.",
+        "es_correcta": true,
+        "explicacion": "`valid_amount` uses default WARN (no `ON VIOLATION` clause), so the record is retained. `valid_category` passes, so no drop occurs."
+      },
+      {
+        "texto_opcion": "The record is dropped because `amount > 0` fails.",
+        "es_correcta": false,
+        "explicacion": "The `valid_amount` constraint has no `ON VIOLATION` clause, meaning it uses the default WARN behavior and retains the record."
+      },
+      {
+        "texto_opcion": "The pipeline fails because `amount > 0` is violated.",
+        "es_correcta": false,
+        "explicacion": "There is no `ON VIOLATION FAIL UPDATE` clause on `valid_amount`. The pipeline does not fail; it logs the violation."
+      },
+      {
+        "texto_opcion": "Both constraints are evaluated together and the record is dropped since one fails.",
+        "es_correcta": false,
+        "explicacion": "Each constraint has its own independent action. `valid_amount` WARNs; `valid_category` DROPs. Actions are not combined."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Mixed expectation actions in SQL"
+    ]
+  },
+  {
+    "pregunta": "Where can a data engineer monitor metrics for `WARN` and `DROP` expectations in Lakeflow SDP?",
+    "opciones": [
+      {
+        "texto_opcion": "In the pipeline UI under the **Data quality** tab for each dataset, or by querying the SDP event log.",
+        "es_correcta": true,
+        "explicacion": "SDP tracks pass/fail counts per expectation in the event log and surfaces them in the pipeline UI's Data quality tab."
+      },
+      {
+        "texto_opcion": "In the Spark UI under the SQL metrics section.",
+        "es_correcta": false,
+        "explicacion": "The Spark UI shows stage-level execution metrics, not pipeline expectation pass/fail counts."
+      },
+      {
+        "texto_opcion": "In Unity Catalog's column lineage view.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog lineage tracks data flow between tables, not runtime data quality constraint metrics."
+      },
+      {
+        "texto_opcion": "In the cluster's driver logs under `stderr`.",
+        "es_correcta": false,
+        "explicacion": "Expectation metrics are stored in the SDP event log, not printed to driver stderr."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Expectation metrics monitoring"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to enforce that `start_date <= end_date` and both columns are non-null, using a single expectation with WARN action. Which constraint is correct?\n\n```python\n@dp.expect(???, ???)\n```",
+    "opciones": [
+      {
+        "texto_opcion": "`@dp.expect(\"valid_dates\", \"start_date IS NOT NULL AND end_date IS NOT NULL AND start_date <= end_date\")`",
+        "es_correcta": true,
+        "explicacion": "A single constraint can combine multiple conditions using SQL boolean operators (`AND`, `OR`). All conditions are evaluated as one boolean expression."
+      },
+      {
+        "texto_opcion": "`@dp.expect_all(\"valid_dates\", \"start_date <= end_date\")`",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect_all` requires a dict argument `{name: constraint}`, not two string positional arguments."
+      },
+      {
+        "texto_opcion": "`@dp.expect(\"valid_dates\", check_dates(start_date, end_date))`",
+        "es_correcta": false,
+        "explicacion": "Custom Python functions are explicitly not allowed in expectation constraints. Only standard SQL boolean expressions are valid."
+      },
+      {
+        "texto_opcion": "`@dp.expect(\"valid_dates\", \"start_date <= end_date\", \"start_date IS NOT NULL\")`",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect` accepts exactly two arguments (name, constraint). Multiple conditions must be combined in a single SQL expression."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Complex constraint expressions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer creates a Delta table directly (outside a pipeline) and wants to enforce that `quantity` is never negative. Which SQL statement achieves table-level enforcement?",
+    "opciones": [
+      {
+        "texto_opcion": "```sql\nCREATE TABLE inventory (\n  item_id STRING,\n  quantity INT CHECK (quantity >= 0)\n);\n```",
+        "es_correcta": true,
+        "explicacion": "`CHECK` constraints are enforced at the Delta table level for all writes. Any attempt to insert or update a row violating `quantity >= 0` is rejected."
+      },
+      {
+        "texto_opcion": "```sql\nCREATE TABLE inventory (\n  item_id STRING,\n  quantity INT EXPECT (quantity >= 0)\n);\n```",
+        "es_correcta": false,
+        "explicacion": "`EXPECT` is SDP pipeline syntax, not valid DDL for a standalone Delta table. Use `CHECK` for table-level constraints."
+      },
+      {
+        "texto_opcion": "```sql\nCREATE TABLE inventory (\n  item_id STRING,\n  quantity INT CONSTRAINT positive_qty WARN\n);\n```",
+        "es_correcta": false,
+        "explicacion": "WARN is a pipeline expectation action, not a Delta table constraint keyword."
+      },
+      {
+        "texto_opcion": "```sql\nCREATE TABLE inventory (\n  item_id STRING,\n  quantity INT NOT NULL\n);\n```",
+        "es_correcta": false,
+        "explicacion": "`NOT NULL` prevents null values but does not prevent negative integers. `CHECK (quantity >= 0)` is needed for the range constraint."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Table CHECK constraints"
+    ]
+  },
+  {
+    "pregunta": "Which two types of constraints are **enforced** at the Delta table level (not within a pipeline)?",
+    "opciones": [
+      {
+        "texto_opcion": "`NOT NULL` and `CHECK`",
+        "es_correcta": true,
+        "explicacion": "Delta tables enforce `NOT NULL` (prevents nulls in a column) and `CHECK` (validates a boolean expression) for every write operation."
+      },
+      {
+        "texto_opcion": "`UNIQUE` and `PRIMARY KEY`",
+        "es_correcta": false,
+        "explicacion": "Delta Lake supports `PRIMARY KEY` and `FOREIGN KEY` as informational constraints only; they are not enforced for uniqueness."
+      },
+      {
+        "texto_opcion": "`WARN` and `DROP`",
+        "es_correcta": false,
+        "explicacion": "`WARN` and `DROP` are pipeline expectation actions, not table-level constraint types."
+      },
+      {
+        "texto_opcion": "`FOREIGN KEY` and `CHECK`",
+        "es_correcta": false,
+        "explicacion": "`FOREIGN KEY` constraints in Delta Lake are informational only (not enforced). Only `NOT NULL` and `CHECK` are enforced."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Table-level constraints NOT NULL and CHECK"
+    ]
+  },
+  {
+    "pregunta": "A data engineer defines an expectation name `\"valid_price\"` on two different datasets in the same pipeline. What is the result?",
+    "opciones": [
+      {
+        "texto_opcion": "This is allowed; expectation names must be unique **per dataset**, not across the entire pipeline.",
+        "es_correcta": true,
+        "explicacion": "An expectation name must be unique within a given dataset, but the same name can be reused across multiple datasets in the same pipeline."
+      },
+      {
+        "texto_opcion": "The pipeline fails at startup because expectation names must be globally unique.",
+        "es_correcta": false,
+        "explicacion": "The uniqueness requirement is scoped to a single dataset, not the entire pipeline."
+      },
+      {
+        "texto_opcion": "The second dataset's expectation silently overrides the first.",
+        "es_correcta": false,
+        "explicacion": "Datasets are independent; expectations on separate datasets do not interact or override each other."
+      },
+      {
+        "texto_opcion": "Only the first dataset retains the expectation; the second is ignored.",
+        "es_correcta": false,
+        "explicacion": "Both datasets independently track their own `\"valid_price\"` expectation with separate metrics."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Expectation name uniqueness scope"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to validate data using a complex business rule that calls an external REST API to check if a customer ID exists. Can this logic be used inside an SDP expectation constraint?",
+    "opciones": [
+      {
+        "texto_opcion": "No — expectation constraints cannot include external service calls; only standard SQL boolean expressions are allowed.",
+        "es_correcta": true,
+        "explicacion": "SDP expectation constraints are restricted to SQL boolean expressions. Custom Python functions, external service calls, and subqueries referencing other tables are all prohibited."
+      },
+      {
+        "texto_opcion": "Yes — you can wrap the REST call in a Python UDF and reference it in the constraint.",
+        "es_correcta": false,
+        "explicacion": "Custom Python functions (including UDFs that call external services) are explicitly not allowed in expectation constraints."
+      },
+      {
+        "texto_opcion": "Yes — use `@dp.expect_or_fail` with a Python lambda as the constraint.",
+        "es_correcta": false,
+        "explicacion": "The constraint argument must be a SQL string, not a Python callable. Lambdas are not supported."
+      },
+      {
+        "texto_opcion": "Yes — but only when using the SQL `CONSTRAINT` syntax, not Python decorators.",
+        "es_correcta": false,
+        "explicacion": "The same restriction applies to both Python and SQL interfaces. Neither allows external service calls in constraints."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Expectation constraint limitations"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes the following code. What is wrong?\n\n```python\nfrom pyspark import pipelines as dp\n\n@dp.table()\n@dp.expect_all_or_fail(\"non_null_id\", \"order_id IS NOT NULL\")\ndef critical_orders():\n    return spark.readStream.table(\"silver.orders\")\n```",
+    "opciones": [
+      {
+        "texto_opcion": "`@dp.expect_all_or_fail` requires a dict argument, not two positional strings.",
+        "es_correcta": true,
+        "explicacion": "The `_all` variants (`expect_all`, `expect_all_or_drop`, `expect_all_or_fail`) take a single dict `{name: constraint}`. Use `@dp.expect_or_fail` for a single rule with two string arguments."
+      },
+      {
+        "texto_opcion": "The function name `critical_orders` conflicts with a reserved SDP keyword.",
+        "es_correcta": false,
+        "explicacion": "SDP has no reserved function name restrictions for user-defined dataset functions."
+      },
+      {
+        "texto_opcion": "`@dp.table()` must be placed after the expectation decorator, not before.",
+        "es_correcta": false,
+        "explicacion": "`@dp.table()` should be placed before (above) the expectation decorators. The code order shown is correct."
+      },
+      {
+        "texto_opcion": "The constraint `\"order_id IS NOT NULL\"` is invalid because IS NOT NULL cannot be used in SDP expectations.",
+        "es_correcta": false,
+        "explicacion": "`IS NOT NULL` is a standard SQL boolean expression and is fully supported in SDP expectation constraints."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "expect_all_or_fail signature"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to track data quality violations without losing any records in the Bronze layer. Which expectation action should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "WARN (`@dp.expect`) — retains all records and logs violation metrics.",
+        "es_correcta": true,
+        "explicacion": "WARN is the correct choice when auditability is needed but data loss is unacceptable. All records are written, and violation counts are tracked in the event log."
+      },
+      {
+        "texto_opcion": "DROP (`@dp.expect_or_drop`) — removes bad records to keep the table clean.",
+        "es_correcta": false,
+        "explicacion": "DROP causes data loss. For a Bronze layer where raw data fidelity is paramount, WARN is preferred."
+      },
+      {
+        "texto_opcion": "FAIL (`@dp.expect_or_fail`) — stops the pipeline so no bad data enters.",
+        "es_correcta": false,
+        "explicacion": "FAIL stops the entire pipeline update, which is too disruptive for a Bronze ingestion layer that should accept all data."
+      },
+      {
+        "texto_opcion": "There is no WARN action; omit expectations entirely to retain all records.",
+        "es_correcta": false,
+        "explicacion": "WARN is the explicit default action of `@dp.expect`. Omitting expectations altogether would not provide any quality metrics."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Expectation actions - choosing WARN"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes the following SQL:\n\n```sql\nCREATE OR REFRESH STREAMING TABLE payments (\n  CONSTRAINT non_null_txn   EXPECT (txn_id IS NOT NULL)   ON VIOLATION FAIL UPDATE,\n  CONSTRAINT positive_amt   EXPECT (amount > 0)            ON VIOLATION DROP ROW\n)\nAS SELECT * FROM STREAM(bronze.payments);\n```\n\nA record arrives with `txn_id = NULL` and `amount = 50`. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "The pipeline update fails because `non_null_txn` is violated with `ON VIOLATION FAIL UPDATE`.",
+        "es_correcta": true,
+        "explicacion": "When a FAIL constraint is violated, the pipeline update stops immediately regardless of other constraints' actions."
+      },
+      {
+        "texto_opcion": "The record is dropped because `positive_amt` passes and `non_null_txn` results in DROP.",
+        "es_correcta": false,
+        "explicacion": "`non_null_txn` has `ON VIOLATION FAIL UPDATE`, not DROP ROW. A pipeline failure, not a row drop, is the result."
+      },
+      {
+        "texto_opcion": "Both constraints are evaluated independently; the record is dropped for `non_null_txn` and retained for `positive_amt`.",
+        "es_correcta": false,
+        "explicacion": "Actions are per-constraint, but a FAIL UPDATE on any constraint halts the entire pipeline update."
+      },
+      {
+        "texto_opcion": "The violation is logged as a warning and the record is written because `amount` is valid.",
+        "es_correcta": false,
+        "explicacion": "WARN is the default only when no `ON VIOLATION` clause is specified. Here `ON VIOLATION FAIL UPDATE` overrides that default."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "FAIL UPDATE takes precedence"
+    ]
+  },
+  {
+    "pregunta": "The following SQL creates a streaming table. Which statement is true about the expectation defined?\n\n```sql\nCREATE OR REFRESH STREAMING TABLE clean_users (\n  CONSTRAINT valid_email EXPECT (email RLIKE '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\\\.[A-Za-z]{2,}$')\n)\nAS SELECT * FROM STREAM(raw.users);\n```",
+    "opciones": [
+      {
+        "texto_opcion": "Records with invalid emails are written to `clean_users` and the violation count is tracked.",
+        "es_correcta": true,
+        "explicacion": "No `ON VIOLATION` clause means the default WARN action applies: invalid records are retained and metrics are logged."
+      },
+      {
+        "texto_opcion": "Records with invalid emails are dropped because RLIKE validations always apply DROP behavior.",
+        "es_correcta": false,
+        "explicacion": "The action is determined by the `ON VIOLATION` clause, not the type of SQL function used in the constraint. Without it, WARN is the default."
+      },
+      {
+        "texto_opcion": "The pipeline fails at runtime because `RLIKE` is not supported in expectation constraints.",
+        "es_correcta": false,
+        "explicacion": "`RLIKE` is a standard Spark SQL function and is fully supported in SDP expectation constraint expressions."
+      },
+      {
+        "texto_opcion": "The constraint is enforced at the Delta table level for all writes, including external writes.",
+        "es_correcta": false,
+        "explicacion": "Pipeline expectations are only enforced during pipeline execution. They are not table-level constraints that apply to external writes."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "SQL WARN expectation with RLIKE"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to add a `CHECK` constraint to an **existing** Delta table. Which SQL command is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`ALTER TABLE orders ADD CONSTRAINT positive_qty CHECK (quantity > 0);`",
+        "es_correcta": true,
+        "explicacion": "`ALTER TABLE ... ADD CONSTRAINT ... CHECK (...)` adds an enforced CHECK constraint to an existing Delta table. All subsequent writes must satisfy it."
+      },
+      {
+        "texto_opcion": "`UPDATE TABLE orders SET CONSTRAINT positive_qty = 'quantity > 0';`",
+        "es_correcta": false,
+        "explicacion": "`UPDATE TABLE SET CONSTRAINT` is not valid SQL syntax for adding constraints in Databricks."
+      },
+      {
+        "texto_opcion": "`CONSTRAINT positive_qty EXPECT (quantity > 0) ON TABLE orders;`",
+        "es_correcta": false,
+        "explicacion": "`CONSTRAINT ... EXPECT` is SDP pipeline syntax, not valid Delta Lake DDL for standalone tables."
+      },
+      {
+        "texto_opcion": "`CREATE CONSTRAINT positive_qty ON orders (quantity > 0);`",
+        "es_correcta": false,
+        "explicacion": "`CREATE CONSTRAINT` is not valid SQL syntax in Databricks. Use `ALTER TABLE ... ADD CONSTRAINT`."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "ALTER TABLE ADD CONSTRAINT"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to apply the same set of three business rules (WARN action) across five different Silver tables. What is the most maintainable approach in Python SDP?",
+    "opciones": [
+      {
+        "texto_opcion": "Define the rules dict once and pass it to `@dp.expect_all(rules_dict)` on each table function.",
+        "es_correcta": true,
+        "explicacion": "`@dp.expect_all` accepts a dict that can be defined once and reused across multiple dataset definitions, reducing duplication."
+      },
+      {
+        "texto_opcion": "Copy the `@dp.expect` decorators to each table function individually.",
+        "es_correcta": false,
+        "explicacion": "While valid, copying decorators to every function is not maintainable. The dict reuse pattern with `@dp.expect_all` is the recommended approach."
+      },
+      {
+        "texto_opcion": "Create a Great Expectations suite and reference it inside the `@dp.table` decorator.",
+        "es_correcta": false,
+        "explicacion": "Great Expectations is an external framework and cannot be referenced inside `@dp.table` decorators. It would need to be called separately."
+      },
+      {
+        "texto_opcion": "Use `@dp.expect_all_or_fail` to ensure consistency across all tables.",
+        "es_correcta": false,
+        "explicacion": "The action choice (WARN vs FAIL) is independent of reusability. `@dp.expect_all` with a shared dict is correct for WARN across multiple tables."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Reusable expectations pattern"
+    ]
+  },
+  {
+    "pregunta": "Which statement accurately describes the difference between a **pipeline expectation** and a **Delta table CHECK constraint**?",
+    "opciones": [
+      {
+        "texto_opcion": "Pipeline expectations are enforced only during pipeline execution; CHECK constraints are enforced on every write to the Delta table, including external writes.",
+        "es_correcta": true,
+        "explicacion": "Pipeline expectations run only within an SDP pipeline update. CHECK constraints are table-level and block any write (batch, streaming, or direct) that violates them."
+      },
+      {
+        "texto_opcion": "CHECK constraints support WARN, DROP, and FAIL actions like pipeline expectations.",
+        "es_correcta": false,
+        "explicacion": "CHECK constraints either allow or reject a write — there is no WARN or DROP concept at the table level."
+      },
+      {
+        "texto_opcion": "Pipeline expectations replace CHECK constraints and make them redundant.",
+        "es_correcta": false,
+        "explicacion": "They are complementary. Pipeline expectations manage quality within a pipeline; CHECK constraints enforce rules for all writes regardless of source."
+      },
+      {
+        "texto_opcion": "Both are evaluated using the `pyspark.pipelines` module.",
+        "es_correcta": false,
+        "explicacion": "CHECK constraints are defined with SQL DDL (`CREATE TABLE` / `ALTER TABLE`) and are part of the Delta Lake protocol, not the SDP `pyspark.pipelines` module."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Expectations vs CHECK constraints"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following code:\n\n```python\nfrom pyspark import pipelines as dp\n\n@dp.table()\n@dp.expect(\"valid_status\", \"\"\"\n  CASE\n    WHEN type = 'ORDER' THEN status IN ('PENDING','COMPLETED')\n    WHEN type = 'REFUND' THEN status IN ('PENDING','APPROVED')\n    ELSE false\n  END\n\"\"\")\ndef validated_transactions():\n    return spark.readStream.table(\"bronze.transactions\")\n```\n\nA record arrives with `type = 'ORDER'` and `status = 'APPROVED'`. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "The record is written to `validated_transactions` with the `valid_status` violation flagged in metrics.",
+        "es_correcta": true,
+        "explicacion": "`@dp.expect` is the WARN action. The CASE expression evaluates to `false` for `type='ORDER'` with `status='APPROVED'`, logging a violation but retaining the record."
+      },
+      {
+        "texto_opcion": "The record is dropped because the CASE expression evaluates to `false`.",
+        "es_correcta": false,
+        "explicacion": "Dropping requires `@dp.expect_or_drop`. With `@dp.expect` (WARN), false-evaluating records are retained."
+      },
+      {
+        "texto_opcion": "The CASE expression is not valid in an SDP expectation constraint and causes a parse error.",
+        "es_correcta": false,
+        "explicacion": "CASE statements are valid SQL boolean expressions and are fully supported in SDP expectation constraints."
+      },
+      {
+        "texto_opcion": "The pipeline fails because the constraint returns `false` for this record.",
+        "es_correcta": false,
+        "explicacion": "Failing on violation requires `@dp.expect_or_fail`. The decorator used here is `@dp.expect` (WARN)."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "CASE expression in expectation constraint"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to validate that `event_date` is not in the future using a SQL function inside an SDP constraint. Which option is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`@dp.expect(\"not_future_date\", \"event_date <= current_date()\")`",
+        "es_correcta": true,
+        "explicacion": "Standard Spark SQL functions like `current_date()` are supported in SDP expectation constraints as long as they return a boolean result."
+      },
+      {
+        "texto_opcion": "`@dp.expect(\"not_future_date\", lambda row: row.event_date <= date.today())`",
+        "es_correcta": false,
+        "explicacion": "Constraint clauses must be SQL strings. Python lambdas and functions are not allowed in expectation constraints."
+      },
+      {
+        "texto_opcion": "`@dp.expect(\"not_future_date\", spark.sql(\"SELECT current_date()\"))`",
+        "es_correcta": false,
+        "explicacion": "The constraint must be a SQL string, not a Spark SQL DataFrame call. The SQL expression is evaluated internally by the framework."
+      },
+      {
+        "texto_opcion": "`@dp.expect(\"not_future_date\", \"event_date <= NOW()\")`",
+        "es_correcta": false,
+        "explicacion": "The correct Spark SQL function for the current date is `current_date()`, not `NOW()`, which is a MySQL-style function not available in Spark SQL."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "SQL functions in constraints"
+    ]
+  },
+  {
+    "pregunta": "A data engineer's pipeline has a FAIL expectation on the Silver table. After the pipeline fails, what is required before data can be reprocessed?",
+    "opciones": [
+      {
+        "texto_opcion": "Manual intervention — the engineer must fix the violating data or the expectation rule, then manually restart the pipeline update.",
+        "es_correcta": true,
+        "explicacion": "When `ON VIOLATION FAIL UPDATE` triggers, the pipeline update stops completely. The violation must be resolved manually before reprocessing."
+      },
+      {
+        "texto_opcion": "Nothing — the pipeline automatically retries after a configurable interval.",
+        "es_correcta": false,
+        "explicacion": "Automatic retries do not resolve data quality failures. A FAIL expectation requires explicit human intervention."
+      },
+      {
+        "texto_opcion": "The pipeline skips the violating records on the next run and continues automatically.",
+        "es_correcta": false,
+        "explicacion": "FAIL stops the update entirely and does not implement any automatic skip-and-continue behavior."
+      },
+      {
+        "texto_opcion": "The violating records are moved to a quarantine table automatically.",
+        "es_correcta": false,
+        "explicacion": "Quarantining is an advanced manual pattern the engineer must implement explicitly. The built-in FAIL action simply stops the pipeline."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "FAIL action - manual intervention"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is choosing between `@dp.expect_or_drop` and `@dp.expect_all_or_drop`. When should `@dp.expect_all_or_drop` be preferred?",
+    "opciones": [
+      {
+        "texto_opcion": "When multiple DROP rules need to be grouped together in a single decorator for readability and maintainability.",
+        "es_correcta": true,
+        "explicacion": "`expect_all_or_drop` accepts a dict of multiple rules and drops records failing any of them. It is the idiomatic way to apply several DROP rules at once."
+      },
+      {
+        "texto_opcion": "When different rules should have different actions (some DROP, some WARN).",
+        "es_correcta": false,
+        "explicacion": "Mixed actions require stacking individual decorators (`@dp.expect`, `@dp.expect_or_drop`). `expect_all_or_drop` applies the same DROP action to all rules in the dict."
+      },
+      {
+        "texto_opcion": "When a record should be dropped only if **all** rules fail simultaneously.",
+        "es_correcta": false,
+        "explicacion": "`expect_all_or_drop` drops a record if **any** single rule in the dict fails, not when all fail together."
+      },
+      {
+        "texto_opcion": "Only when using SQL syntax; Python does not support `expect_all_or_drop`.",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect_all_or_drop` is a Python decorator in `pyspark.pipelines`. It is not a SQL construct."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "expect_or_drop vs expect_all_or_drop"
+    ]
+  },
+  {
+    "pregunta": "A data engineer queries the SDP event log to monitor expectation performance. What information does the `details` column in the event log contain for an expectation event?",
+    "opciones": [
+      {
+        "texto_opcion": "A nested JSON structure with pass and fail counts for each constraint.",
+        "es_correcta": true,
+        "explicacion": "The event log's `details` column stores per-constraint pass/fail record counts in a nested JSON structure, enabling quality trend analysis over time."
+      },
+      {
+        "texto_opcion": "The full content of the violating records for debugging.",
+        "es_correcta": false,
+        "explicacion": "The event log records metrics counts, not the actual row data of violating records."
+      },
+      {
+        "texto_opcion": "The Spark execution plan for the pipeline stage.",
+        "es_correcta": false,
+        "explicacion": "Execution plans are found in the Spark UI, not in the SDP event log."
+      },
+      {
+        "texto_opcion": "The pipeline configuration YAML including expectation definitions.",
+        "es_correcta": false,
+        "explicacion": "Pipeline configuration is separate. The event log's `details` column stores runtime metrics for expectations."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Event log - expectation metrics"
+    ]
+  },
+  {
+    "pregunta": "Which scenario is a valid use case for integrating **Great Expectations** with a Databricks pipeline instead of using native SDP expectations?",
+    "opciones": [
+      {
+        "texto_opcion": "When complex, programmatic validation logic is needed that cannot be expressed as a standard SQL boolean expression.",
+        "es_correcta": true,
+        "explicacion": "Great Expectations supports arbitrary Python logic, statistical distributions, and external lookups — use cases not supported by SDP's SQL-only constraint syntax."
+      },
+      {
+        "texto_opcion": "When the engineer wants to use WARN, DROP, or FAIL actions declaratively.",
+        "es_correcta": false,
+        "explicacion": "WARN, DROP, and FAIL are native SDP expectation actions. Great Expectations does not integrate with these pipeline-level actions."
+      },
+      {
+        "texto_opcion": "When expectations need to be visible in the pipeline UI's Data quality tab.",
+        "es_correcta": false,
+        "explicacion": "Only native SDP expectations appear in the pipeline UI Data quality tab. Great Expectations results are managed separately."
+      },
+      {
+        "texto_opcion": "When the engineer wants to avoid importing `pyspark.pipelines`.",
+        "es_correcta": false,
+        "explicacion": "Avoiding an import is not a valid architectural reason. Use Great Expectations when native SQL-based constraints are insufficient for the validation logic needed."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Great Expectations vs SDP expectations"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes:\n\n```python\nfrom pyspark import pipelines as dp\n\nrules = {\n    \"non_null_id\":    \"order_id IS NOT NULL\",\n    \"valid_amount\":   \"amount BETWEEN 0 AND 1000000\",\n    \"valid_currency\": \"currency IN ('USD','EUR','GBP')\"\n}\n\n@dp.table()\n@dp.expect_all(rules)\ndef silver_orders():\n    return spark.readStream.table(\"bronze.orders\")\n```\n\nA record has `order_id = NULL`, `amount = 500`, `currency = 'USD'`. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "The record is written to `silver_orders`; the `non_null_id` violation is tracked in pipeline metrics.",
+        "es_correcta": true,
+        "explicacion": "`@dp.expect_all` applies the WARN action to every rule in the dict. Violating records are retained and violation counts are logged per rule."
+      },
+      {
+        "texto_opcion": "The record is dropped because `non_null_id` fails.",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect_all` is the WARN variant. To drop violating records, `@dp.expect_all_or_drop` must be used."
+      },
+      {
+        "texto_opcion": "The pipeline fails because `order_id` is NULL.",
+        "es_correcta": false,
+        "explicacion": "Failing requires `@dp.expect_all_or_fail`. `@dp.expect_all` only warns and logs the violation."
+      },
+      {
+        "texto_opcion": "All three rules are evaluated, and since two pass, the record is considered valid and no violation is logged.",
+        "es_correcta": false,
+        "explicacion": "Each rule is tracked independently. A violation on `non_null_id` is logged regardless of the other two rules passing."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "expect_all WARN with dict"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to configure a Gold layer materialized view with quality enforcement. The team wants records with `total_sales < 0` to be **dropped** and records with a `NULL` region to be **warned but retained**. Which SDP Python code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\n@dp.materialized_view()\n@dp.expect(\"warn_null_region\", \"region IS NOT NULL\")\n@dp.expect_or_drop(\"drop_negative_sales\", \"total_sales >= 0\")\ndef gold_sales_summary():\n    return spark.read.table(\"silver.orders\")\n```",
+        "es_correcta": true,
+        "explicacion": "Stacking `@dp.expect` (WARN) and `@dp.expect_or_drop` (DROP) applies different actions to each rule independently on the same dataset."
+      },
+      {
+        "texto_opcion": "```python\n@dp.materialized_view()\n@dp.expect_all({\"warn_null_region\": \"region IS NOT NULL\", \"drop_negative_sales\": \"total_sales >= 0\"})\ndef gold_sales_summary():\n    return spark.read.table(\"silver.orders\")\n```",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect_all` applies the same WARN action to all rules. It cannot mix WARN and DROP actions in a single decorator."
+      },
+      {
+        "texto_opcion": "```python\n@dp.materialized_view()\n@dp.expect_all_or_drop({\"warn_null_region\": \"region IS NOT NULL\", \"drop_negative_sales\": \"total_sales >= 0\"})\ndef gold_sales_summary():\n    return spark.read.table(\"silver.orders\")\n```",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect_all_or_drop` applies DROP to all rules. It cannot apply WARN to one rule and DROP to another."
+      },
+      {
+        "texto_opcion": "```python\n@dp.table()\n@dp.expect_or_drop({\"warn_null_region\": \"region IS NOT NULL\", \"drop_negative_sales\": \"total_sales >= 0\"})\ndef gold_sales_summary():\n    return spark.read.table(\"silver.orders\")\n```",
+        "es_correcta": false,
+        "explicacion": "`@dp.expect_or_drop` takes two positional string arguments (name, constraint), not a dict. Use `@dp.expect_all_or_drop` for dict-style multi-rule DROP."
+      }
+    ],
+    "tags": [
+      "3.8",
+      "Mixed expect and expect_or_drop on materialized view"
+    ]
+  }
+]

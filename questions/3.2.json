@@ -1,0 +1,872 @@
+[
+  {
+    "pregunta": "A data engineer reads a Bronze Delta table and wants to remove all rows where `customer_id` is null before writing to Silver. Which code correctly filters out those rows?\n\n```python\ndf = spark.table(\"bronze.orders\")\n```",
+    "opciones": [
+      {
+        "texto_opcion": "`df.filter(col(\"customer_id\").isNotNull())`",
+        "es_correcta": true,
+        "explicacion": "`isNotNull()` returns only rows where the column has a value, which is the correct way to drop nulls on a specific column."
+      },
+      {
+        "texto_opcion": "`df.filter(col(\"customer_id\") != None)`",
+        "es_correcta": false,
+        "explicacion": "Comparing with `!= None` in Spark does not work as expected; null comparisons in SQL/Spark always return null, not true."
+      },
+      {
+        "texto_opcion": "`df.dropna()`",
+        "es_correcta": false,
+        "explicacion": "`dropna()` without arguments drops rows where **any** column is null, which is more aggressive than targeting only `customer_id`."
+      },
+      {
+        "texto_opcion": "`df.fillna(0, subset=[\"customer_id\"])`",
+        "es_correcta": false,
+        "explicacion": "`fillna` replaces nulls with a value rather than removing the rows; it does not filter anything out."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A Bronze table has a column `event_ts` stored as `STRING` in format `'2024-03-15 08:30:00'`. A data engineer needs to convert it to `TIMESTAMP` in the Silver layer. Which expression is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`col(\"event_ts\").cast(\"timestamp\")`",
+        "es_correcta": true,
+        "explicacion": "Spark can cast ISO-format datetime strings directly to `timestamp` using `.cast(\"timestamp\")`."
+      },
+      {
+        "texto_opcion": "`to_date(col(\"event_ts\"))`",
+        "es_correcta": false,
+        "explicacion": "`to_date()` returns only the date portion (no time), losing time precision needed for event data."
+      },
+      {
+        "texto_opcion": "`col(\"event_ts\").cast(\"date\")`",
+        "es_correcta": false,
+        "explicacion": "Casting to `date` truncates the time component; the engineer needs the full timestamp."
+      },
+      {
+        "texto_opcion": "`timestamp(col(\"event_ts\"))`",
+        "es_correcta": false,
+        "explicacion": "`timestamp()` is not a valid PySpark function; the correct approach is `.cast(\"timestamp\")`."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following code to clean a Bronze table:\n\n```python\ndf_silver = (\n    df_bronze\n    .dropna(subset=[\"order_id\", \"amount\"])\n    .fillna(0, subset=[\"discount\"])\n)\n```\n\nWhat does this code do?",
+    "opciones": [
+      {
+        "texto_opcion": "Drops rows missing `order_id` or `amount`, then replaces nulls in `discount` with 0.",
+        "es_correcta": true,
+        "explicacion": "`dropna(subset=...)` removes rows where any of the listed columns is null. `fillna` then substitutes 0 for null discounts in the remaining rows."
+      },
+      {
+        "texto_opcion": "Drops rows missing `order_id` or `amount`, then drops rows where `discount` is null.",
+        "es_correcta": false,
+        "explicacion": "`fillna` replaces values; it does not drop rows. Nulls in `discount` become 0, not removed."
+      },
+      {
+        "texto_opcion": "Drops rows where all three columns are null simultaneously.",
+        "es_correcta": false,
+        "explicacion": "`dropna(subset=[...])` drops if **any** listed column is null, not all simultaneously."
+      },
+      {
+        "texto_opcion": "Replaces nulls in `order_id`, `amount`, and `discount` with 0.",
+        "es_correcta": false,
+        "explicacion": "`dropna` removes rows; it does not fill values. Only `discount` is filled with `fillna`."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A Bronze table contains a `price` column of type `STRING`. The Silver transformation includes:\n\n```python\ndf = df.withColumn(\"price\", col(\"price\").cast(\"double\"))\n```\n\nWhat happens to rows where `price` contains the value `'N/A'`?",
+    "opciones": [
+      {
+        "texto_opcion": "The cast fails silently and the value becomes `null`.",
+        "es_correcta": true,
+        "explicacion": "In Spark, when a string cannot be cast to a numeric type, the result is `null` rather than an exception (by default)."
+      },
+      {
+        "texto_opcion": "An exception is raised and the job fails.",
+        "es_correcta": false,
+        "explicacion": "Spark does not raise exceptions on failed casts by default; it produces nulls. Exceptions require explicit use of `try_cast` or Delta constraints."
+      },
+      {
+        "texto_opcion": "The value `'N/A'` is converted to `0.0`.",
+        "es_correcta": false,
+        "explicacion": "Spark does not map non-numeric strings to 0; failed casts yield `null`."
+      },
+      {
+        "texto_opcion": "The row is automatically dropped from the result.",
+        "es_correcta": false,
+        "explicacion": "Failed casts do not remove rows; they produce a null in the casted column while keeping the row."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "Which PySpark method reads a Delta table registered in the Databricks metastore by name, without specifying a file path?",
+    "opciones": [
+      {
+        "texto_opcion": "`spark.table(\"bronze.events\")`",
+        "es_correcta": true,
+        "explicacion": "`spark.table()` reads a Delta table registered in the metastore using the `catalog.schema.table` or `schema.table` notation."
+      },
+      {
+        "texto_opcion": "`spark.read.format(\"delta\").load(\"bronze.events\")`",
+        "es_correcta": false,
+        "explicacion": "`.load()` expects a file system path (e.g., `/mnt/bronze/events`), not a metastore table name."
+      },
+      {
+        "texto_opcion": "`spark.read.table(\"bronze/events\")`",
+        "es_correcta": false,
+        "explicacion": "`spark.read.table()` is a valid alias but `\"bronze/events\"` uses a path separator instead of a dot; the correct form is `\"bronze.events\"`."
+      },
+      {
+        "texto_opcion": "`spark.sql(\"READ TABLE bronze.events\")`",
+        "es_correcta": false,
+        "explicacion": "`READ TABLE` is not valid SQL; you would use `SELECT * FROM bronze.events` inside `spark.sql()`."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to fill nulls in the `country` column with `'UNKNOWN'` and nulls in the `sales_amount` column with `0`. Which single statement achieves both?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.fillna({\"country\": \"UNKNOWN\", \"sales_amount\": 0})`",
+        "es_correcta": true,
+        "explicacion": "`fillna` accepts a dictionary mapping column names to replacement values, allowing multiple columns to be handled in one call."
+      },
+      {
+        "texto_opcion": "`df.fillna(\"UNKNOWN\").fillna(0)`",
+        "es_correcta": false,
+        "explicacion": "This would attempt to fill all string nulls with `'UNKNOWN'` and all numeric nulls with `0`, potentially affecting unintended columns."
+      },
+      {
+        "texto_opcion": "`df.replace(None, {\"country\": \"UNKNOWN\", \"sales_amount\": 0})`",
+        "es_correcta": false,
+        "explicacion": "`replace` is used for substituting specific values, not nulls; its signature is `replace(to_replace, value)`, not a column-to-fill mapping."
+      },
+      {
+        "texto_opcion": "`df.dropna(subset=[\"country\", \"sales_amount\"])`",
+        "es_correcta": false,
+        "explicacion": "`dropna` removes rows with nulls; it does not fill them with defaults."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A Bronze table has duplicate rows caused by upstream reprocessing. A data engineer deduplicates by `order_id` keeping the most recent record:\n\n```python\nfrom pyspark.sql.window import Window\nfrom pyspark.sql.functions import row_number\n\nw = Window.partitionBy(\"order_id\").orderBy(col(\"ingested_at\").desc())\ndf_silver = (\n    df_bronze\n    .withColumn(\"rn\", row_number().over(w))\n    .filter(col(\"rn\") == 1)\n    .drop(\"rn\")\n)\n```\n\nWhat does this code accomplish?",
+    "opciones": [
+      {
+        "texto_opcion": "Keeps the most recently ingested record for each `order_id`, removing older duplicates.",
+        "es_correcta": true,
+        "explicacion": "Partitioning by `order_id` and ordering by `ingested_at` descending assigns row number 1 to the newest record; filtering on `rn == 1` retains only that row."
+      },
+      {
+        "texto_opcion": "Keeps the oldest record for each `order_id`.",
+        "es_correcta": false,
+        "explicacion": "The window orders by `ingested_at` **descending**, so the newest record gets `rn = 1`, not the oldest."
+      },
+      {
+        "texto_opcion": "Drops all rows that have any duplicate `order_id`.",
+        "es_correcta": false,
+        "explicacion": "This pattern keeps exactly one row per `order_id` (the latest); it does not drop all duplicates."
+      },
+      {
+        "texto_opcion": "Raises an error because `row_number()` cannot be used with `.filter()`.",
+        "es_correcta": false,
+        "explicacion": "Filtering on a window function result after wrapping it in a `withColumn` is a valid and common pattern in PySpark."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to remove leading and trailing whitespace from the `customer_name` column during Bronze-to-Silver cleaning. Which expression is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`col(\"customer_name\").trim()`",
+        "es_correcta": false,
+        "explicacion": "`trim()` is a standalone function, not a Column method; the correct usage is `trim(col(\"customer_name\"))`."
+      },
+      {
+        "texto_opcion": "`trim(col(\"customer_name\"))`",
+        "es_correcta": true,
+        "explicacion": "`trim()` from `pyspark.sql.functions` removes both leading and trailing whitespace from a string column."
+      },
+      {
+        "texto_opcion": "`col(\"customer_name\").strip()`",
+        "es_correcta": false,
+        "explicacion": "`.strip()` is a Python string method; it does not exist on Spark Column objects."
+      },
+      {
+        "texto_opcion": "`regexp_replace(col(\"customer_name\"), \"\\\\s\", \"\")`",
+        "es_correcta": false,
+        "explicacion": "This removes **all** whitespace including internal spaces, not just leading and trailing ones."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A Bronze table sample:\n\n| order_id | status   | amount |\n|----------|----------|--------|\n| 1        | complete | 100.0  |\n| 2        | null     | 50.0   |\n| 3        | complete | null   |\n\nA data engineer runs `df.dropna()`. How many rows are in the Silver output?",
+    "opciones": [
+      {
+        "texto_opcion": "1 row",
+        "es_correcta": true,
+        "explicacion": "`dropna()` without arguments drops any row with **at least one** null. Rows 2 and 3 each have a null, leaving only row 1."
+      },
+      {
+        "texto_opcion": "2 rows",
+        "es_correcta": false,
+        "explicacion": "Both rows 2 and 3 contain nulls in different columns, so both are removed by `dropna()`."
+      },
+      {
+        "texto_opcion": "3 rows",
+        "es_correcta": false,
+        "explicacion": "`dropna()` without arguments removes rows with any null; it would not return all 3 rows."
+      },
+      {
+        "texto_opcion": "0 rows",
+        "es_correcta": false,
+        "explicacion": "Row 1 has no nulls and is retained; the result has 1 row, not 0."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer standardizes the `country_code` column to uppercase in the Silver layer:\n\n```python\ndf_silver = df_bronze.withColumn(\"country_code\", upper(col(\"country_code\")))\n```\n\nWhat happens to rows where `country_code` is null?",
+    "opciones": [
+      {
+        "texto_opcion": "The column remains null; `upper(null)` evaluates to null.",
+        "es_correcta": true,
+        "explicacion": "Most Spark string functions, including `upper()`, propagate nulls — applying the function to a null returns null."
+      },
+      {
+        "texto_opcion": "The row is dropped automatically.",
+        "es_correcta": false,
+        "explicacion": "`upper()` does not filter rows; null propagation keeps the row with a null value in that column."
+      },
+      {
+        "texto_opcion": "An exception is raised for null input.",
+        "es_correcta": false,
+        "explicacion": "Spark built-in functions handle nulls gracefully by returning null rather than raising exceptions."
+      },
+      {
+        "texto_opcion": "The value becomes an empty string `''`.",
+        "es_correcta": false,
+        "explicacion": "`upper(null)` in Spark returns null, not an empty string."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer reads a Bronze Delta table from a file path and writes the cleaned output to Silver:\n\n```python\ndf = spark.read.format(\"delta\").load(\"/mnt/bronze/sales\")\ndf_clean = df.filter(col(\"amount\") > 0)\ndf_clean.write.format(\"delta\").mode(\"append\").saveAsTable(\"silver.sales\")\n```\n\nWhat write behavior does `mode(\"append\")` produce?",
+    "opciones": [
+      {
+        "texto_opcion": "New records are added to the existing Silver table without affecting existing rows.",
+        "es_correcta": true,
+        "explicacion": "`append` mode adds the new rows to the target table, leaving existing data intact."
+      },
+      {
+        "texto_opcion": "The Silver table is fully replaced with the new data.",
+        "es_correcta": false,
+        "explicacion": "Replacing the table requires `mode(\"overwrite\")`; `append` only adds rows."
+      },
+      {
+        "texto_opcion": "Duplicate rows are automatically deduplicated on write.",
+        "es_correcta": false,
+        "explicacion": "`append` mode does not perform deduplication; it writes all rows unconditionally."
+      },
+      {
+        "texto_opcion": "The write fails if the Silver table already exists.",
+        "es_correcta": false,
+        "explicacion": "`mode(\"errorifexists\")` would fail on an existing table; `append` succeeds and adds rows."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A Bronze table stores dates as `STRING` in format `'MM/dd/yyyy'` (e.g., `'03/15/2024'`). Which expression correctly converts this to a Spark `DATE` type?",
+    "opciones": [
+      {
+        "texto_opcion": "`to_date(col(\"event_date\"), \"MM/dd/yyyy\")`",
+        "es_correcta": true,
+        "explicacion": "`to_date()` with an explicit format string correctly parses non-ISO date formats into a Spark `DATE` type."
+      },
+      {
+        "texto_opcion": "`col(\"event_date\").cast(\"date\")`",
+        "es_correcta": false,
+        "explicacion": "Direct cast works only for ISO-format strings (`yyyy-MM-dd`); `'03/15/2024'` would be cast to null."
+      },
+      {
+        "texto_opcion": "`to_timestamp(col(\"event_date\"), \"MM/dd/yyyy\")`",
+        "es_correcta": false,
+        "explicacion": "`to_timestamp()` returns a `TIMESTAMP`; if only a `DATE` is needed, `to_date()` is the correct function."
+      },
+      {
+        "texto_opcion": "`date_format(col(\"event_date\"), \"MM/dd/yyyy\")`",
+        "es_correcta": false,
+        "explicacion": "`date_format()` converts a date/timestamp **to** a formatted string; it does not parse strings into dates."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to add a column `is_valid` that is `true` when both `customer_id` is not null and `amount` is greater than 0. Which code is correct?\n\n```python\ndf = df.withColumn(\"is_valid\", ???)\n```",
+    "opciones": [
+      {
+        "texto_opcion": "`col(\"customer_id\").isNotNull() & (col(\"amount\") > 0)`",
+        "es_correcta": true,
+        "explicacion": "Spark Column boolean expressions are combined with `&` (bitwise AND); this correctly evaluates both conditions."
+      },
+      {
+        "texto_opcion": "`col(\"customer_id\").isNotNull() and (col(\"amount\") > 0)`",
+        "es_correcta": false,
+        "explicacion": "Python's `and` keyword does not work with Spark Column objects; use `&` instead."
+      },
+      {
+        "texto_opcion": "`col(\"customer_id\") != None and col(\"amount\") > 0`",
+        "es_correcta": false,
+        "explicacion": "Comparing a Column to `None` with `!=` does not perform a null check in Spark, and `and` cannot combine Columns."
+      },
+      {
+        "texto_opcion": "`isnull(col(\"customer_id\")) & (col(\"amount\") > 0)`",
+        "es_correcta": false,
+        "explicacion": "`isnull()` checks for null (true when null), which is the opposite of what is needed; `isNotNull()` is the correct method."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A Bronze table has the following schema:\n\n```\nroot\n |-- order_id: string\n |-- amount: string\n |-- created_at: string\n```\n\nA data engineer applies this transformation to produce Silver:\n\n```python\ndf_silver = df_bronze \\\n    .withColumn(\"amount\", col(\"amount\").cast(\"decimal(10,2)\")) \\\n    .withColumn(\"created_at\", to_timestamp(col(\"created_at\")))\n```\n\nWhich statement best describes the result?",
+    "opciones": [
+      {
+        "texto_opcion": "`amount` becomes `DECIMAL(10,2)` and `created_at` becomes `TIMESTAMP`; unparseable values become null.",
+        "es_correcta": true,
+        "explicacion": "Both casts are correct. Spark silently sets invalid values to null rather than raising errors."
+      },
+      {
+        "texto_opcion": "The transformation fails because you cannot cast a string to decimal.",
+        "es_correcta": false,
+        "explicacion": "Spark supports casting strings to decimal as long as the format is valid; invalid strings yield null, not an error."
+      },
+      {
+        "texto_opcion": "`order_id` is also converted to an integer automatically.",
+        "es_correcta": false,
+        "explicacion": "Spark only transforms the columns explicitly targeted with `withColumn`; `order_id` remains a string."
+      },
+      {
+        "texto_opcion": "The original `amount` column is dropped and replaced by a new column appended at the end.",
+        "es_correcta": false,
+        "explicacion": "`withColumn` with an existing column name **replaces** that column in place, preserving its position in the schema."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to replace all occurrences of the literal string `'NULL'` (stored as text) in the `category` column with an actual SQL null. Which code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.withColumn(\"category\", when(col(\"category\") == \"NULL\", None).otherwise(col(\"category\")))`",
+        "es_correcta": true,
+        "explicacion": "`when(..., None)` in PySpark sets the value to null for matching rows; `.otherwise()` keeps the original value for non-matching rows."
+      },
+      {
+        "texto_opcion": "`df.fillna(None, subset=[\"category\"])`",
+        "es_correcta": false,
+        "explicacion": "`fillna` replaces **existing nulls** with a value; it cannot find the string `'NULL'` and replace it."
+      },
+      {
+        "texto_opcion": "`df.replace(\"NULL\", None)`",
+        "es_correcta": false,
+        "explicacion": "`replace(None, ...)` is problematic in PySpark because it does not handle None as a replacement value correctly across all types."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"category\", col(\"category\").isNull())`",
+        "es_correcta": false,
+        "explicacion": "`isNull()` returns a boolean column, not null; this would replace the category values with `True` or `False`."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer notices that a Silver table's `phone_number` column contains values like `'(555) 123-4567'`. The Silver standard requires only digits. Which function removes all non-digit characters?",
+    "opciones": [
+      {
+        "texto_opcion": "`regexp_replace(col(\"phone_number\"), \"[^0-9]\", \"\")`",
+        "es_correcta": true,
+        "explicacion": "The regex `[^0-9]` matches any character that is **not** a digit; replacing those with `''` leaves only the digits."
+      },
+      {
+        "texto_opcion": "`regexp_replace(col(\"phone_number\"), \"[0-9]\", \"\")`",
+        "es_correcta": false,
+        "explicacion": "This regex matches **digits** and removes them, which is the opposite of the desired behavior."
+      },
+      {
+        "texto_opcion": "`trim(col(\"phone_number\"))`",
+        "es_correcta": false,
+        "explicacion": "`trim()` only removes leading and trailing whitespace, not parentheses, spaces, or dashes within the string."
+      },
+      {
+        "texto_opcion": "`col(\"phone_number\").replace(\"(\", \"\").replace(\")\", \"\")`",
+        "es_correcta": false,
+        "explicacion": "Column objects do not have a `.replace()` chain method like Python strings; use `regexp_replace` for this."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes Silver data using:\n\n```python\ndf_silver.write \\\n    .format(\"delta\") \\\n    .mode(\"overwrite\") \\\n    .option(\"overwriteSchema\", \"true\") \\\n    .save(\"/mnt/silver/customers\")\n```\n\nWhy would `overwriteSchema` be needed?",
+    "opciones": [
+      {
+        "texto_opcion": "The new DataFrame has a different schema than the existing Delta table, and the schema change must be explicitly allowed.",
+        "es_correcta": true,
+        "explicacion": "Delta Lake enforces schema consistency; `overwriteSchema` is required when overwriting with a DataFrame whose schema doesn't match the existing table schema."
+      },
+      {
+        "texto_opcion": "It is required every time you write with `mode('overwrite')`.",
+        "es_correcta": false,
+        "explicacion": "`overwriteSchema` is only needed when the schema **changes**; overwriting with the same schema does not require it."
+      },
+      {
+        "texto_opcion": "It enables time travel on the overwritten data.",
+        "es_correcta": false,
+        "explicacion": "Time travel is an inherent Delta Lake feature, not controlled by `overwriteSchema`."
+      },
+      {
+        "texto_opcion": "It prevents duplicate rows from being written.",
+        "es_correcta": false,
+        "explicacion": "`overwriteSchema` is a schema evolution option; it has no effect on row-level deduplication."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A Bronze table has columns `first_name` and `last_name`. The Silver layer requires a `full_name` column (concatenated) and the original columns removed. Which code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.withColumn(\"full_name\", concat_ws(\" \", col(\"first_name\"), col(\"last_name\"))).drop(\"first_name\", \"last_name\")`",
+        "es_correcta": true,
+        "explicacion": "`concat_ws` joins strings with a separator and handles nulls gracefully; `.drop()` removes the source columns."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"full_name\", col(\"first_name\") + col(\"last_name\")).drop(\"first_name\", \"last_name\")`",
+        "es_correcta": false,
+        "explicacion": "String concatenation with `+` in Spark does not add a space and returns null if either column is null."
+      },
+      {
+        "texto_opcion": "`df.select(concat(col(\"first_name\"), lit(\" \"), col(\"last_name\")).alias(\"full_name\"))`",
+        "es_correcta": false,
+        "explicacion": "This works but `concat` returns null if any argument is null; `concat_ws` is preferred for nullable columns."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"full_name\", col(\"first_name\").concat(col(\"last_name\")))`",
+        "es_correcta": false,
+        "explicacion": "`concat()` is a function from `pyspark.sql.functions`, not a Column method; this syntax is invalid."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "What is the primary reason to use `coalesce(col(\"shipping_address\"), col(\"billing_address\"))` during Bronze-to-Silver cleaning?",
+    "opciones": [
+      {
+        "texto_opcion": "Returns the first non-null value between the two columns.",
+        "es_correcta": true,
+        "explicacion": "`coalesce()` evaluates its arguments left-to-right and returns the first non-null; it is ideal for fallback logic when a preferred column might be null."
+      },
+      {
+        "texto_opcion": "Merges the two address columns into a single string.",
+        "es_correcta": false,
+        "explicacion": "`coalesce` does not concatenate; it selects the first non-null value as-is."
+      },
+      {
+        "texto_opcion": "Raises an error if both columns are null.",
+        "es_correcta": false,
+        "explicacion": "If all arguments to `coalesce` are null, the result is null — no error is raised."
+      },
+      {
+        "texto_opcion": "Reduces the number of DataFrame partitions.",
+        "es_correcta": false,
+        "explicacion": "`df.coalesce(n)` (the DataFrame method) reduces partitions; `coalesce()` from `pyspark.sql.functions` operates on column values."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer reads a Bronze table that was created by Auto Loader with `cloudFiles.schemaEvolutionMode = 'addNewColumns'`. New columns appeared in recent files but the Silver transformation references a fixed list of columns with `select()`. What happens when the Silver job runs?",
+    "opciones": [
+      {
+        "texto_opcion": "Only the selected columns are written to Silver; new Bronze columns are silently ignored.",
+        "es_correcta": true,
+        "explicacion": "`select()` returns only the specified columns; any new columns present in Bronze but not in the select list are excluded from the Silver output."
+      },
+      {
+        "texto_opcion": "The Silver job fails because the schema has changed.",
+        "es_correcta": false,
+        "explicacion": "A `select()` on a DataFrame with extra columns does not fail; Spark simply projects the specified columns."
+      },
+      {
+        "texto_opcion": "New Bronze columns are automatically added to the Silver schema.",
+        "es_correcta": false,
+        "explicacion": "Schema evolution is controlled by Delta write options (e.g., `mergeSchema`), not by the presence of extra columns in the source."
+      },
+      {
+        "texto_opcion": "The Silver write fails because `overwriteSchema` was not set.",
+        "es_correcta": false,
+        "explicacion": "`overwriteSchema` is only required when the output schema changes; here the Silver schema is stable because `select()` pins the columns."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to rename the column `ts` to `event_timestamp` and `usr` to `user_id` in one operation. Which code is most concise?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.withColumnsRenamed({\"ts\": \"event_timestamp\", \"usr\": \"user_id\"})`",
+        "es_correcta": true,
+        "explicacion": "`withColumnsRenamed()` (Spark 3.4+) accepts a dictionary and renames multiple columns in a single call."
+      },
+      {
+        "texto_opcion": "`df.withColumnRenamed(\"ts\", \"event_timestamp\").withColumnRenamed(\"usr\", \"user_id\")`",
+        "es_correcta": false,
+        "explicacion": "This is valid but chains two calls; `withColumnsRenamed()` is more concise for renaming multiple columns at once."
+      },
+      {
+        "texto_opcion": "`df.rename({\"ts\": \"event_timestamp\", \"usr\": \"user_id\"})`",
+        "es_correcta": false,
+        "explicacion": "`.rename()` is a Pandas method; it does not exist on Spark DataFrames."
+      },
+      {
+        "texto_opcion": "`df.select(col(\"ts\").alias(\"event_timestamp\"), col(\"usr\").alias(\"user_id\"))`",
+        "es_correcta": false,
+        "explicacion": "This works but drops all other columns not included in the `select`; `withColumnsRenamed` preserves all columns."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes cleaned data to a Silver table using `mergeSchema` option:\n\n```python\ndf_silver.write.format(\"delta\") \\\n    .mode(\"append\") \\\n    .option(\"mergeSchema\", \"true\") \\\n    .saveAsTable(\"silver.events\")\n```\n\nWhat does `mergeSchema` enable?",
+    "opciones": [
+      {
+        "texto_opcion": "New columns in the incoming DataFrame are added to the existing table schema automatically.",
+        "es_correcta": true,
+        "explicacion": "`mergeSchema` (schema evolution) allows the target Delta table to be updated with any new columns present in the incoming data."
+      },
+      {
+        "texto_opcion": "It replaces the existing schema with the incoming schema.",
+        "es_correcta": false,
+        "explicacion": "Schema replacement requires `overwriteSchema`; `mergeSchema` only adds new columns without removing existing ones."
+      },
+      {
+        "texto_opcion": "It prevents the write if the incoming schema does not match exactly.",
+        "es_correcta": false,
+        "explicacion": "Default Delta behavior (without `mergeSchema`) rejects schema mismatches; `mergeSchema` relaxes this to allow additive changes."
+      },
+      {
+        "texto_opcion": "It deduplicates rows based on the schema keys before writing.",
+        "es_correcta": false,
+        "explicacion": "`mergeSchema` is a schema evolution option only; it has no effect on row-level deduplication."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A Bronze table sample:\n\n| id | value |\n|----|-------|\n| 1  | 10    |\n| 1  | 10    |\n| 2  | 20    |\n\nA data engineer runs `df.dropDuplicates([\"id\"])`. What is the result?",
+    "opciones": [
+      {
+        "texto_opcion": "2 rows — one row per unique `id`.",
+        "es_correcta": true,
+        "explicacion": "`dropDuplicates([\"id\"])` keeps one arbitrary row for each distinct `id`, resulting in 2 rows for ids 1 and 2."
+      },
+      {
+        "texto_opcion": "3 rows — no duplicates are removed because `value` differs are compared too.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates([\"id\"])` considers **only** the `id` column; since both rows with `id=1` have the same id, one is dropped."
+      },
+      {
+        "texto_opcion": "1 row — only fully unique rows across all columns are kept.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates()` without arguments considers all columns; with a column list it only checks those columns."
+      },
+      {
+        "texto_opcion": "An error — `dropDuplicates` requires all columns to be specified.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates` can take a subset of column names or no arguments (which defaults to all columns); both are valid."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer reads a partitioned Bronze Delta table but needs only data for `region = 'EMEA'`. Which approach leverages partition pruning to avoid reading unnecessary files?",
+    "opciones": [
+      {
+        "texto_opcion": "`spark.read.format(\"delta\").load(\"/mnt/bronze/sales\").filter(col(\"region\") == \"EMEA\")`",
+        "es_correcta": true,
+        "explicacion": "Spark's Catalyst optimizer pushes `filter` predicates on partition columns down to the file scan, reading only the matching partition directories."
+      },
+      {
+        "texto_opcion": "`spark.read.format(\"delta\").load(\"/mnt/bronze/sales/region=EMEA\")`",
+        "es_correcta": false,
+        "explicacion": "Reading a partition directory directly bypasses the Delta transaction log and may miss metadata; using `.filter()` on the full path is preferred."
+      },
+      {
+        "texto_opcion": "`spark.read.format(\"delta\").option(\"partition\", \"EMEA\").load(\"/mnt/bronze/sales\")`",
+        "es_correcta": false,
+        "explicacion": "There is no `partition` read option for Delta; partition pruning is achieved through filter predicates."
+      },
+      {
+        "texto_opcion": "`spark.read.format(\"parquet\").load(\"/mnt/bronze/sales\").filter(col(\"region\") == \"EMEA\")`",
+        "es_correcta": false,
+        "explicacion": "Reading as Parquet bypasses the Delta transaction log, losing ACID guarantees and time travel support."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to cast the `age` column from `STRING` to `INTEGER` and also drop rows where the cast result is null. Which code correctly accomplishes both steps?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.withColumn(\"age\", col(\"age\").cast(\"int\")).filter(col(\"age\").isNotNull())`",
+        "es_correcta": true,
+        "explicacion": "First the cast is applied (invalid strings become null), then `isNotNull()` filters out those null rows in sequence."
+      },
+      {
+        "texto_opcion": "`df.filter(col(\"age\").isNotNull()).withColumn(\"age\", col(\"age\").cast(\"int\"))`",
+        "es_correcta": false,
+        "explicacion": "Filtering before casting checks for null in the original string column, not in the cast result; non-numeric strings like `'abc'` would still pass the filter and produce nulls."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"age\", col(\"age\").cast(\"int\")).dropna()`",
+        "es_correcta": false,
+        "explicacion": "`dropna()` without arguments drops rows with **any** null, which may remove valid rows that have nulls in other columns."
+      },
+      {
+        "texto_opcion": "`df.select(col(\"age\").cast(\"int\").alias(\"age\")).filter(col(\"age\") > 0)`",
+        "es_correcta": false,
+        "explicacion": "Filtering `> 0` drops zero-age values in addition to nulls (null comparisons return null/false in Spark), and it drops all other columns with `select`."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer checks the schema of a Bronze DataFrame with `df.printSchema()` and sees `amount: string`. The Silver standard requires `amount: double`. After casting, the engineer wants to validate that no nulls were introduced. Which code performs that check?",
+    "opciones": [
+      {
+        "texto_opcion": "`df_silver.filter(col(\"amount\").isNull()).count()`",
+        "es_correcta": true,
+        "explicacion": "Counting rows where the cast column is null reveals how many strings failed to parse; a count > 0 signals data quality issues."
+      },
+      {
+        "texto_opcion": "`df_silver.describe(\"amount\").show()`",
+        "es_correcta": false,
+        "explicacion": "`describe()` shows statistics (count, mean, stddev, min, max) but does not directly surface null counts."
+      },
+      {
+        "texto_opcion": "`df_silver.select(count(\"amount\")).show()`",
+        "es_correcta": false,
+        "explicacion": "`count(column)` counts non-null values; comparing it to `df_silver.count()` would reveal nulls, but the statement alone doesn't validate."
+      },
+      {
+        "texto_opcion": "`df_silver.schema[\"amount\"].nullable`",
+        "es_correcta": false,
+        "explicacion": "Schema `nullable` indicates whether the column **can** hold nulls by schema definition, not whether any nulls actually exist in the data."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to handle a Bronze column `score` that contains mixed values: valid floats, the string 'N/A', and actual nulls. The Silver rule is: nulls → 0.0, 'N/A' → null, valid floats → keep as-is. Which sequence is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "fillna(0.0) → cast to float → 'N/A' becomes null automatically (invalid cast)",
+        "es_correcta": true,
+        "explicacion": "Filling original nulls with 0.0 first (while 'N/A' is still a distinct string) ensures only true nulls get 0.0. Casting to float afterward turns the untouched 'N/A' strings into null, satisfying both parts of the rule without collisions."
+      },
+      {
+        "texto_opcion": "Replace 'N/A' with null → cast to float → fillna(0.0)",
+        "es_correcta": false,
+        "explicacion": "This sends both original nulls and 'N/A' through the same fillna(0.0) step, so 'N/A' ends up as 0.0 instead of null, violating the rule."
+      },
+      {
+        "texto_opcion": "fillna(0.0) → replace 'N/A' with null → cast to float",
+        "es_correcta": false,
+        "explicacion": "fillna(0.0) on a string column converts nulls to the string '0.0', and casting afterward doesn't distinguish 'N/A' from the now-stringified zero; type handling breaks down."
+      },
+      {
+        "texto_opcion": "Cast to float → replace 'N/A' with null → fillna(0.0)",
+        "es_correcta": false,
+        "explicacion": "After casting, 'N/A' becomes null and is indistinguishable from original nulls, so any later replace or fillna step affects both identically, making it impossible to treat them differently."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer applies the following Silver cleaning logic:\n\n```python\ndf_silver = df_bronze.select(\n    col(\"id\"),\n    lower(trim(col(\"email\"))).alias(\"email\"),\n    col(\"signup_date\").cast(\"date\").alias(\"signup_date\")\n)\n```\n\nWhich issue in the Bronze data would **not** be fixed by this code?",
+    "opciones": [
+      {
+        "texto_opcion": "Duplicate `id` values.",
+        "es_correcta": true,
+        "explicacion": "The code applies formatting and type corrections but performs no deduplication; duplicate `id` rows would persist in the Silver output."
+      },
+      {
+        "texto_opcion": "Emails stored in uppercase.",
+        "es_correcta": false,
+        "explicacion": "`lower()` converts uppercase emails to lowercase, so this issue is handled."
+      },
+      {
+        "texto_opcion": "Emails with leading/trailing spaces.",
+        "es_correcta": false,
+        "explicacion": "`trim()` removes leading and trailing whitespace, resolving this issue."
+      },
+      {
+        "texto_opcion": "`signup_date` stored as a string.",
+        "es_correcta": false,
+        "explicacion": "`.cast(\"date\")` converts the string to a Spark `DATE` type."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes Silver data incrementally. The Bronze table is appended every hour and contains an `ingest_time` column. The Silver job should only process records newer than the last Silver write. What is the correct incremental reading pattern?",
+    "opciones": [
+      {
+        "texto_opcion": "Use `spark.readStream.format('delta').table('bronze.events')` with a Structured Streaming pipeline that checkpoints processed offsets.",
+        "es_correcta": true,
+        "explicacion": "Structured Streaming with Delta source tracks progress via checkpoints, automatically processing only new data since the last run without manually managing watermarks."
+      },
+      {
+        "texto_opcion": "Run a batch job that reads all Bronze data and overwrites Silver every hour.",
+        "es_correcta": false,
+        "explicacion": "Full reprocessing every hour is inefficient and expensive; it is not an incremental pattern."
+      },
+      {
+        "texto_opcion": "Use `COPY INTO` to append only new records from Bronze to Silver.",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` is designed for ingesting from cloud storage paths into Delta, not for Delta-to-Delta incremental reads."
+      },
+      {
+        "texto_opcion": "Read Bronze with `spark.read` and filter by `ingest_time > max(silver.ingest_time)` using a hardcoded timestamp.",
+        "es_correcta": false,
+        "explicacion": "Hardcoded timestamps are fragile; using Structured Streaming or Delta Change Data Feed is the recommended incremental approach."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  },
+  {
+    "pregunta": "A Bronze table has a nested column `address` of type `STRUCT<city: STRING, zip: STRING>`. A data engineer needs to flatten it so `city` and `zip` are top-level Silver columns. Which expression correctly extracts them?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.select(col(\"id\"), col(\"address.city\"), col(\"address.zip\"))`",
+        "es_correcta": true,
+        "explicacion": "Dot notation (`address.city`) accesses struct fields in Spark, producing flat columns in the selected output."
+      },
+      {
+        "texto_opcion": "`df.select(col(\"id\"), col(\"address\")[\"city\"], col(\"address\")[\"zip\"])`",
+        "es_correcta": false,
+        "explicacion": "Bracket notation (`col[\"key\"]`) is used for map columns; struct fields are accessed with dot notation."
+      },
+      {
+        "texto_opcion": "`df.select(col(\"id\"), explode(col(\"address\")))`",
+        "es_correcta": false,
+        "explicacion": "`explode()` is used for arrays; it cannot be applied to structs and would raise an error."
+      },
+      {
+        "texto_opcion": "`df.withColumn(\"city\", col(\"address\").getField(0))`",
+        "es_correcta": false,
+        "explicacion": "`getField()` requires the field **name**, not an integer index; `getField(\"city\")` would work but dot notation is cleaner."
+      }
+    ],
+    "tags": [
+      "3.2",
+      "Reading Bronze & cleaning to Silver"
+    ]
+  }
+]

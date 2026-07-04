@@ -1,0 +1,872 @@
+[
+  {
+    "pregunta": "A data engineer needs a job to start a run as soon as new rows are merged into a Unity Catalog Delta table, without polling or maintaining a continuously running cluster.\n\nWhich trigger type should be configured?",
+    "opciones": [
+      {
+        "texto_opcion": "Table update trigger",
+        "es_correcta": true,
+        "explicacion": "A table update trigger runs the job when one or more monitored Unity Catalog tables are updated, removing the need for a continuously running cluster or knowledge of the upstream process."
+      },
+      {
+        "texto_opcion": "Scheduled trigger with a 1-minute interval",
+        "es_correcta": false,
+        "explicacion": "A tight schedule approximates reactivity through polling, wasting compute on empty runs instead of reacting directly to the table change."
+      },
+      {
+        "texto_opcion": "File arrival trigger",
+        "es_correcta": false,
+        "explicacion": "File arrival triggers monitor files landing in a UC external location or volume, not Delta table merges."
+      },
+      {
+        "texto_opcion": "Continuous trigger",
+        "es_correcta": false,
+        "explicacion": "A continuous trigger keeps a job perpetually running and restarting; it doesn't wait for or react to a specific table update event."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Trigger Types"
+    ]
+  },
+  {
+    "pregunta": "Review this REST API trigger body:\n\n```json\n{\n  \"trigger\": {\n    \"pause_status\": \"UNPAUSED\",\n    \"periodic\": { \"interval\": 1, \"unit\": \"HOURS\" }\n  }\n}\n```\n\nWhat does this configure?",
+    "opciones": [
+      {
+        "texto_opcion": "A scheduled trigger that runs the job once every hour, currently active (not paused).",
+        "es_correcta": true,
+        "explicacion": "`trigger.periodic` with `interval: 1, unit: HOURS` configures an hourly schedule, and `pause_status: UNPAUSED` means the trigger is active."
+      },
+      {
+        "texto_opcion": "A continuous trigger that restarts the job every hour regardless of run status.",
+        "es_correcta": false,
+        "explicacion": "Continuous triggers use the separate top-level `continuous` field, not `trigger.periodic`."
+      },
+      {
+        "texto_opcion": "A file arrival trigger that checks for new files once per hour.",
+        "es_correcta": false,
+        "explicacion": "File arrival triggers are configured under `trigger.file_arrival`, not `trigger.periodic`."
+      },
+      {
+        "texto_opcion": "A paused job that will not run until manually resumed.",
+        "es_correcta": false,
+        "explicacion": "`pause_status: UNPAUSED` means the trigger is currently active, not paused."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Scheduled Trigger"
+    ]
+  },
+  {
+    "pregunta": "A data engineer configures a file arrival trigger on a Unity Catalog volume path. An existing file in that path is later overwritten with new content but keeps the same file name.\n\nWhat happens?",
+    "opciones": [
+      {
+        "texto_opcion": "No run is triggered, because only new files trigger a run — overwriting an existing file with the same name does not.",
+        "es_correcta": true,
+        "explicacion": "This is a documented limitation: file arrival triggers only fire on new files, not on overwrites of existing files with the same name."
+      },
+      {
+        "texto_opcion": "A run is triggered immediately, since the file's content changed.",
+        "es_correcta": false,
+        "explicacion": "Content changes to an existing file name do not count as a new arrival."
+      },
+      {
+        "texto_opcion": "A run is triggered, but only if file events are enabled on the external location.",
+        "es_correcta": false,
+        "explicacion": "Enabling file events improves performance and metadata tracking, but it does not change the fundamental rule that overwrites of same-named files don't trigger runs."
+      },
+      {
+        "texto_opcion": "The trigger enters an error state because of the duplicate file name.",
+        "es_correcta": false,
+        "explicacion": "Overwriting a file does not put the trigger into an error state; it simply does not generate a new arrival event."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "File Arrival Trigger"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants files arriving in bursts (multiple files within a few seconds of each other) to be processed together in a single run, rather than triggering a run per file.\n\nWhich file arrival trigger setting should be configured?",
+    "opciones": [
+      {
+        "texto_opcion": "`wait_after_last_change_seconds`, set to wait after the most recent arrival before starting a run, resetting on each new file.",
+        "es_correcta": true,
+        "explicacion": "\"Wait after last change\" debounces bursty arrivals — it waits this long after the most recent file arrives before starting a run, and each new arrival resets the timer, so the whole batch is processed together."
+      },
+      {
+        "texto_opcion": "`min_time_between_triggers_seconds`, set to a low value like 5.",
+        "es_correcta": false,
+        "explicacion": "\"Minimum time between triggers\" is a cooldown that limits run frequency after a run completes; it does not consolidate files arriving in a single burst into one run."
+      },
+      {
+        "texto_opcion": "`max_concurrent_runs`, increased to allow parallel runs per file.",
+        "es_correcta": false,
+        "explicacion": "Increasing concurrency would allow more parallel runs, the opposite of consolidating a burst into a single run."
+      },
+      {
+        "texto_opcion": "`condition: ALL_UPDATED` on the trigger.",
+        "es_correcta": false,
+        "explicacion": "`condition` (e.g., `ALL_UPDATED`/`ANY_UPDATED`) is a table update trigger field for multi-table conditions, not a file arrival debounce setting."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "File Arrival Trigger"
+    ]
+  },
+  {
+    "pregunta": "What is the minimum allowed value for `wait_after_last_change_seconds` on a **file arrival** trigger?",
+    "opciones": [
+      {
+        "texto_opcion": "60 seconds",
+        "es_correcta": true,
+        "explicacion": "The documented minimum allowed value for \"Wait after last change in seconds\" on a file arrival trigger is 60 seconds."
+      },
+      {
+        "texto_opcion": "1 second",
+        "es_correcta": false,
+        "explicacion": "1 second is below the documented minimum of 60 seconds for this setting."
+      },
+      {
+        "texto_opcion": "There is no minimum; any positive integer is accepted.",
+        "es_correcta": false,
+        "explicacion": "A documented minimum of 60 seconds applies; arbitrary low values are not accepted."
+      },
+      {
+        "texto_opcion": "10 minutes",
+        "es_correcta": false,
+        "explicacion": "10 minutes (600 seconds) is far above the documented 60-second minimum, not the minimum itself."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "File Arrival Trigger"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to monitor a Unity Catalog external location for new files but is concerned about hitting the documented file-count limits.\n\nWhat should the engineer do to remove most of these limits and improve trigger performance?",
+    "opciones": [
+      {
+        "texto_opcion": "Enable file events on the external location.",
+        "es_correcta": true,
+        "explicacion": "Enabling file events lets Databricks track ingestion metadata from cloud-provider change notifications instead of repeatedly listing the bucket, removing the hard file-count limit and improving performance."
+      },
+      {
+        "texto_opcion": "Increase `min_time_between_triggers_seconds` to its maximum value.",
+        "es_correcta": false,
+        "explicacion": "This only throttles run frequency; it does not remove the file-count limits tied to listing performance."
+      },
+      {
+        "texto_opcion": "Switch the trigger to a table update trigger pointing at the same path.",
+        "es_correcta": false,
+        "explicacion": "Table update triggers monitor Unity Catalog tables/views, not arbitrary file paths, so this isn't a direct substitute."
+      },
+      {
+        "texto_opcion": "Reduce the job's `max_concurrent_runs` to 1.",
+        "es_correcta": false,
+        "explicacion": "Concurrent run limits are unrelated to the file-count limits on the monitored storage location."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "File Arrival Trigger"
+    ]
+  },
+  {
+    "pregunta": "Without file events enabled, what are the documented limitations for a file arrival trigger's monitored storage location?",
+    "opciones": [
+      {
+        "texto_opcion": "A maximum of 50 jobs per workspace can use a file arrival trigger on a given location, and the location is capped at 10,000 files.",
+        "es_correcta": true,
+        "explicacion": "These are the documented limits without file events: 50 jobs per workspace on a given location, and a 10,000-file cap on the configured subpath."
+      },
+      {
+        "texto_opcion": "A maximum of 1,000 jobs per workspace, and an unlimited number of files.",
+        "es_correcta": false,
+        "explicacion": "1,000 jobs per workspace is the documented limit for table update triggers without file events, not file arrival triggers."
+      },
+      {
+        "texto_opcion": "A maximum of 10 jobs per workspace, and a 1,000-file cap.",
+        "es_correcta": false,
+        "explicacion": "These numbers don't match the documented limits of 50 jobs and 10,000 files."
+      },
+      {
+        "texto_opcion": "There are no limits without file events; limits only apply once file events are enabled.",
+        "es_correcta": false,
+        "explicacion": "This is backwards — the hard file-count and job-count limits apply specifically when file events are NOT enabled."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "File Arrival Trigger"
+    ]
+  },
+  {
+    "pregunta": "A data engineer configures a table update trigger to monitor two tables, `main.sales.orders` and `main.sales.returns`, and wants the job to run as soon as **either** table is updated — not waiting for both.\n\nWhich `condition` value is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`ANY_UPDATED`",
+        "es_correcta": true,
+        "explicacion": "`condition: ANY_UPDATED` (the \"Any table is updated\" option) fires the trigger when at least one of the monitored tables changes."
+      },
+      {
+        "texto_opcion": "`ALL_UPDATED`",
+        "es_correcta": false,
+        "explicacion": "This would require every monitored table to be updated before the trigger fires, the opposite of the requirement."
+      },
+      {
+        "texto_opcion": "`ANY_SUCCESS`",
+        "es_correcta": false,
+        "explicacion": "`ANY_SUCCESS` is not a documented table update trigger condition value; condition values relate to table updates, not task outcomes."
+      },
+      {
+        "texto_opcion": "`min_time_between_triggers_seconds: 0`",
+        "es_correcta": false,
+        "explicacion": "This is a rate-control field, not the multi-table firing condition the scenario requires."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Table Update Trigger"
+    ]
+  },
+  {
+    "pregunta": "Up to how many managed or Delta tables can be monitored by a single table update trigger?",
+    "opciones": [
+      {
+        "texto_opcion": "10",
+        "es_correcta": true,
+        "explicacion": "Table update triggers support up to 10 managed or Delta tables per trigger; views' dependent tables also count toward this limit."
+      },
+      {
+        "texto_opcion": "50",
+        "es_correcta": false,
+        "explicacion": "50 is the documented job-count limit for file arrival triggers without file events, not the table count for table update triggers."
+      },
+      {
+        "texto_opcion": "1,000",
+        "es_correcta": false,
+        "explicacion": "1,000 is the documented limit on the number of jobs (without file events) that can have a table update trigger per workspace, not the table count per trigger."
+      },
+      {
+        "texto_opcion": "Unlimited",
+        "es_correcta": false,
+        "explicacion": "A documented limit of 10 tables per trigger applies; it is not unlimited."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Table Update Trigger"
+    ]
+  },
+  {
+    "pregunta": "A table update trigger is configured to monitor a Unity Catalog view that depends on 11 different supported tables.\n\nWhat happens?",
+    "opciones": [
+      {
+        "texto_opcion": "The view cannot be used in a table update trigger, since source tables for a view are counted toward the 10-table-per-trigger limit.",
+        "es_correcta": true,
+        "explicacion": "Source tables for a view count toward the 10-tables-per-trigger limit, so a view depending on 11 tables exceeds the limit and cannot be used."
+      },
+      {
+        "texto_opcion": "The view is allowed because views are exempt from the table-count limit.",
+        "es_correcta": false,
+        "explicacion": "Views are explicitly not exempt — their dependent tables count toward the same 10-table limit."
+      },
+      {
+        "texto_opcion": "Only the first 10 dependent tables are monitored; the 11th is silently ignored.",
+        "es_correcta": false,
+        "explicacion": "There's no documented partial-monitoring behavior; exceeding the limit prevents using the view in the trigger at all."
+      },
+      {
+        "texto_opcion": "The trigger is created successfully, but the job is automatically capped at 1 concurrent run.",
+        "es_correcta": false,
+        "explicacion": "This conflates an unrelated pipeline-task concurrency rule with the table-count limit on table update triggers."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Table Update Trigger"
+    ]
+  },
+  {
+    "pregunta": "A view used in a table update trigger depends on a federated (non-Unity-Catalog) table as one of its sources.\n\nWhat is the documented behavior?",
+    "opciones": [
+      {
+        "texto_opcion": "Trigger creation succeeds, but no runs fire when the unsupported federated dependency updates.",
+        "es_correcta": true,
+        "explicacion": "Views depending on federated tables are not supported as a triggering dependency; creation of the trigger still succeeds, but no job runs are triggered for updates to that unsupported dependency."
+      },
+      {
+        "texto_opcion": "Trigger creation fails immediately with a validation error.",
+        "es_correcta": false,
+        "explicacion": "The documented behavior is that creation succeeds; it simply won't fire runs for the unsupported dependency, rather than failing outright."
+      },
+      {
+        "texto_opcion": "The trigger automatically falls back to polling the federated table every minute like a file arrival trigger.",
+        "es_correcta": false,
+        "explicacion": "There is no automatic fallback to file-arrival-style polling for unsupported view dependencies."
+      },
+      {
+        "texto_opcion": "The federated table is automatically converted to a Unity Catalog managed table.",
+        "es_correcta": false,
+        "explicacion": "Table update triggers do not perform any automatic data migration or conversion."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Table Update Trigger"
+    ]
+  },
+  {
+    "pregunta": "A data engineer sets both `min_time_between_triggers_seconds: 120` and `wait_after_last_change_seconds: 60` on a table update trigger. A table update occurs at the 5-second mark, and another update occurs at the 115-second mark.\n\nWhen does the trigger actually fire a run, based on the documented interaction of these two settings?",
+    "opciones": [
+      {
+        "texto_opcion": "Not until after 175 seconds, because the wait-after-last-change timer resets on the update at 115 seconds, on top of the 120-second minimum.",
+        "es_correcta": true,
+        "explicacion": "When both options are used, the trigger waits the minimum time between triggers first, then waits the wait-after-last-change period after the last change; an update at 115s resets the 60-second debounce, pushing the fire time to 175s."
+      },
+      {
+        "texto_opcion": "Exactly at 120 seconds, since the minimum time between triggers takes priority and ignores later updates.",
+        "es_correcta": false,
+        "explicacion": "The minimum-time window does not ignore subsequent updates — the wait-after-last-change debounce still applies on top and can push the actual fire time later."
+      },
+      {
+        "texto_opcion": "Exactly at 65 seconds, immediately after the wait-after-last-change window from the first update.",
+        "es_correcta": false,
+        "explicacion": "The minimum-time-between-triggers floor of 120 seconds must also be honored, and the second update at 115s resets the debounce timer, so 65 seconds is too early."
+      },
+      {
+        "texto_opcion": "Two separate runs fire — one at 65 seconds and another at 175 seconds.",
+        "es_correcta": false,
+        "explicacion": "The documented example describes a single consolidated run after the combined cooldown and debounce windows, not two separate runs."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Table Update Trigger"
+    ]
+  },
+  {
+    "pregunta": "A job uses a **continuous** trigger. The trigger is paused while a run is actively executing, and then later resumed.\n\nWhat happens when the trigger is resumed?",
+    "opciones": [
+      {
+        "texto_opcion": "If a run is still active when resumed, the scheduler waits for that run to finish before starting a new one.",
+        "es_correcta": true,
+        "explicacion": "This is the documented continuous trigger resume behavior: an in-progress run is allowed to finish before the scheduler starts a new run."
+      },
+      {
+        "texto_opcion": "The currently active run is immediately killed and a fresh run starts.",
+        "es_correcta": false,
+        "explicacion": "Resuming does not kill the active run; the scheduler waits for it to complete instead."
+      },
+      {
+        "texto_opcion": "Resuming a continuous trigger has no effect until the next scheduled time window.",
+        "es_correcta": false,
+        "explicacion": "Continuous triggers are not schedule-based, so there's no \"next scheduled time window\" concept; resuming takes effect once the active run completes."
+      },
+      {
+        "texto_opcion": "The job permanently reverts to manual-only triggering.",
+        "es_correcta": false,
+        "explicacion": "Resuming restores the configured continuous trigger behavior; it does not revert the job to manual triggering."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Continuous Trigger"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has a Lakeflow Spark Declarative Pipeline already configured in **continuous** mode, and wraps the job that orchestrates it in a job-level **continuous** trigger as well.\n\nWhat does Databricks recommend regarding this setup?",
+    "opciones": [
+      {
+        "texto_opcion": "Avoid this combination — keep pipeline tasks in triggered mode when orchestrated by a job, rather than wrapping an already-continuous pipeline in a job-level continuous trigger.",
+        "es_correcta": true,
+        "explicacion": "Databricks recommends not wrapping an already-continuous pipeline in a job-level continuous trigger; pipeline tasks orchestrated by jobs should use triggered mode instead, to avoid double-continuous execution."
+      },
+      {
+        "texto_opcion": "This is the recommended pattern for maximum reliability — always double-wrap continuous pipelines in continuous job triggers.",
+        "es_correcta": false,
+        "explicacion": "This is explicitly the opposite of the documented recommendation, which warns against this redundant double-continuous setup."
+      },
+      {
+        "texto_opcion": "It has no practical effect either way, since pipeline mode and job trigger mode are fully independent.",
+        "es_correcta": false,
+        "explicacion": "The documentation specifically calls this combination out as something to avoid, so it is not a no-op."
+      },
+      {
+        "texto_opcion": "Databricks will automatically convert the pipeline to triggered mode the first time the job runs.",
+        "es_correcta": false,
+        "explicacion": "There is no automatic conversion described; the recommendation is a manual best practice the engineer should follow."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Continuous Trigger"
+    ]
+  },
+  {
+    "pregunta": "A job has no trigger configured at all (\"None\").\n\nWhich of the following will start a run of this job?",
+    "opciones": [
+      {
+        "texto_opcion": "Clicking Run now in the UI, calling the Run now REST endpoint, or an external orchestrator like Apache Airflow calling the Jobs API.",
+        "es_correcta": true,
+        "explicacion": "With no trigger configured, runs only start manually — via the UI's Run now button, the Run now REST endpoint, or an external orchestrator calling the Jobs API."
+      },
+      {
+        "texto_opcion": "The job runs automatically once per day at midnight UTC by default.",
+        "es_correcta": false,
+        "explicacion": "There is no default schedule applied to untriggered jobs; without a configured trigger, nothing runs automatically."
+      },
+      {
+        "texto_opcion": "The job runs whenever any table in the workspace is updated.",
+        "es_correcta": false,
+        "explicacion": "That behavior requires an explicitly configured table update trigger; it is not a default fallback for untriggered jobs."
+      },
+      {
+        "texto_opcion": "The job never runs until a trigger of some kind is explicitly added.",
+        "es_correcta": false,
+        "explicacion": "Manual run options (UI, REST API, external orchestrator) are always available, even without a configured trigger."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Manual Runs"
+    ]
+  },
+  {
+    "pregunta": "A data engineer calls:\n\n```json\nPOST /api/2.2/jobs/run-now\n{\n  \"job_id\": 123456789,\n  \"notebook_params\": {\n    \"year_param\": \"2026\"\n  }\n}\n```\n\nWhat kind of trigger does this represent?",
+    "opciones": [
+      {
+        "texto_opcion": "A manual / API-driven run — it programmatically starts a single run, independent of any configured trigger.",
+        "es_correcta": true,
+        "explicacion": "Calling the `jobs/run-now` REST endpoint is a manual/API-driven trigger mechanism, used to start an individual run on demand."
+      },
+      {
+        "texto_opcion": "A scheduled trigger using the legacy `schedule` field.",
+        "es_correcta": false,
+        "explicacion": "This is a one-time `run-now` API call, not a persisted `schedule` configuration on the job."
+      },
+      {
+        "texto_opcion": "A table update trigger, since `notebook_params` references a year.",
+        "es_correcta": false,
+        "explicacion": "`notebook_params` simply passes runtime parameter overrides; it has no relationship to table update triggers."
+      },
+      {
+        "texto_opcion": "A continuous trigger that will keep restarting the job indefinitely.",
+        "es_correcta": false,
+        "explicacion": "`run-now` starts a single run; it does not configure or invoke a continuous trigger."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Manual Runs"
+    ]
+  },
+  {
+    "pregunta": "According to the unified `trigger` object schema in the Jobs API, how many of `periodic`, `file_arrival`, and `table_update` can be set on a single trigger in practice?",
+    "opciones": [
+      {
+        "texto_opcion": "Exactly one — only one of `periodic`, `file_arrival`, or `table_update` is set per trigger.",
+        "es_correcta": true,
+        "explicacion": "The documentation explicitly notes that in practice only one of the three sub-configurations is set per trigger object; showing them together is only to illustrate the schema shape."
+      },
+      {
+        "texto_opcion": "All three simultaneously, so the trigger fires on whichever condition is met first.",
+        "es_correcta": false,
+        "explicacion": "The unified `trigger` object is documented as holding exactly one event-based or periodic sub-configuration, not all three at once."
+      },
+      {
+        "texto_opcion": "Exactly two, paired as either `periodic` + `file_arrival` or `file_arrival` + `table_update`.",
+        "es_correcta": false,
+        "explicacion": "There is no documented pairing behavior; only a single sub-configuration is used per trigger."
+      },
+      {
+        "texto_opcion": "Zero — these fields are deprecated in favor of `continuous`.",
+        "es_correcta": false,
+        "explicacion": "`periodic`, `file_arrival`, and `table_update` are the active, documented trigger sub-configurations; `continuous` is a separate, distinct trigger mechanism."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "REST API"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to add a table update trigger to an **already existing** job via the REST API, without recreating the job from scratch.\n\nWhich endpoint and approach is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`POST /api/2.2/jobs/update` with `job_id` and a `new_settings.trigger.table_update` block.",
+        "es_correcta": true,
+        "explicacion": "Adding a trigger to an existing job is done via `jobs/update`, specifying the `job_id` and the new `trigger` configuration inside `new_settings`."
+      },
+      {
+        "texto_opcion": "`POST /api/2.2/jobs/create` with the same `job_id` as the existing job.",
+        "es_correcta": false,
+        "explicacion": "`jobs/create` creates a brand-new job; it does not accept an existing `job_id` to modify a job in place."
+      },
+      {
+        "texto_opcion": "`GET /api/2.2/jobs/get` with a `trigger` query parameter.",
+        "es_correcta": false,
+        "explicacion": "`jobs/get` is a read-only endpoint for retrieving job settings; it cannot modify the job's trigger."
+      },
+      {
+        "texto_opcion": "`POST /api/2.2/jobs/run-now` with the trigger configuration embedded in the request body.",
+        "es_correcta": false,
+        "explicacion": "`run-now` starts a single run and accepts only run-time parameter overrides; it does not persist a new trigger configuration on the job."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "REST API"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to temporarily halt automated runs of a job during a maintenance window, without deleting the job's trigger configuration.\n\nWhich REST API call accomplishes this?",
+    "opciones": [
+      {
+        "texto_opcion": "`POST /api/2.2/jobs/update` with `new_settings.trigger.pause_status: \"PAUSED\"`.",
+        "es_correcta": true,
+        "explicacion": "Setting `pause_status: PAUSED` on the trigger via `jobs/update` halts new runs from starting while preserving the trigger's configuration for later resumption."
+      },
+      {
+        "texto_opcion": "`POST /api/2.2/jobs/delete` to remove the job temporarily.",
+        "es_correcta": false,
+        "explicacion": "Deleting the job removes it entirely; it does not preserve the trigger configuration for later resumption."
+      },
+      {
+        "texto_opcion": "`POST /api/2.2/jobs/runs/submit` with an empty `tasks` array.",
+        "es_correcta": false,
+        "explicacion": "`runs/submit` creates a one-time, unsaved run; it has no relationship to pausing a job's persisted trigger."
+      },
+      {
+        "texto_opcion": "Setting `max_concurrent_runs: 0` on the job.",
+        "es_correcta": false,
+        "explicacion": "There is no documented behavior where setting concurrency to 0 pauses a trigger; `pause_status` is the field designed for this purpose."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Pause and Resume"
+    ]
+  },
+  {
+    "pregunta": "In the workspace UI, the Pause and Resume buttons appear in the Job details pane under Schedules & Triggers.\n\nUnder what condition do these buttons appear?",
+    "opciones": [
+      {
+        "texto_opcion": "Only for jobs that have a trigger configured.",
+        "es_correcta": true,
+        "explicacion": "Pause and Resume buttons appear only for jobs with a configured trigger; an untriggered (manual-only) job has nothing to pause."
+      },
+      {
+        "texto_opcion": "Only for jobs running in serverless compute.",
+        "es_correcta": false,
+        "explicacion": "Pause/Resume availability depends on whether a trigger is configured, not on the compute type used by the job's tasks."
+      },
+      {
+        "texto_opcion": "For every job, regardless of trigger configuration.",
+        "es_correcta": false,
+        "explicacion": "Jobs without any configured trigger do not show Pause/Resume controls, since there's no automated trigger to pause."
+      },
+      {
+        "texto_opcion": "Only for jobs owned by a service principal.",
+        "es_correcta": false,
+        "explicacion": "Ownership identity has no bearing on whether Pause/Resume controls are shown."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Pause and Resume"
+    ]
+  },
+  {
+    "pregunta": "A data engineer pauses an active trigger while a run is currently in progress (non-continuous job).\n\nWhat happens to that in-progress run?",
+    "opciones": [
+      {
+        "texto_opcion": "It continues to completion; pausing only stops the trigger from starting new runs.",
+        "es_correcta": true,
+        "explicacion": "Pausing a trigger means any currently active run continues to completion, but the trigger stops starting new runs."
+      },
+      {
+        "texto_opcion": "It is immediately canceled.",
+        "es_correcta": false,
+        "explicacion": "Pausing does not cancel an already-active run; it only prevents future runs from starting."
+      },
+      {
+        "texto_opcion": "It is paused mid-execution and resumes exactly where it left off once the trigger is resumed.",
+        "es_correcta": false,
+        "explicacion": "There is no mid-execution pause/resume of an individual run tied to trigger pause status; the active run simply continues unaffected."
+      },
+      {
+        "texto_opcion": "It restarts from the beginning automatically.",
+        "es_correcta": false,
+        "explicacion": "Pausing the trigger does not restart any in-progress run."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Pause and Resume"
+    ]
+  },
+  {
+    "pregunta": "A job uses a table update trigger monitoring `main.sales.orders`. A downstream notebook task needs to know exactly which tables were updated since the last run, as a JSON list.\n\nWhich dynamic value reference should the task use?",
+    "opciones": [
+      {
+        "texto_opcion": "`{{job.trigger.table_update.updated_tables}}`",
+        "es_correcta": true,
+        "explicacion": "`{{job.trigger.table_update.updated_tables}}` returns a JSON list of tables updated since the last job run."
+      },
+      {
+        "texto_opcion": "`{{job.trigger.table_update.version}}`",
+        "es_correcta": false,
+        "explicacion": "`version` returns the most recent commit version for a specific table, not a list of all updated tables."
+      },
+      {
+        "texto_opcion": "`{{tasks.read_control_table.values.updated_tables}}`",
+        "es_correcta": false,
+        "explicacion": "This is task value reference syntax for values set by `taskValues.set()` in an upstream task, not the trigger-supplied dynamic value reference."
+      },
+      {
+        "texto_opcion": "`{{job.parameters.updated_tables}}`",
+        "es_correcta": false,
+        "explicacion": "`job.parameters` retrieves explicitly configured job parameters, not the automatically-exposed trigger metadata about updated tables."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Dynamic Value References"
+    ]
+  },
+  {
+    "pregunta": "A table update trigger monitors only a single table, `main.sales.orders`. A downstream task wants the commit timestamp that triggered the run.\n\nWhich dynamic value reference is correct in this single-table case?",
+    "opciones": [
+      {
+        "texto_opcion": "`{{job.trigger.table_update.commit_timestamp.iso_datetime}}`",
+        "es_correcta": true,
+        "explicacion": "If only one table is monitored, the `<catalog.schema.table>` qualifier can be omitted, so the reference simplifies to `{{job.trigger.table_update.commit_timestamp.iso_datetime}}`."
+      },
+      {
+        "texto_opcion": "`{{job.trigger.table_update.`main.sales.orders`.commit_timestamp.iso_datetime}}` is the only valid form, even with a single table.",
+        "es_correcta": false,
+        "explicacion": "The fully qualified form with the table name is valid but not required when only one table is monitored — the qualifier can be omitted."
+      },
+      {
+        "texto_opcion": "`{{job.run_id}}`",
+        "es_correcta": false,
+        "explicacion": "`{{job.run_id}}` returns the current run's ID, not a commit timestamp from the triggering table update."
+      },
+      {
+        "texto_opcion": "`{{tasks.trigger.values.commit_timestamp}}`",
+        "es_correcta": false,
+        "explicacion": "This is not valid syntax; table update trigger metadata is exposed via `{{job.trigger.table_update...}}`, not as a task value."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Dynamic Value References"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is evaluating whether to use a scheduled trigger or a table update trigger for a job. Which factor most strongly favors choosing a **scheduled** trigger over a table update trigger?",
+    "opciones": [
+      {
+        "texto_opcion": "The upstream data lands predictably and exact run timing matters more than reacting immediately to data changes.",
+        "es_correcta": true,
+        "explicacion": "Best practice: use Scheduled for predictable, periodic workloads where exact timing matters more than reacting to data as it lands."
+      },
+      {
+        "texto_opcion": "The team operates in a decentralized Data Mesh setup with no visibility into upstream producers' schedules.",
+        "es_correcta": false,
+        "explicacion": "This scenario is specifically called out as a reason to prefer a table update trigger, not a scheduled trigger."
+      },
+      {
+        "texto_opcion": "Downstream dashboards should refresh as soon as new data lands, rather than waiting for a fixed time.",
+        "es_correcta": false,
+        "explicacion": "This latency-sensitive requirement favors a table update trigger, not a fixed schedule."
+      },
+      {
+        "texto_opcion": "The job needs to avoid wasted compute from polling on a fixed cron because data arrives irregularly.",
+        "es_correcta": false,
+        "explicacion": "Irregular arrival favors an event-driven trigger (file arrival or table update), not a scheduled cron-based approach."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Trigger Selection"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to be alerted specifically when a file arrival trigger **fails to evaluate** — separate from the underlying job run itself failing.\n\nHow should this be configured?",
+    "opciones": [
+      {
+        "texto_opcion": "Configure email or system destination notifications on job failure.",
+        "es_correcta": true,
+        "explicacion": "The documentation recommends configuring email or system destination notifications on job failure to be alerted if a file arrival or table update trigger fails to evaluate."
+      },
+      {
+        "texto_opcion": "Set `retry_on_timeout: true` on every task in the job.",
+        "es_correcta": false,
+        "explicacion": "`retry_on_timeout` is a task-level retry setting unrelated to trigger evaluation failure notifications."
+      },
+      {
+        "texto_opcion": "Use a `For each` task to loop over trigger evaluation attempts.",
+        "es_correcta": false,
+        "explicacion": "`For each` is a looping mechanism for nested tasks; it has no relationship to monitoring trigger evaluation health."
+      },
+      {
+        "texto_opcion": "There is no way to be notified of trigger evaluation failures; only job run failures can be monitored.",
+        "es_correcta": false,
+        "explicacion": "Trigger evaluation failure notifications are explicitly supported via job failure notifications, distinct from job run failures."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Best Practices"
+    ]
+  },
+  {
+    "pregunta": "Which Databricks system tables would a data engineer query to analyze how often each trigger type fires and correlate that with run duration and cost?",
+    "opciones": [
+      {
+        "texto_opcion": "`system.lakeflow.jobs`, `job_tasks`, `job_run_timeline`, and `task_run_timeline`.",
+        "es_correcta": true,
+        "explicacion": "The documentation recommends using the `system.lakeflow` schema's `jobs`, `job_tasks`, `job_run_timeline`, and `task_run_timeline` tables to analyze trigger firing frequency correlated with duration/cost."
+      },
+      {
+        "texto_opcion": "`system.billing.usage` exclusively, with no job-level tables required.",
+        "es_correcta": false,
+        "explicacion": "Billing usage alone doesn't provide trigger-firing-frequency or per-run timeline detail; the `system.lakeflow` tables are the documented source for this analysis."
+      },
+      {
+        "texto_opcion": "`system.access.table_lineage`.",
+        "es_correcta": false,
+        "explicacion": "Lineage tables track data dependencies between objects, not trigger firing frequency or job run timelines."
+      },
+      {
+        "texto_opcion": "There is no system table support for this; it must be derived from the Jobs REST API only.",
+        "es_correcta": false,
+        "explicacion": "The `system.lakeflow` schema is explicitly documented as supporting this kind of analysis without requiring custom REST API polling."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Monitoring"
+    ]
+  },
+  {
+    "pregunta": "Examine this DAB YAML snippet:\n\n```yaml\nresources:\n  jobs:\n    process_new_files:\n      name: process_new_files\n      trigger:\n        pause_status: UNPAUSED\n        file_arrival:\n          url: /Volumes/mycatalog/myschema/myvolume/incoming/\n          min_time_between_triggers_seconds: 60\n          wait_after_last_change_seconds: 300\n      tasks:\n        - task_key: load_files\n          notebook_task:\n            notebook_path: ../src/load_files.ipynb\n```\n\nWhat is the effect of `wait_after_last_change_seconds: 300` here?",
+    "opciones": [
+      {
+        "texto_opcion": "The trigger waits 300 seconds after the most recent file arrival before starting a run, resetting the timer on each new arrival.",
+        "es_correcta": true,
+        "explicacion": "This implements the debounce behavior: after the last file lands, the trigger waits 300 seconds before firing, and any new arrival during that window resets the countdown."
+      },
+      {
+        "texto_opcion": "The trigger checks for new files every 300 seconds.",
+        "es_correcta": false,
+        "explicacion": "File arrival triggers check for new files on a roughly per-minute best-effort basis regardless of this setting; `wait_after_last_change_seconds` controls debounce timing, not the polling interval."
+      },
+      {
+        "texto_opcion": "Each job run is allowed to take up to 300 seconds before timing out.",
+        "es_correcta": false,
+        "explicacion": "This describes a task `timeout_seconds` concept, unrelated to the trigger's `wait_after_last_change_seconds` field."
+      },
+      {
+        "texto_opcion": "The job pauses for 300 seconds after each successful run before re-enabling the trigger.",
+        "es_correcta": false,
+        "explicacion": "This describes something closer to `min_time_between_triggers_seconds`'s cooldown concept, not the debounce behavior of `wait_after_last_change_seconds`."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "DABs"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to deploy a job with a table update trigger using Databricks Asset Bundles, and validate the configuration before deploying to production.\n\nWhich command sequence is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`databricks bundle validate -t prod` then `databricks bundle deploy -t prod`",
+        "es_correcta": true,
+        "explicacion": "Best practice is to always run `databricks bundle validate` before `databricks bundle deploy` to catch configuration errors before they reach production."
+      },
+      {
+        "texto_opcion": "`databricks bundle deploy -t prod` then `databricks bundle validate -t prod`",
+        "es_correcta": false,
+        "explicacion": "Validating after deploying defeats the purpose of catching errors before the configuration reaches production."
+      },
+      {
+        "texto_opcion": "`databricks jobs create --json @bundle.yml`",
+        "es_correcta": false,
+        "explicacion": "`databricks jobs create` expects a JSON job spec via `--json`, not a bundle's `databricks.yml`; bundle deployment uses `databricks bundle deploy`."
+      },
+      {
+        "texto_opcion": "`databricks bundle run -t prod` is sufficient on its own; validate and deploy are not needed.",
+        "es_correcta": false,
+        "explicacion": "`bundle run` triggers a job run; it does not validate or deploy the bundle's resource definitions first."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "DABs"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to monitor a path in Amazon S3 for new files, but the configured directory has not been created yet by the upstream system.\n\nWhat is the documented behavior of the file arrival trigger in this case?",
+    "opciones": [
+      {
+        "texto_opcion": "The trigger continues to be evaluated with no error, finding no files until the path exists.",
+        "es_correcta": true,
+        "explicacion": "On S3/GCS, a file arrival trigger pointed at a non-existent or deleted path does not error — S3/GCS don't distinguish empty/non-existent/deleted directories, so it simply finds no files until the path exists."
+      },
+      {
+        "texto_opcion": "The trigger immediately fails and disables itself.",
+        "es_correcta": false,
+        "explicacion": "The trigger does not error or disable itself; it continues evaluating without error."
+      },
+      {
+        "texto_opcion": "The job run starts anyway with an empty input set.",
+        "es_correcta": false,
+        "explicacion": "No run is triggered at all if no files are found; the trigger simply doesn't fire."
+      },
+      {
+        "texto_opcion": "Databricks automatically creates the missing directory.",
+        "es_correcta": false,
+        "explicacion": "There is no documented auto-creation behavior for missing storage paths."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "File Arrival Trigger"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to choose between a file arrival trigger and a table update trigger for a new pipeline that ingests raw JSON files from an S3 bucket where an upstream vendor drops files with no fixed schedule.\n\nWhich trigger type is the better fit, and why?",
+    "opciones": [
+      {
+        "texto_opcion": "File arrival trigger, because the source is raw files in cloud storage, not a Unity Catalog table.",
+        "es_correcta": true,
+        "explicacion": "File arrival triggers are designed for new files landing in a Unity Catalog external location or volume such as S3; table update triggers monitor UC tables/views, not raw incoming files."
+      },
+      {
+        "texto_opcion": "Table update trigger, because it has no file-count limitations at all.",
+        "es_correcta": false,
+        "explicacion": "Table update triggers monitor table changes, not raw files in S3 — they are the wrong mechanism for this ingestion scenario regardless of limit comparisons."
+      },
+      {
+        "texto_opcion": "Either works identically since both ultimately rely on Unity Catalog.",
+        "es_correcta": false,
+        "explicacion": "They monitor fundamentally different objects — file arrival watches storage paths, while table update watches UC tables/views — so they are not interchangeable here."
+      },
+      {
+        "texto_opcion": "Continuous trigger, since the vendor has no fixed schedule.",
+        "es_correcta": false,
+        "explicacion": "A continuous trigger keeps a job perpetually running regardless of arrivals; it does not specifically react to file arrival events the way a file arrival trigger does."
+      }
+    ],
+    "tags": [
+      "4.4",
+      "Trigger Selection"
+    ]
+  }
+]

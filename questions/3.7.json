@@ -1,0 +1,749 @@
+[
+  {
+    "pregunta": "A data engineer defines the following in a Lakeflow Spark Declarative Pipelines (SDP) pipeline:\n\n```sql\nCREATE OR REFRESH MATERIALIZED VIEW gold_daily_sales AS\nSELECT sale_date, SUM(amount) AS total\nFROM silver_sales\nGROUP BY sale_date;\n```\n\nWhen does Databricks recompute this materialized view?",
+    "opciones": [
+      {
+        "texto_opcion": "Every time a downstream query reads from it.",
+        "es_correcta": false,
+        "explicacion": "That describes a regular SQL view, which re-executes at query time. Materialized views store precomputed results."
+      },
+      {
+        "texto_opcion": "Only when the engineer manually runs REFRESH MATERIALIZED VIEW.",
+        "es_correcta": false,
+        "explicacion": "Manual refresh is not required; Lakeflow SDP pipelines handle refresh automatically when the pipeline runs."
+      },
+      {
+        "texto_opcion": "When the Lakeflow SDP pipeline runs and upstream data in silver_sales has changed.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow SDP recomputes materialized views during each pipeline run, incorporating changes from upstream datasets."
+      },
+      {
+        "texto_opcion": "On a fixed schedule independent of the pipeline.",
+        "es_correcta": false,
+        "explicacion": "Materialized view refresh is driven by the Lakeflow SDP pipeline trigger, not a separate schedule."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Materialized Views",
+      "Lakeflow SDP refresh"
+    ]
+  },
+  {
+    "pregunta": "Which statement best describes the storage behavior of a SQL view defined in the Gold layer versus a materialized view?",
+    "opciones": [
+      {
+        "texto_opcion": "Both store query results physically in Delta format.",
+        "es_correcta": false,
+        "explicacion": "Regular views store no data; only materialized views persist query results to storage."
+      },
+      {
+        "texto_opcion": "A SQL view stores results physically; a materialized view re-executes at query time.",
+        "es_correcta": false,
+        "explicacion": "This is reversed. The SQL view re-executes; the materialized view stores precomputed results."
+      },
+      {
+        "texto_opcion": "A SQL view stores no data and re-executes its query on every read; a materialized view persists precomputed results.",
+        "es_correcta": true,
+        "explicacion": "SQL views are virtual — zero storage cost but full recompute per query. Materialized views trade storage for faster reads."
+      },
+      {
+        "texto_opcion": "Neither stores data; both are logical representations only.",
+        "es_correcta": false,
+        "explicacion": "Materialized views do store physical data in Delta format, unlike regular views."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Views vs Materialized Views"
+    ]
+  },
+  {
+    "pregunta": "A BI team queries a Gold layer view dozens of times per hour. The view joins three large Silver tables and computes heavy aggregations. Query latency is 45 seconds. Which change would most directly reduce latency?",
+    "opciones": [
+      {
+        "texto_opcion": "Add more Silver layer tables as sources to the view.",
+        "es_correcta": false,
+        "explicacion": "Adding more source tables increases query complexity and latency further."
+      },
+      {
+        "texto_opcion": "Convert the view to a materialized view in a Lakeflow SDP pipeline.",
+        "es_correcta": true,
+        "explicacion": "A materialized view stores precomputed aggregations, so BI queries read cached results instead of re-running the expensive join+aggregate each time."
+      },
+      {
+        "texto_opcion": "Convert the view to a streaming table.",
+        "es_correcta": false,
+        "explicacion": "Streaming tables process incremental appends; they are not designed for fully recomputed batch aggregations from static Silver tables."
+      },
+      {
+        "texto_opcion": "Increase the SQL warehouse cluster size.",
+        "es_correcta": false,
+        "explicacion": "Scaling compute reduces time per query but does not eliminate the redundant recomputation that a materialized view would avoid entirely."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Materialized Views",
+      "performance"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes the following Lakeflow SDP Python pipeline code:\n\n```python\nfrom pyspark import pipelines as dp\nfrom pyspark.sql.functions import sum as _sum\n\n@dp.materialized_view\ndef gold_revenue():\n    return (\n        dp.read(\"silver_orders\")\n        .groupBy(\"region\")\n        .agg(_sum(\"revenue\").alias(\"total_revenue\"))\n    )\n```\n\nWhat type of Gold layer object does this create?",
+    "opciones": [
+      {
+        "texto_opcion": "A streaming table that continuously ingests from silver_orders.",
+        "es_correcta": false,
+        "explicacion": "`@dp.materialized_view` with `dp.read()` (not `dp.read_stream()`) creates a materialized view, not a streaming table. In the new SDP API, `@dp.table` creates a streaming table."
+      },
+      {
+        "texto_opcion": "A regular Delta managed table written by a batch job.",
+        "es_correcta": false,
+        "explicacion": "This is a Lakeflow SDP pipeline object managed by the SDP runtime, not a standalone batch write to a Delta table."
+      },
+      {
+        "texto_opcion": "A Lakeflow SDP materialized view that is refreshed by the pipeline on each run.",
+        "es_correcta": true,
+        "explicacion": "`@dp.materialized_view` with `dp.read()` (batch read) produces a materialized view. Lakeflow SDP refreshes it each pipeline run — using an incremental or full recompute depending on the optimizer and whether serverless compute is used."
+      },
+      {
+        "texto_opcion": "A SQL view that defers execution until queried.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow SDP `@dp.materialized_view` objects are not lazy SQL views; they store precomputed results and are refreshed by the pipeline."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Lakeflow SDP Python syntax",
+      "materialized views"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to serve near-real-time order counts to an operations dashboard. New orders arrive in a Silver Delta table every few minutes. Which Gold layer object is the best fit?",
+    "opciones": [
+      {
+        "texto_opcion": "A SQL view over the Silver table.",
+        "es_correcta": false,
+        "explicacion": "A view re-runs the full aggregation at query time, adding latency and compute cost on every dashboard refresh."
+      },
+      {
+        "texto_opcion": "A streaming table defined in a Lakeflow SDP pipeline.",
+        "es_correcta": true,
+        "explicacion": "Streaming tables incrementally process new records as they arrive, keeping Gold results current with low latency."
+      },
+      {
+        "texto_opcion": "A materialized view refreshed once per day.",
+        "es_correcta": false,
+        "explicacion": "A daily refresh does not satisfy a near-real-time requirement."
+      },
+      {
+        "texto_opcion": "A regular Delta table populated by a weekly batch job.",
+        "es_correcta": false,
+        "explicacion": "Weekly batch updates cannot support near-real-time dashboards."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Streaming Tables",
+      "near-real-time"
+    ]
+  },
+  {
+    "pregunta": "What is the key functional difference between a Lakeflow SDP streaming table and a Lakeflow SDP materialized view?",
+    "opciones": [
+      {
+        "texto_opcion": "Streaming tables support SQL only; materialized views support Python only.",
+        "es_correcta": false,
+        "explicacion": "Both object types support SQL and Python in Lakeflow SDP pipelines."
+      },
+      {
+        "texto_opcion": "Streaming tables process only new appended records incrementally; materialized views use batch semantics and may refresh incrementally or fully depending on the optimizer.",
+        "es_correcta": true,
+        "explicacion": "Streaming tables always use checkpoints to process only new data. Materialized views use batch semantics — on serverless pipelines the optimizer may choose an incremental refresh; on classic pipelines a full recompute is always performed."
+      },
+      {
+        "texto_opcion": "Materialized views support MERGE operations; streaming tables do not.",
+        "es_correcta": false,
+        "explicacion": "This is not the defining functional difference between the two object types."
+      },
+      {
+        "texto_opcion": "Streaming tables store data in Parquet; materialized views store data in Delta format.",
+        "es_correcta": false,
+        "explicacion": "Both streaming tables and materialized views in Lakeflow SDP store data in Delta format."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Streaming Tables vs Materialized Views"
+    ]
+  },
+  {
+    "pregunta": "A data engineer creates the following object:\n\n```sql\nCREATE OR REFRESH STREAMING TABLE gold_events\nAS SELECT event_id, event_type, ts\nFROM STREAM(silver_events);\n```\n\nWhich scenario would cause this to fail at pipeline execution?",
+    "opciones": [
+      {
+        "texto_opcion": "The silver_events table has more than 1 million rows.",
+        "es_correcta": false,
+        "explicacion": "Row count does not cause streaming table creation to fail."
+      },
+      {
+        "texto_opcion": "The silver_events table is a static Delta table with no new appends since the last pipeline run.",
+        "es_correcta": false,
+        "explicacion": "If there are no new records, the streaming table simply processes zero new rows — it does not fail."
+      },
+      {
+        "texto_opcion": "silver_events is not a streaming source or Delta table supported by STREAM().",
+        "es_correcta": true,
+        "explicacion": "`STREAM()` requires a source that supports streaming reads (e.g., a Delta table). Unsupported source types cause pipeline failure."
+      },
+      {
+        "texto_opcion": "The SELECT contains no aggregation functions.",
+        "es_correcta": false,
+        "explicacion": "Streaming tables do not require aggregation; simple projections and filters are valid."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Streaming Tables",
+      "Lakeflow SDP syntax"
+    ]
+  },
+  {
+    "pregunta": "When should a data engineer prefer a regular managed Delta table over a Lakeflow SDP materialized view in the Gold layer?",
+    "opciones": [
+      {
+        "texto_opcion": "When the Gold table requires complex MERGE logic that incorporates business rules not expressible in a single SELECT.",
+        "es_correcta": true,
+        "explicacion": "Regular Delta tables support arbitrary DML (MERGE, UPDATE, DELETE) and custom orchestration logic, which Lakeflow SDP materialized views do not expose."
+      },
+      {
+        "texto_opcion": "When upstream data changes frequently and automatic refresh is needed.",
+        "es_correcta": false,
+        "explicacion": "Automatic refresh is a strength of Lakeflow SDP materialized views, not regular Delta tables."
+      },
+      {
+        "texto_opcion": "When the engineer wants zero storage cost in the Gold layer.",
+        "es_correcta": false,
+        "explicacion": "Regular Delta tables store data physically; a SQL view would provide zero storage cost."
+      },
+      {
+        "texto_opcion": "When query latency must be minimized for BI tools.",
+        "es_correcta": false,
+        "explicacion": "Both materialized views and Delta tables store precomputed data; neither has an inherent latency advantage over the other for reads."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Managed Delta Tables",
+      "decision"
+    ]
+  },
+  {
+    "pregunta": "A Gold layer SQL view is defined as:\n\n```sql\nCREATE VIEW gold.customer_ltv AS\nSELECT customer_id, SUM(order_total) AS lifetime_value\nFROM silver.orders\nGROUP BY customer_id;\n```\n\nA ML engineer queries this view to train a model on 500 million rows. What is the main concern?",
+    "opciones": [
+      {
+        "texto_opcion": "The view cannot be queried by ML workloads — only BI tools can read views.",
+        "es_correcta": false,
+        "explicacion": "SQL views can be queried by any workload, including ML training pipelines."
+      },
+      {
+        "texto_opcion": "The aggregation runs in full at query time every training run, wasting compute.",
+        "es_correcta": true,
+        "explicacion": "Views recompute their query on every read. For 500M rows, each ML training run triggers a full expensive aggregation — a materialized view would precompute this once."
+      },
+      {
+        "texto_opcion": "The view will return stale data because it caches results for 24 hours.",
+        "es_correcta": false,
+        "explicacion": "SQL views do not cache results at all — they always re-execute the underlying query."
+      },
+      {
+        "texto_opcion": "The SUM aggregation is not supported in Gold layer views.",
+        "es_correcta": false,
+        "explicacion": "Standard SQL aggregation functions including SUM are fully supported in views."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Views",
+      "performance limitations"
+    ]
+  },
+  {
+    "pregunta": "A Lakeflow SDP pipeline runs in triggered mode once per hour. It contains both a materialized view and a streaming table reading from the same Silver source. How does their refresh behavior differ per pipeline run?",
+    "opciones": [
+      {
+        "texto_opcion": "The materialized view processes only new records; the streaming table recomputes fully.",
+        "es_correcta": false,
+        "explicacion": "This is reversed. Streaming tables always process only new records via checkpointing. Materialized views use batch semantics, not streaming semantics."
+      },
+      {
+        "texto_opcion": "Both fully recompute from all source data on every triggered run.",
+        "es_correcta": false,
+        "explicacion": "Streaming tables use checkpointing to process only new records, even in triggered mode. Only classic (non-serverless) materialized views always do a full recompute."
+      },
+      {
+        "texto_opcion": "The materialized view uses batch semantics and may do a full recompute or incremental refresh; the streaming table processes only records added since the last run.",
+        "es_correcta": true,
+        "explicacion": "Streaming tables always checkpoint progress and process only new data. Materialized views use batch semantics — on serverless pipelines the optimizer may choose incremental refresh; on classic pipelines a full recompute is performed."
+      },
+      {
+        "texto_opcion": "Both process only new records using checkpointing.",
+        "es_correcta": false,
+        "explicacion": "Only streaming tables use checkpointing. Materialized views use batch semantics and do not checkpoint their reads."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "triggered mode",
+      "Streaming Tables vs Materialized Views"
+    ]
+  },
+  {
+    "pregunta": "Which Lakeflow SDP SQL syntax correctly creates a streaming table in the Gold layer?",
+    "opciones": [
+      {
+        "texto_opcion": "`CREATE STREAMING TABLE gold_events AS SELECT * FROM silver_events;`",
+        "es_correcta": false,
+        "explicacion": "Missing `OR REFRESH` and `STREAM()` wrapper; the source must be declared as a streaming source."
+      },
+      {
+        "texto_opcion": "`CREATE OR REFRESH STREAMING TABLE gold_events AS SELECT * FROM STREAM(silver_events);`",
+        "es_correcta": true,
+        "explicacion": "`CREATE OR REFRESH STREAMING TABLE` with `STREAM()` wrapping the source is the correct Lakeflow SDP syntax for defining a streaming table."
+      },
+      {
+        "texto_opcion": "`CREATE OR REFRESH MATERIALIZED VIEW gold_events AS SELECT * FROM STREAM(silver_events);`",
+        "es_correcta": false,
+        "explicacion": "`MATERIALIZED VIEW` combined with `STREAM()` is invalid; `STREAM()` is used only with streaming tables."
+      },
+      {
+        "texto_opcion": "`CREATE TABLE gold_events USING DELTA AS SELECT * FROM STREAM(silver_events);`",
+        "es_correcta": false,
+        "explicacion": "This mixes standard Delta DDL with the Lakeflow SDP `STREAM()` function, which is not valid outside an SDP pipeline context."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Lakeflow SDP syntax",
+      "Streaming Tables"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to expose a Gold table to external stakeholders outside Databricks via Delta Sharing. The table must be queryable without recomputing aggregations. Which object type is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "A SQL view, because views are lightweight and shareable.",
+        "es_correcta": false,
+        "explicacion": "Delta Sharing shares Delta tables, not SQL views. A view cannot be directly shared via Delta Sharing."
+      },
+      {
+        "texto_opcion": "A streaming table in continuous mode.",
+        "es_correcta": false,
+        "explicacion": "Streaming tables can be shared, but continuous mode is unnecessary for a batch aggregation exposed to external parties."
+      },
+      {
+        "texto_opcion": "A materialized view or regular managed Delta table, both of which store physical Delta data shareable via Delta Sharing.",
+        "es_correcta": true,
+        "explicacion": "Delta Sharing operates on physical Delta tables. Both materialized views and managed Delta tables persist data in Delta format and can be shared."
+      },
+      {
+        "texto_opcion": "A temporary view created with CREATE TEMP VIEW.",
+        "es_correcta": false,
+        "explicacion": "Temporary views are session-scoped, store no data, and cannot be shared via Delta Sharing."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Managed Delta Tables",
+      "Delta Sharing"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes:\n\n```python\nfrom pyspark import pipelines as dp\n\n@dp.table\ndef gold_top_customers():\n    return dp.read_stream(\"silver_transactions\") \\\n        .groupBy(\"customer_id\") \\\n        .count()\n```\n\nWhat issue does this code have?",
+    "opciones": [
+      {
+        "texto_opcion": "No issue — `@dp.table` with `dp.read_stream()` creates a valid streaming table.",
+        "es_correcta": false,
+        "explicacion": "`@dp.table` with `dp.read_stream()` does create a streaming table, but `groupBy().count()` is a stateful aggregation that requires a watermark or complete output mode to work correctly in streaming context."
+      },
+      {
+        "texto_opcion": "Stateful aggregations like `groupBy().count()` on a stream require replacing `@dp.table` with `@dp.materialized_view`.",
+        "es_correcta": false,
+        "explicacion": "`@dp.materialized_view` is for batch reads (`dp.read()`), not streaming sources. The real issue is that stateful streaming aggregations need a watermark or complete output mode."
+      },
+      {
+        "texto_opcion": "`dp.read_stream()` combined with `groupBy()` requires a watermark or complete output mode; without it the streaming aggregation may fail.",
+        "es_correcta": true,
+        "explicacion": "Streaming `groupBy` aggregations require a watermark for late data handling or complete output mode; omitting this causes pipeline errors in stateful streaming."
+      },
+      {
+        "texto_opcion": "`@dp.table` cannot read from Silver layer tables — it only supports Bronze sources.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow SDP tables can read from any upstream SDP dataset or external Delta table regardless of medallion layer."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Streaming Tables",
+      "Lakeflow SDP Python syntax"
+    ]
+  },
+  {
+    "pregunta": "Which Gold layer object incurs zero additional storage cost beyond what already exists in the Silver layer?",
+    "opciones": [
+      {
+        "texto_opcion": "A materialized view.",
+        "es_correcta": false,
+        "explicacion": "Materialized views persist query results to Delta storage, incurring additional storage cost."
+      },
+      {
+        "texto_opcion": "A streaming table.",
+        "es_correcta": false,
+        "explicacion": "Streaming tables write incremental results to Delta storage, adding storage overhead."
+      },
+      {
+        "texto_opcion": "A SQL view.",
+        "es_correcta": true,
+        "explicacion": "A SQL view is a logical construct — it stores only the query definition, not results. It adds no storage cost."
+      },
+      {
+        "texto_opcion": "A managed Delta table populated by CTAS.",
+        "es_correcta": false,
+        "explicacion": "A CTAS (CREATE TABLE AS SELECT) physically writes data to storage, adding cost proportional to result size."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Views",
+      "storage cost"
+    ]
+  },
+  {
+    "pregunta": "A Gold layer is built using a Lakeflow SDP pipeline. The business requires that if the pipeline fails mid-run, the Gold tables must never show partial results to downstream consumers. Which object type best guarantees this?",
+    "opciones": [
+      {
+        "texto_opcion": "A SQL view, because it always reads directly from the current Silver state.",
+        "es_correcta": false,
+        "explicacion": "A SQL view reflects Silver data in real time but provides no atomicity guarantee — if Silver is partially written, the view reflects that."
+      },
+      {
+        "texto_opcion": "A Lakeflow SDP materialized view, because SDP pipelines apply updates atomically and downstream tables are only updated on successful completion.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow SDP pipelines commit results atomically — Gold tables are updated only when the entire pipeline run succeeds, preventing consumers from seeing partial results."
+      },
+      {
+        "texto_opcion": "A streaming table in continuous mode, which rolls back partial writes automatically.",
+        "es_correcta": false,
+        "explicacion": "Continuous streaming does not inherently roll back partial writes in case of failure the same way a triggered Lakeflow SDP pipeline does."
+      },
+      {
+        "texto_opcion": "A regular Delta table updated by individual INSERT statements per batch.",
+        "es_correcta": false,
+        "explicacion": "Individual INSERT statements are each committed separately; if the job fails midway, earlier inserts are already visible to consumers."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Materialized Views",
+      "atomicity"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to build a Gold layer table that supports time travel queries so that the finance team can audit historical values as of specific dates. Which object type satisfies this requirement?",
+    "opciones": [
+      {
+        "texto_opcion": "A SQL view, using VERSION AS OF in the view definition.",
+        "es_correcta": false,
+        "explicacion": "Views store no data and cannot be queried with time travel syntax — VERSION AS OF applies to the underlying Delta table, not the view itself."
+      },
+      {
+        "texto_opcion": "A managed Delta table or Lakeflow SDP materialized view, both of which store data in Delta format with a transaction log that enables time travel.",
+        "es_correcta": false,
+        "explicacion": "Materialized views explicitly do not support time travel queries, even though they are backed by Delta storage. Only managed Delta tables (and streaming tables) support VERSION AS OF and TIMESTAMP AS OF."
+      },
+      {
+        "texto_opcion": "A managed Delta table, which maintains a Delta transaction log that supports VERSION AS OF and TIMESTAMP AS OF queries.",
+        "es_correcta": true,
+        "explicacion": "Managed Delta tables fully support time travel. Materialized views do not support time travel despite being Delta-backed, and SQL views store no history at all."
+      },
+      {
+        "texto_opcion": "A temporary view with CACHE TABLE to persist snapshots.",
+        "es_correcta": false,
+        "explicacion": "CACHE TABLE stores data in memory for the session only and provides no historical versioning or time travel capability."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Managed Delta Tables",
+      "time travel"
+    ]
+  },
+  {
+    "pregunta": "A pipeline team maintains separate dev and prod Lakeflow SDP pipelines. They want Gold layer logic defined once and deployed to both environments without code changes. Which approach is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Duplicate the Lakeflow SDP notebook for each environment and change catalog names manually.",
+        "es_correcta": false,
+        "explicacion": "Manual duplication violates DRY principles and creates maintenance burden; environment-specific config belongs outside the notebook."
+      },
+      {
+        "texto_opcion": "Use Lakeflow SDP pipeline settings or Databricks Asset Bundles to inject catalog/schema names as parameters, keeping Gold layer SQL/Python unchanged.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow SDP supports parameterized catalog and schema through pipeline configuration or DABs, allowing the same Gold layer code to run in dev and prod without modification."
+      },
+      {
+        "texto_opcion": "Create a SQL view in Gold that references both dev and prod Silver tables using UNION ALL.",
+        "es_correcta": false,
+        "explicacion": "Merging dev and prod data via UNION ALL defeats environment isolation and produces incorrect results."
+      },
+      {
+        "texto_opcion": "Use IF/ELSE branching in the Lakeflow SDP notebook to select dev or prod table names at runtime.",
+        "es_correcta": false,
+        "explicacion": "Conditional logic in the notebook for environment selection is fragile; pipeline-level configuration is the recommended pattern."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Lakeflow SDP",
+      "environment promotion"
+    ]
+  },
+  {
+    "pregunta": "Examine the following code:\n\n```sql\nCREATE OR REFRESH MATERIALIZED VIEW gold.weekly_kpis AS\nSELECT\n  DATE_TRUNC('week', event_date) AS week_start,\n  COUNT(DISTINCT user_id)        AS active_users,\n  SUM(revenue)                   AS total_revenue\nFROM silver.events\nGROUP BY 1;\n```\n\nA new column `country` is added to `silver.events`. What happens to the materialized view on the next pipeline run?",
+    "opciones": [
+      {
+        "texto_opcion": "The pipeline fails because the source schema changed.",
+        "es_correcta": false,
+        "explicacion": "Adding a column to the source does not break a materialized view that selects specific columns; the view simply ignores the new column."
+      },
+      {
+        "texto_opcion": "The materialized view automatically adds a `country` column to its output.",
+        "es_correcta": false,
+        "explicacion": "The view's SELECT explicitly lists columns; it will not automatically project new upstream columns."
+      },
+      {
+        "texto_opcion": "The materialized view recomputes with the same output schema, unaffected by the new column it does not reference.",
+        "es_correcta": true,
+        "explicacion": "Because the SELECT does not include `country`, the materialized view output schema remains unchanged. Lakeflow SDP recomputes using the explicit column list."
+      },
+      {
+        "texto_opcion": "The pipeline requires a full refresh to be triggered manually before processing continues.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow SDP handles schema changes in upstream tables automatically; a manual full refresh is not required for additive schema changes."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Materialized Views",
+      "schema evolution"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has four Gold layer requirements. Match each to the best object type:\n\n1. Ad-hoc analyst queries with no freshness SLA and minimal setup\n2. Pre-aggregated KPIs refreshed by a Lakeflow SDP pipeline, queried by dashboards\n3. Real-time event counts updated as events arrive from a Silver stream\n4. A fact table loaded via custom MERGE logic from an external orchestrator\n\nWhich mapping is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "1→Streaming Table, 2→View, 3→Materialized View, 4→Managed Delta Table",
+        "es_correcta": false,
+        "explicacion": "This maps streaming and materialized view roles incorrectly; ad-hoc low-setup queries suit a view, not a streaming table."
+      },
+      {
+        "texto_opcion": "1→View, 2→Materialized View, 3→Streaming Table, 4→Managed Delta Table",
+        "es_correcta": true,
+        "explicacion": "Views suit ad-hoc no-setup queries; materialized views serve pre-aggregated dashboard KPIs; streaming tables handle real-time incremental updates; managed Delta tables support custom MERGE orchestration."
+      },
+      {
+        "texto_opcion": "1→Materialized View, 2→Streaming Table, 3→View, 4→Managed Delta Table",
+        "es_correcta": false,
+        "explicacion": "Materialized views have Lakeflow SDP pipeline overhead — they are not the simplest choice for ad-hoc analyst queries."
+      },
+      {
+        "texto_opcion": "1→View, 2→Streaming Table, 3→Materialized View, 4→Managed Delta Table",
+        "es_correcta": false,
+        "explicacion": "Pre-aggregated KPIs for dashboards need a materialized view (precomputed storage), not a streaming table."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "decision matrix",
+      "all object types"
+    ]
+  },
+  {
+    "pregunta": "A data engineer queries a Gold materialized view immediately after running the Lakeflow SDP pipeline. A Silver table was updated 5 minutes after the pipeline completed. What does the Gold materialized view return?",
+    "opciones": [
+      {
+        "texto_opcion": "The results including the Silver update from 5 minutes ago, because materialized views poll for changes continuously.",
+        "es_correcta": false,
+        "explicacion": "Materialized views do not poll continuously; they only update when the Lakeflow SDP pipeline runs."
+      },
+      {
+        "texto_opcion": "The results as of the last completed pipeline run, not including the Silver update.",
+        "es_correcta": true,
+        "explicacion": "Materialized views reflect the state of upstream data at the time the pipeline last ran. Changes after that run are not visible until the next pipeline execution."
+      },
+      {
+        "texto_opcion": "An error, because the materialized view detects a source change and invalidates the cache.",
+        "es_correcta": false,
+        "explicacion": "Materialized views do not automatically invalidate on upstream changes; they serve stale but consistent results until the next pipeline run."
+      },
+      {
+        "texto_opcion": "A mix of old and new data depending on which partitions were updated.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow SDP updates materialized views atomically at pipeline run time; partial or mixed results do not occur."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Materialized Views",
+      "freshness"
+    ]
+  },
+  {
+    "pregunta": "A streaming table in a Lakeflow SDP pipeline is defined over a Silver Delta table. The pipeline is run in triggered mode. After the first successful run, 10,000 new rows are added to the Silver table. On the second triggered run, how many rows does the streaming table process?",
+    "opciones": [
+      {
+        "texto_opcion": "All rows in the Silver table, because the pipeline always reprocesses from the beginning.",
+        "es_correcta": false,
+        "explicacion": "Streaming tables use checkpointing to track progress. Full reprocessing only occurs on a full refresh."
+      },
+      {
+        "texto_opcion": "Zero rows, because triggered mode only runs on schedule regardless of new data.",
+        "es_correcta": false,
+        "explicacion": "Triggered mode runs the pipeline once and processes all available new data up to that point."
+      },
+      {
+        "texto_opcion": "Only the 10,000 new rows added since the first run.",
+        "es_correcta": true,
+        "explicacion": "Streaming tables checkpoint their read offset. On the second run, only rows added after the checkpoint (the 10,000 new rows) are processed."
+      },
+      {
+        "texto_opcion": "A random subset determined by Spark task partitioning.",
+        "es_correcta": false,
+        "explicacion": "Streaming table processing is deterministic and checkpoint-based, not random."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Streaming Tables",
+      "incremental processing"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to create a Gold layer object using SQL outside of a Lakeflow SDP pipeline — in a regular Databricks notebook. Which object types are available?",
+    "opciones": [
+      {
+        "texto_opcion": "Materialized views and streaming tables only — both are notebook-compatible.",
+        "es_correcta": false,
+        "explicacion": "`CREATE OR REFRESH MATERIALIZED VIEW` and `CREATE OR REFRESH STREAMING TABLE` are Lakeflow SDP-specific DDL and cannot be executed in a standard notebook."
+      },
+      {
+        "texto_opcion": "SQL views and managed Delta tables — both can be created with standard DDL in any SQL context.",
+        "es_correcta": true,
+        "explicacion": "Standard DDL (`CREATE VIEW`, `CREATE TABLE`) works in notebooks, jobs, and SQL warehouses. Lakeflow SDP objects require an SDP pipeline runtime."
+      },
+      {
+        "texto_opcion": "Only streaming tables — notebooks can execute streaming logic via `spark.readStream`.",
+        "es_correcta": false,
+        "explicacion": "While notebooks can run Structured Streaming code, Lakeflow SDP `STREAMING TABLE` DDL specifically requires the SDP pipeline runtime."
+      },
+      {
+        "texto_opcion": "All four object types are available in any Databricks SQL or notebook context.",
+        "es_correcta": false,
+        "explicacion": "Materialized views and streaming tables defined with Lakeflow SDP syntax require the SDP pipeline runtime."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Lakeflow SDP vs non-SDP context"
+    ]
+  },
+  {
+    "pregunta": "A Gold layer managed Delta table is defined as:\n\n```sql\nCREATE TABLE IF NOT EXISTS gold.customer_segments\n(customer_id STRING, segment STRING, score DOUBLE)\nUSING DELTA;\n```\n\nWhat happens to this table's data if the engineer runs `DROP TABLE gold.customer_segments`?",
+    "opciones": [
+      {
+        "texto_opcion": "Only the table metadata is deleted; the underlying Delta files remain in the storage location.",
+        "es_correcta": false,
+        "explicacion": "That describes an external table. For managed tables, `DROP TABLE` deletes both metadata and the underlying data files."
+      },
+      {
+        "texto_opcion": "Both the table metadata and the underlying Delta files are deleted.",
+        "es_correcta": true,
+        "explicacion": "Managed (internal) tables are fully owned by the metastore. Dropping a managed table removes both the metadata entry and all associated data files."
+      },
+      {
+        "texto_opcion": "The table is moved to a recycle bin and can be restored for 30 days.",
+        "es_correcta": false,
+        "explicacion": "Databricks does not have a recycle bin for dropped managed tables by default; deletion is permanent unless backed up."
+      },
+      {
+        "texto_opcion": "The table is converted to an external table pointing to the same storage path.",
+        "es_correcta": false,
+        "explicacion": "DROP TABLE does not convert managed tables to external tables; it deletes the table entirely."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Managed Delta Tables",
+      "drop behavior"
+    ]
+  },
+  {
+    "pregunta": "A Gold layer materialized view in a Lakeflow SDP pipeline is showing stale data. The pipeline has been running successfully. Which is the most likely cause?",
+    "opciones": [
+      {
+        "texto_opcion": "The materialized view definition contains a syntax error that Lakeflow SDP silently ignores.",
+        "es_correcta": false,
+        "explicacion": "Syntax errors in Lakeflow SDP cause pipeline failures, not silent staleness."
+      },
+      {
+        "texto_opcion": "The Lakeflow SDP pipeline trigger frequency is lower than the rate at which Silver data is updated.",
+        "es_correcta": true,
+        "explicacion": "Materialized views only refresh when the pipeline runs. If Silver updates faster than the pipeline trigger interval, the Gold view will lag behind."
+      },
+      {
+        "texto_opcion": "The Unity Catalog metastore has not propagated the latest version to query engines.",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog metadata propagation is near-instant and is not a source of data staleness in materialized views."
+      },
+      {
+        "texto_opcion": "The BI tool is caching query results and not reading the latest Delta version.",
+        "es_correcta": false,
+        "explicacion": "While BI caching is possible, the question asks about a Gold layer cause. The pipeline trigger frequency is the root cause within the Gold layer design."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Materialized Views",
+      "troubleshooting"
+    ]
+  },
+  {
+    "pregunta": "A data engineer builds a Gold layer using the following Lakeflow SDP SQL:\n\n```sql\nCREATE OR REFRESH MATERIALIZED VIEW gold.revenue_by_product AS\nSELECT product_id, SUM(amount) AS revenue\nFROM silver.transactions\nGROUP BY product_id;\n\nCREATE OR REFRESH STREAMING TABLE gold.live_transactions AS\nSELECT * FROM STREAM(silver.transactions);\n```\n\nWhich statement is true about how these two objects coexist in the same pipeline?",
+    "opciones": [
+      {
+        "texto_opcion": "They cannot coexist — a Lakeflow SDP pipeline must contain only streaming tables or only materialized views.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow SDP pipelines can mix materialized views and streaming tables freely within the same pipeline."
+      },
+      {
+        "texto_opcion": "They can coexist; the materialized view uses batch semantics (full recompute or incremental per optimizer) while the streaming table always processes only new records.",
+        "es_correcta": true,
+        "explicacion": "Lakeflow SDP supports both object types in a single pipeline. Streaming tables always process incrementally via checkpointing. Materialized views use batch semantics — the optimizer chooses full recompute or incremental refresh, with incremental only available on serverless pipelines."
+      },
+      {
+        "texto_opcion": "The streaming table forces the materialized view to also run in streaming incremental mode.",
+        "es_correcta": false,
+        "explicacion": "Object types in Lakeflow SDP are independent; a streaming table's presence does not change the refresh behavior of materialized views."
+      },
+      {
+        "texto_opcion": "Both objects will use the same checkpoint directory, causing conflicts.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow SDP manages checkpoints per object automatically; there are no checkpoint conflicts between objects in the same pipeline."
+      }
+    ],
+    "tags": [
+      "3.7",
+      "Streaming Tables vs Materialized Views",
+      "Lakeflow SDP pipeline"
+    ]
+  }
+]

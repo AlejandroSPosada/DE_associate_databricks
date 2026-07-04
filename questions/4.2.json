@@ -1,0 +1,727 @@
+[
+  {
+    "pregunta": "A data engineer needs to refresh an AI/BI Dashboard as part of a job and email a snapshot to a list of subscribers automatically after each refresh.\n\nWhich task type should the engineer use?",
+    "opciones": [
+      {
+        "texto_opcion": "Dashboard task (`dashboard_task`) with a `subscription` block listing subscribers.",
+        "es_correcta": true,
+        "explicacion": "The `dashboard_task` type refreshes an AI/BI dashboard and can send a snapshot to subscribers via the `subscription.subscribers` field."
+      },
+      {
+        "texto_opcion": "SQL task (`sql_task`) with a `query` block referencing the dashboard's `query_id`.",
+        "es_correcta": false,
+        "explicacion": "`sql_task.query` runs a saved SQL query, not a dashboard, and has no native subscriber snapshot feature."
+      },
+      {
+        "texto_opcion": "Notebook task that calls `dbutils.notebook.run()` on the dashboard.",
+        "es_correcta": false,
+        "explicacion": "Dashboards are not notebooks and cannot be invoked with `dbutils.notebook.run()`."
+      },
+      {
+        "texto_opcion": "Pipeline task pointed at the dashboard's `pipeline_id`.",
+        "es_correcta": false,
+        "explicacion": "Dashboards do not have a `pipeline_id`; pipeline tasks trigger Lakeflow Spark Declarative Pipeline updates, not dashboard refreshes."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Dashboard Task"
+    ]
+  },
+  {
+    "pregunta": "A notebook task is configured with a base parameter `year_param`. Inside the notebook, the engineer writes:\n\n```python\ndbutils.widgets.text(\"year_param\", \"2012\", \"Year Parameter\")\nyear_value = dbutils.widgets.get(\"year_param\")\n```\n\nWhat does `dbutils.widgets.text(...)` accomplish here?",
+    "opciones": [
+      {
+        "texto_opcion": "Declares the widget and sets a default value used when the notebook runs outside of a job.",
+        "es_correcta": true,
+        "explicacion": "`dbutils.widgets.text` registers the widget with a fallback default (`\"2012\"`), which is overridden by the job's `base_parameters` when run as a task."
+      },
+      {
+        "texto_opcion": "Permanently overwrites any parameter value passed in from the job configuration.",
+        "es_correcta": false,
+        "explicacion": "Job-level `base_parameters` take precedence over the widget default when the notebook runs as a task."
+      },
+      {
+        "texto_opcion": "Sends the value `\"2012\"` to downstream tasks via `taskValues`.",
+        "es_correcta": false,
+        "explicacion": "Passing values downstream requires `dbutils.jobs.taskValues.set()`, not `dbutils.widgets.text()`."
+      },
+      {
+        "texto_opcion": "Triggers a SQL alert when `year_param` changes.",
+        "es_correcta": false,
+        "explicacion": "Widgets have no relationship to SQL alert tasks."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Notebook Task"
+    ]
+  },
+  {
+    "pregunta": "A notebook task contains:\n\n```python\nmessage = \"Hello from the first task\"\ndbutils.jobs.taskValues.set(key=\"message\", value=message)\n```\n\nWhich dynamic value reference correctly retrieves this in a downstream task's parameters?",
+    "opciones": [
+      {
+        "texto_opcion": "`{{tasks.output_value.values.message}}` where `output_value` is the upstream task's `task_key`.",
+        "es_correcta": true,
+        "explicacion": "Task values are referenced with `{{tasks.<task_key>.values.<key>}}`, using the producing task's `task_key`, not its variable name."
+      },
+      {
+        "texto_opcion": "`{{job.parameters.message}}`",
+        "es_correcta": false,
+        "explicacion": "`{{job.parameters.<name>}}` retrieves job-level parameters, not task values set at runtime."
+      },
+      {
+        "texto_opcion": "`{{taskValues.message}}`",
+        "es_correcta": false,
+        "explicacion": "This is not valid dynamic value reference syntax in Lakeflow Jobs."
+      },
+      {
+        "texto_opcion": "`dbutils.jobs.taskValues.get(key=\"message\")` directly in the task's `base_parameters` field.",
+        "es_correcta": false,
+        "explicacion": "`base_parameters` accepts string values or dynamic references, not a live Python function call; the value is retrieved with `taskValues.get` inside the notebook code itself, after being passed in via the reference syntax."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Passing Parameters"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must run a version-controlled `.sql` script stored in a Git repository as part of a job, without first saving it as a Databricks SQL query object.\n\nWhich `sql_task` configuration is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`sql_task: { file: { path: \"...\", source: GIT }, warehouse_id: \"...\" }`",
+        "es_correcta": true,
+        "explicacion": "The SQL file task runs a `.sql` file directly from the workspace or a Git repo by setting `file.path` and `file.source`, and always requires a `warehouse_id`."
+      },
+      {
+        "texto_opcion": "`sql_task: { query: { query_id: \"...\" }, warehouse_id: \"...\" }`",
+        "es_correcta": false,
+        "explicacion": "`query.query_id` runs a saved Databricks SQL query object, which requires the SQL to already be saved — not a file pulled from Git."
+      },
+      {
+        "texto_opcion": "`sql_task: { alert: { alert_id: \"...\" }, warehouse_id: \"...\" }`",
+        "es_correcta": false,
+        "explicacion": "`alert.alert_id` refreshes a SQL alert and triggers notifications; it does not execute a `.sql` script file."
+      },
+      {
+        "texto_opcion": "`notebook_task: { notebook_path: \"...\", source: GIT }`",
+        "es_correcta": false,
+        "explicacion": "A `.sql` file is not a notebook; running it via Git source requires the SQL file task, not the notebook task."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "SQL Task"
+    ]
+  },
+  {
+    "pregunta": "What is the primary purpose of a SQL alert task (`sql_task.alert`) within a Lakeflow Job?",
+    "opciones": [
+      {
+        "texto_opcion": "Refresh a Databricks SQL alert and notify subscribers when its condition is met.",
+        "es_correcta": true,
+        "explicacion": "The alert task type refreshes a SQL alert, evaluates its condition, and triggers notifications to subscribers if the alert fires."
+      },
+      {
+        "texto_opcion": "Pause the job if the SQL warehouse becomes unhealthy.",
+        "es_correcta": false,
+        "explicacion": "Alert tasks evaluate query conditions, not warehouse health."
+      },
+      {
+        "texto_opcion": "Refresh a legacy SQL dashboard's underlying queries.",
+        "es_correcta": false,
+        "explicacion": "Refreshing a legacy SQL dashboard is a separate `sql_task` variant; alert tasks are scoped to a single alert object."
+      },
+      {
+        "texto_opcion": "Send a snapshot of an AI/BI Dashboard to subscribers.",
+        "es_correcta": false,
+        "explicacion": "Dashboard snapshots to subscribers are handled by the `dashboard_task` type, not `sql_task.alert`."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "SQL Task"
+    ]
+  },
+  {
+    "pregunta": "An AI/BI Dashboard used in a `dashboard_task` is published WITHOUT shared data permissions.\n\nWhose credentials are used to refresh the dashboard's data when the job runs?",
+    "opciones": [
+      {
+        "texto_opcion": "The identity defined in the job's \"Run as\" setting, defaulting to the job owner.",
+        "es_correcta": true,
+        "explicacion": "Without shared data permissions, the dashboard refresh uses the job's configured \"Run as\" identity (job owner by default) rather than the publisher's credentials."
+      },
+      {
+        "texto_opcion": "The credentials of whoever last edited the dashboard.",
+        "es_correcta": false,
+        "explicacion": "Last editor identity is not used for refresh credentials in either publishing mode."
+      },
+      {
+        "texto_opcion": "The dashboard publisher's credentials, regardless of sharing settings.",
+        "es_correcta": false,
+        "explicacion": "Publisher credentials are used only when the dashboard is published WITH shared data permissions; otherwise the job's Run as identity applies."
+      },
+      {
+        "texto_opcion": "An anonymous service identity with read-only catalog access.",
+        "es_correcta": false,
+        "explicacion": "Databricks does not use an anonymous identity for dashboard task refreshes; it always resolves to either the publisher or the job's Run as identity."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Dashboard Task"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants a job-level parameter to automatically populate a dashboard filter when a `dashboard_task` runs, without manually setting the filter value in the task configuration.\n\nWhat must the engineer do?",
+    "opciones": [
+      {
+        "texto_opcion": "Set the dashboard filter widget's URL Identifier to match the job parameter's key.",
+        "es_correcta": true,
+        "explicacion": "If a dashboard filter's URL Identifier matches a job-level parameter key, the task automatically applies that parameter's value to the filter."
+      },
+      {
+        "texto_opcion": "Set the dataset parameter directly in the `dashboard_task` JSON body.",
+        "es_correcta": false,
+        "explicacion": "Dataset parameters cannot be set directly on the task; they must be attached to a dashboard filter widget first."
+      },
+      {
+        "texto_opcion": "Add the parameter as a `base_parameters` entry on a notebook task upstream.",
+        "es_correcta": false,
+        "explicacion": "Upstream notebook `base_parameters` do not automatically propagate to a dashboard's filter widgets."
+      },
+      {
+        "texto_opcion": "Rename the job parameter to `dashboard_filter_default`.",
+        "es_correcta": false,
+        "explicacion": "There is no reserved parameter name; matching is based on the filter's URL Identifier, not a fixed naming convention."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Dashboard Task"
+    ]
+  },
+  {
+    "pregunta": "Why can a pipeline task only target a Lakeflow Spark Declarative Pipeline configured in **triggered** mode, and not one in **continuous** mode?",
+    "opciones": [
+      {
+        "texto_opcion": "A continuous pipeline already runs without being triggered, so triggering it through a task would be redundant.",
+        "es_correcta": true,
+        "explicacion": "Continuous pipelines run on their own; only triggered pipelines need an external mechanism like a pipeline task to start an update."
+      },
+      {
+        "texto_opcion": "Continuous pipelines are not supported by Unity Catalog.",
+        "es_correcta": false,
+        "explicacion": "Pipeline mode is unrelated to Unity Catalog support."
+      },
+      {
+        "texto_opcion": "Pipeline tasks can only call materialized views, and continuous pipelines cannot contain materialized views.",
+        "es_correcta": false,
+        "explicacion": "Both materialized views and streaming tables can be computed in either pipeline mode; this is not the reason."
+      },
+      {
+        "texto_opcion": "Continuous pipelines require a SQL warehouse, which pipeline tasks cannot reference.",
+        "es_correcta": false,
+        "explicacion": "Pipelines use their own configured compute, not a SQL warehouse, and this is not why continuous pipelines aren't triggerable."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Pipeline Task"
+    ]
+  },
+  {
+    "pregunta": "A job contains a pipeline task and has `max_concurrent_runs` set to 5.\n\nWhat actually happens when multiple runs of this job are triggered close together?",
+    "opciones": [
+      {
+        "texto_opcion": "The job is capped to a single concurrent run because it contains a pipeline task, regardless of the configured limit.",
+        "es_correcta": true,
+        "explicacion": "A pipeline can only run one update at a time, so any job containing a pipeline task is capped at one concurrent run even if `max_concurrent_runs > 1`."
+      },
+      {
+        "texto_opcion": "All 5 runs execute in parallel, each triggering a separate pipeline update.",
+        "es_correcta": false,
+        "explicacion": "A pipeline cannot process more than one update concurrently, so parallel runs are not possible."
+      },
+      {
+        "texto_opcion": "The job fails immediately with a configuration error.",
+        "es_correcta": false,
+        "explicacion": "The job does not fail outright; it is silently capped to one concurrent run instead of erroring."
+      },
+      {
+        "texto_opcion": "Only the pipeline task is skipped on overlapping runs; other tasks still run concurrently.",
+        "es_correcta": false,
+        "explicacion": "The concurrency cap applies to the whole job run, not just the individual pipeline task."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Pipeline Task"
+    ]
+  },
+  {
+    "pregunta": "Which task type is used specifically to refresh a synced table in Lakebase Postgres, either on a schedule or when the source Unity Catalog table changes?",
+    "opciones": [
+      {
+        "texto_opcion": "Database Table Sync pipeline task.",
+        "es_correcta": true,
+        "explicacion": "The Database Table Sync pipeline task variant runs the pipeline maintaining a Lakebase synced table so operational apps read current data."
+      },
+      {
+        "texto_opcion": "SQL alert task.",
+        "es_correcta": false,
+        "explicacion": "SQL alert tasks evaluate alert conditions; they have no role in maintaining Lakebase synced tables."
+      },
+      {
+        "texto_opcion": "Notebook task with a `dbutils.fs.sync()` call.",
+        "es_correcta": false,
+        "explicacion": "There is no `dbutils.fs.sync()` API; Lakebase table sync is managed through the dedicated pipeline task variant."
+      },
+      {
+        "texto_opcion": "Dashboard task with `subscription` enabled.",
+        "es_correcta": false,
+        "explicacion": "Dashboard tasks refresh AI/BI dashboards and notify subscribers; they are unrelated to Lakebase Postgres sync."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Pipeline Task"
+    ]
+  },
+  {
+    "pregunta": "A data engineer submits this request:\n\n```http\nPOST /api/2.2/jobs/create\n```\n```json\n{\n  \"name\": \"daily-sales-pipeline\",\n  \"tasks\": [\n    {\n      \"task_key\": \"validate_sql\",\n      \"sql_task\": {\n        \"query\": { \"query_id\": \"22222222-2222-2222-2222-222222222222\" }\n      }\n    }\n  ]\n}\n```\n\nWhy will this request fail validation?",
+    "opciones": [
+      {
+        "texto_opcion": "The `sql_task` is missing the required `warehouse_id` field.",
+        "es_correcta": true,
+        "explicacion": "All `sql_task` variants (query, file, alert, legacy dashboard) require a `warehouse_id` specifying the SQL warehouse to run against."
+      },
+      {
+        "texto_opcion": "The `task_key` field is not permitted on SQL tasks.",
+        "es_correcta": false,
+        "explicacion": "`task_key` is required on every task type, including `sql_task`."
+      },
+      {
+        "texto_opcion": "`query_id` must be replaced with `query_text` for REST API calls.",
+        "es_correcta": false,
+        "explicacion": "`query.query_id` referencing a saved query is valid REST API syntax; `query_text` is not the documented field."
+      },
+      {
+        "texto_opcion": "Jobs cannot be created with only one task.",
+        "es_correcta": false,
+        "explicacion": "A job can be created with a single task; there's no minimum task count requirement."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "REST API"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to trigger an existing job and pass a different `year_param` value than the notebook's widget default, using the REST API.\n\nWhich request body is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "`POST /api/2.2/jobs/run-now` with `{ \"job_id\": 123456789, \"notebook_params\": { \"year_param\": \"2026\" } }`",
+        "es_correcta": true,
+        "explicacion": "`jobs/run-now` accepts `notebook_params` to override notebook task parameters for that specific run."
+      },
+      {
+        "texto_opcion": "`POST /api/2.2/jobs/create` with `{ \"job_id\": 123456789, \"notebook_params\": { \"year_param\": \"2026\" } }`",
+        "es_correcta": false,
+        "explicacion": "`jobs/create` creates a new job definition; it does not accept a `job_id` to run an existing job with overridden parameters."
+      },
+      {
+        "texto_opcion": "`GET /api/2.2/jobs/get?job_id=123456789&year_param=2026`",
+        "es_correcta": false,
+        "explicacion": "`jobs/get` only retrieves job metadata; it cannot trigger a run or pass runtime parameters."
+      },
+      {
+        "texto_opcion": "`DELETE /api/2.2/jobs/delete` with `{ \"job_id\": 123456789, \"notebook_params\": { \"year_param\": \"2026\" } }`",
+        "es_correcta": false,
+        "explicacion": "`jobs/delete` removes a job entirely; it has no concept of run-time parameters."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "REST API"
+    ]
+  },
+  {
+    "pregunta": "Review this Python SDK snippet:\n\n```python\njobs.Task(\n    task_key=\"run_pipeline\",\n    depends_on=[jobs.TaskDependency(task_key=\"ingest_notebook\")],\n    pipeline_task=jobs.PipelineTask(\n        pipeline_id=\"11111111-1111-1111-1111-111111111111\"\n    ),\n)\n```\n\nWhat does this task definition represent?",
+    "opciones": [
+      {
+        "texto_opcion": "A pipeline task that runs only after the `ingest_notebook` task completes successfully.",
+        "es_correcta": true,
+        "explicacion": "`depends_on` with a `TaskDependency` referencing `ingest_notebook` enforces that this pipeline task waits for that upstream task to succeed before running."
+      },
+      {
+        "texto_opcion": "A notebook task that triggers a pipeline as a side effect.",
+        "es_correcta": false,
+        "explicacion": "This is explicitly a `pipeline_task`, not a `notebook_task`; it does not run notebook code."
+      },
+      {
+        "texto_opcion": "A task that runs in parallel with `ingest_notebook`, sharing the same compute.",
+        "es_correcta": false,
+        "explicacion": "`depends_on` creates a sequential dependency, not parallel execution."
+      },
+      {
+        "texto_opcion": "A task that refreshes a dashboard once the pipeline ID is resolved.",
+        "es_correcta": false,
+        "explicacion": "`PipelineTask` triggers a pipeline update; it has no dashboard-refresh behavior."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Python SDK"
+    ]
+  },
+  {
+    "pregunta": "Which Databricks CLI command retrieves the output and status of a specific completed job run, given its run ID?",
+    "opciones": [
+      {
+        "texto_opcion": "`databricks jobs get-run --run-id 987654321`",
+        "es_correcta": true,
+        "explicacion": "`jobs get-run` returns details, including output and status, for a specific run identified by `--run-id`."
+      },
+      {
+        "texto_opcion": "`databricks jobs get --job-id 987654321`",
+        "es_correcta": false,
+        "explicacion": "`jobs get` returns the job's settings/definition by `--job-id`, not a specific run's output."
+      },
+      {
+        "texto_opcion": "`databricks jobs list --run-id 987654321`",
+        "es_correcta": false,
+        "explicacion": "`jobs list` lists jobs; it does not accept a `--run-id` flag to fetch a single run's output."
+      },
+      {
+        "texto_opcion": "`databricks jobs run-now --run-id 987654321`",
+        "es_correcta": false,
+        "explicacion": "`jobs run-now` starts a new run using `--job-id`; it does not fetch the output of an existing run by run ID."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Databricks CLI"
+    ]
+  },
+  {
+    "pregunta": "In a Declarative Automation Bundle (DAB), how does a `run_pipeline` task declare that it must wait for an `ingest_notebook` task to finish first?",
+    "opciones": [
+      {
+        "texto_opcion": "By adding a `depends_on:` list under the task that includes `- task_key: ingest_notebook`.",
+        "es_correcta": true,
+        "explicacion": "DAB task dependencies are expressed with a `depends_on` list of `task_key` references, identical in structure to the REST API's `depends_on` field."
+      },
+      {
+        "texto_opcion": "By placing `run_pipeline` physically below `ingest_notebook` in the YAML file.",
+        "es_correcta": false,
+        "explicacion": "YAML list order does not establish task execution dependencies; the explicit `depends_on` field is required."
+      },
+      {
+        "texto_opcion": "By setting `wait_for: true` on the `pipeline_task` block.",
+        "es_correcta": false,
+        "explicacion": "`wait_for` is not a recognized field for pipeline tasks or task dependencies in Lakeflow Jobs."
+      },
+      {
+        "texto_opcion": "By giving both tasks the same `task_key`.",
+        "es_correcta": false,
+        "explicacion": "Task keys must be unique within a job; reusing a `task_key` would cause a validation error, not establish a dependency."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "DABs"
+    ]
+  },
+  {
+    "pregunta": "A data engineer's notebook task is configured to read source code from a remote Git repository at the job level (`git_source`), but this single task must instead use the notebook saved in the workspace.\n\nWhat should the engineer configure on that task?",
+    "opciones": [
+      {
+        "texto_opcion": "Set `source: WORKSPACE` on that task to override the job-level Git source.",
+        "es_correcta": true,
+        "explicacion": "Notebook, dbt, Python script, and SQL File tasks support version-controlled source from Git, but this can be overridden per task by setting `source: WORKSPACE`."
+      },
+      {
+        "texto_opcion": "Remove `git_source` from the job entirely.",
+        "es_correcta": false,
+        "explicacion": "Removing `git_source` would affect every task using Git, not just the one task that needs to use the workspace copy."
+      },
+      {
+        "texto_opcion": "Set `notebook_path` to an absolute GitHub URL.",
+        "es_correcta": false,
+        "explicacion": "`notebook_path` expects a workspace or Git-relative path, not a raw URL; the source mode is controlled by the `source` field."
+      },
+      {
+        "texto_opcion": "Create a second job that only runs this task.",
+        "es_correcta": false,
+        "explicacion": "Splitting into a second job is unnecessary; per-task `source` overrides exist specifically for this scenario."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Notebook Task"
+    ]
+  },
+  {
+    "pregunta": "A job defines a job-level parameter `env`. Which dynamic value reference correctly retrieves it when configuring a task in the Databricks UI?",
+    "opciones": [
+      {
+        "texto_opcion": "`{{job.parameters.env}}`",
+        "es_correcta": true,
+        "explicacion": "Job-level parameters are retrieved with the `{{job.parameters.<name>}}` dynamic value reference syntax."
+      },
+      {
+        "texto_opcion": "`{{tasks.env}}`",
+        "es_correcta": false,
+        "explicacion": "`{{tasks.<task_key>.values.<key>}}` is used for task values set at runtime, not job parameters."
+      },
+      {
+        "texto_opcion": "`${var.env}`",
+        "es_correcta": false,
+        "explicacion": "`${var.<name>}` is Declarative Automation Bundle variable substitution syntax used in `databricks.yml`, not a job dynamic value reference for runtime task parameters."
+      },
+      {
+        "texto_opcion": "`{{env}}`",
+        "es_correcta": false,
+        "explicacion": "Bare `{{env}}` is not valid dynamic value reference syntax; the `job.parameters.` prefix is required."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Passing Parameters"
+    ]
+  },
+  {
+    "pregunta": "Which statement correctly distinguishes a job parameter from a task parameter in Lakeflow Jobs?",
+    "opciones": [
+      {
+        "texto_opcion": "Job parameters are defined at the job level and pushed down automatically to tasks that support key-value params; task parameters are defined per task and must be referenced explicitly.",
+        "es_correcta": true,
+        "explicacion": "This matches the documented behavior: job parameters auto-propagate, while task parameters require explicit configuration on each task."
+      },
+      {
+        "texto_opcion": "Task parameters auto-propagate to every task in the job; job parameters must be referenced explicitly per task.",
+        "es_correcta": false,
+        "explicacion": "This reverses the actual behavior — it is job parameters that push down automatically, not task parameters."
+      },
+      {
+        "texto_opcion": "Both job parameters and task parameters are set only at runtime via `taskValues.set()`.",
+        "es_correcta": false,
+        "explicacion": "`taskValues.set()` is used for task values (runtime outputs), a third distinct mechanism from job and task parameters, which are configured before the run starts."
+      },
+      {
+        "texto_opcion": "There is no functional difference; both terms describe the same configuration field.",
+        "es_correcta": false,
+        "explicacion": "Job parameters, task parameters, and task values are three distinct mechanisms with different scopes and propagation behavior."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Passing Parameters"
+    ]
+  },
+  {
+    "pregunta": "A team is deciding between a notebook task and a Python script task for a new ETL step that has no need for interactive cell output or rich visualizations, just a straightforward `.py` file execution.\n\nFrom a task-type perspective, what is true?",
+    "opciones": [
+      {
+        "texto_opcion": "Both are valid task types in Lakeflow Jobs, but only the notebook task supports `.ipynb`/notebook-formatted source with cell-level output.",
+        "es_correcta": true,
+        "explicacion": "Notebook tasks run `.py`, `.ipynb`, `.sql`, `.r`, or `.scala` notebooks with parameters; a plain `.py` file without notebook formatting is typically run as a Python script task instead."
+      },
+      {
+        "texto_opcion": "Python script tasks cannot accept parameters, so a notebook task must be used for any parameterized step.",
+        "es_correcta": false,
+        "explicacion": "Python script tasks accept parameters; they are passed as command-line arguments rather than via `dbutils.widgets`."
+      },
+      {
+        "texto_opcion": "Notebook tasks cannot run `.py` files, only `.ipynb` files.",
+        "es_correcta": false,
+        "explicacion": "Notebook tasks support `.py`, `.ipynb`, `.sql`, `.r`, and `.scala` notebook formats."
+      },
+      {
+        "texto_opcion": "Both task types require a SQL warehouse to execute.",
+        "es_correcta": false,
+        "explicacion": "Neither notebook tasks nor Python script tasks require a SQL warehouse; that requirement applies to `sql_task` and dbt tasks."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Common Task Types"
+    ]
+  },
+  {
+    "pregunta": "Examine this DAB snippet:\n\n```yaml\nresources:\n  jobs:\n    my-dashboard-job:\n      name: my-dashboard-job\n      tasks:\n        - task_key: my-dashboard-task\n          dashboard_task:\n            dashboard_id: 11111111-1111-1111-1111-111111111111\n```\n\nWhat is missing if the engineer also wants this task to notify a list of subscribers on each refresh?",
+    "opciones": [
+      {
+        "texto_opcion": "A `subscription` block with a `subscribers` list nested under `dashboard_task`.",
+        "es_correcta": true,
+        "explicacion": "Subscriber notifications require a `subscription.subscribers` block (e.g., `user_name` entries) nested inside `dashboard_task`."
+      },
+      {
+        "texto_opcion": "A separate `email_notifications` block at the job level with `on_success` subscribers.",
+        "es_correcta": false,
+        "explicacion": "`email_notifications.on_success` sends generic job-run notifications, not the dashboard's data snapshot to subscribers — that's the `subscription` field's job."
+      },
+      {
+        "texto_opcion": "An additional `sql_task.alert` task chained after the dashboard task.",
+        "es_correcta": false,
+        "explicacion": "Alert tasks evaluate query conditions; they are unrelated to dashboard subscriber snapshots."
+      },
+      {
+        "texto_opcion": "Nothing — `dashboard_task` automatically emails all workspace users on refresh.",
+        "es_correcta": false,
+        "explicacion": "Dashboard tasks do not automatically notify anyone; subscribers must be explicitly configured."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Dashboard Task"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```bash\ndatabricks jobs run-now --job-id 123456789 \\\n  --notebook-params '{\"year_param\": \"2026\"}'\n```\n\nWhat does the `--notebook-params` flag do in this CLI command?",
+    "opciones": [
+      {
+        "texto_opcion": "Overrides the notebook task's parameter values for this specific run only.",
+        "es_correcta": true,
+        "explicacion": "`--notebook-params` passes a one-time parameter override for the triggered run, equivalent to `notebook_params` in the REST API's `jobs/run-now` body."
+      },
+      {
+        "texto_opcion": "Permanently updates the job's saved `base_parameters`.",
+        "es_correcta": false,
+        "explicacion": "Run-now parameter overrides apply only to that single run; they do not modify the job's stored definition."
+      },
+      {
+        "texto_opcion": "Creates a new job with the given parameters.",
+        "es_correcta": false,
+        "explicacion": "`jobs run-now` triggers an existing job by `--job-id`; it does not create a new job."
+      },
+      {
+        "texto_opcion": "Sets a Spark configuration property named `year_param` on the cluster.",
+        "es_correcta": false,
+        "explicacion": "`--notebook-params` maps to notebook widget values, not Spark cluster configuration."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Databricks CLI"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to refresh a **legacy** SQL dashboard (not an AI/BI Dashboard) as part of a job.\n\nWhich task type should be used?",
+    "opciones": [
+      {
+        "texto_opcion": "`sql_task`, since it can also refresh a legacy SQL dashboard in addition to queries, files, and alerts.",
+        "es_correcta": true,
+        "explicacion": "The `sql_task` type's legacy dashboard variant refreshes the predecessor to AI/BI Dashboards; new dashboards should use `dashboard_task` instead."
+      },
+      {
+        "texto_opcion": "`dashboard_task`, since all dashboards — legacy and AI/BI — use the same task type.",
+        "es_correcta": false,
+        "explicacion": "`dashboard_task` is dedicated to AI/BI Dashboards; legacy SQL dashboards are refreshed through `sql_task`."
+      },
+      {
+        "texto_opcion": "`pipeline_task`, since dashboards are materialized as streaming tables.",
+        "es_correcta": false,
+        "explicacion": "Dashboards are not pipelines and are not represented as materialized views or streaming tables."
+      },
+      {
+        "texto_opcion": "`notebook_task` running a notebook that calls a private dashboard refresh API.",
+        "es_correcta": false,
+        "explicacion": "No such workaround is needed or documented; `sql_task` natively supports legacy dashboard refresh."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "SQL Task"
+    ]
+  },
+  {
+    "pregunta": "Review this REST API task definition:\n\n```json\n{\n  \"task_key\": \"run_etl_pipeline\",\n  \"pipeline_task\": {\n    \"pipeline_id\": \"11111111-1111-1111-1111-111111111111\",\n    \"full_refresh\": false\n  }\n}\n```\n\nWhat does `\"full_refresh\": false` control?",
+    "opciones": [
+      {
+        "texto_opcion": "Whether the pipeline update reprocesses all historical data from scratch or only processes new/changed data.",
+        "es_correcta": true,
+        "explicacion": "`full_refresh` controls whether the triggered pipeline update is a full refresh (reprocessing all data) or an incremental update; `false` requests the normal incremental behavior."
+      },
+      {
+        "texto_opcion": "Whether the task retries automatically on failure.",
+        "es_correcta": false,
+        "explicacion": "Retry behavior is controlled by a task's `retry_policy` / `max_retries` settings, not `full_refresh`."
+      },
+      {
+        "texto_opcion": "Whether the pipeline runs on serverless or classic compute.",
+        "es_correcta": false,
+        "explicacion": "Compute type is configured on the pipeline itself, not via the `full_refresh` field on a pipeline task."
+      },
+      {
+        "texto_opcion": "Whether downstream tasks are skipped after this task completes.",
+        "es_correcta": false,
+        "explicacion": "Downstream execution is governed by `depends_on` and run conditions, not `full_refresh`."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "REST API"
+    ]
+  },
+  {
+    "pregunta": "All four `sql_task` variants (query, file, alert, legacy dashboard) share which common required field?",
+    "opciones": [
+      {
+        "texto_opcion": "`warehouse_id`, identifying the SQL warehouse the task runs against.",
+        "es_correcta": true,
+        "explicacion": "Every `sql_task` variant requires a `warehouse_id` because SQL tasks execute against a serverless or pro SQL warehouse, regardless of which sub-type is used."
+      },
+      {
+        "texto_opcion": "`notebook_path`, identifying the notebook containing the SQL logic.",
+        "es_correcta": false,
+        "explicacion": "`notebook_path` belongs to `notebook_task`, not `sql_task`."
+      },
+      {
+        "texto_opcion": "`pipeline_id`, identifying the pipeline that produced the data.",
+        "es_correcta": false,
+        "explicacion": "`pipeline_id` is specific to `pipeline_task` and has no role in `sql_task`."
+      },
+      {
+        "texto_opcion": "`cluster_id`, identifying the all-purpose cluster to execute on.",
+        "es_correcta": false,
+        "explicacion": "SQL tasks run against SQL warehouses, not all-purpose clusters, so no `cluster_id` field is required."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "SQL Task"
+    ]
+  },
+  {
+    "pregunta": "A job has four chained tasks: `ingest_notebook` → `run_pipeline` → `validate_sql` → `refresh_dashboard`, each depending on the previous one, as shown in this REST API body:\n\n```json\n{\n  \"task_key\": \"refresh_dashboard\",\n  \"depends_on\": [{ \"task_key\": \"validate_sql\" }],\n  \"dashboard_task\": { \"dashboard_id\": \"33333333-3333-3333-3333-333333333333\" }\n}\n```\n\nIf `validate_sql` fails, what happens to `refresh_dashboard` by default?",
+    "opciones": [
+      {
+        "texto_opcion": "It is skipped, since `depends_on` requires the upstream task to complete successfully.",
+        "es_correcta": true,
+        "explicacion": "An optional array of objects specifying the dependency graph requires all tasks listed in `depends_on` to complete successfully before the dependent task executes; a failed upstream task causes downstream tasks to be skipped by default."
+      },
+      {
+        "texto_opcion": "It runs anyway, using stale data from the last successful `validate_sql` run.",
+        "es_correcta": false,
+        "explicacion": "Without an explicit run condition allowing failure, the dependent task does not execute when its dependency fails."
+      },
+      {
+        "texto_opcion": "The entire job is automatically deleted.",
+        "es_correcta": false,
+        "explicacion": "A task or job failure never results in automatic deletion of the job definition."
+      },
+      {
+        "texto_opcion": "It runs in parallel with `validate_sql`'s retry attempts.",
+        "es_correcta": false,
+        "explicacion": "`depends_on` enforces sequential ordering; the downstream task does not run concurrently with the upstream task's retries."
+      }
+    ],
+    "tags": [
+      "4.2",
+      "Common Task Types"
+    ]
+  }
+]

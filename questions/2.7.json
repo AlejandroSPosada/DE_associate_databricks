@@ -1,0 +1,1017 @@
+[
+  {
+    "pregunta": "A data engineer needs to ingest a 500 GB historical CSV dump from an S3 bucket into a Delta table. The file will not change after upload and the load needs to run once.\n\nWhich ingestion method is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "Auto Loader with `cloudFiles` format",
+        "es_correcta": false,
+        "explicacion": "Auto Loader is optimized for continuous incremental ingestion of new files, not a one-time historical load."
+      },
+      {
+        "texto_opcion": "`COPY INTO` targeting the S3 path",
+        "es_correcta": true,
+        "explicacion": "`COPY INTO` is ideal for one-time or idempotent batch loads from cloud storage. It skips already-loaded files and requires minimal configuration."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect managed connector",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect is designed for SaaS/database source systems with ongoing replication, not ad-hoc S3 file loads."
+      },
+      {
+        "texto_opcion": "JDBC read with `spark.read.jdbc`",
+        "es_correcta": false,
+        "explicacion": "JDBC is for relational database sources. This scenario involves flat files on object storage."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A streaming pipeline must ingest millions of small JSON files landing continuously in ADLS Gen2 every few seconds. New schema fields may appear without notice.\n\nWhich ingestion method best handles this requirement?",
+    "opciones": [
+      {
+        "texto_opcion": "`COPY INTO` with `FORCE = TRUE`",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` is a batch command and does not support continuous streaming or automatic schema evolution."
+      },
+      {
+        "texto_opcion": "Auto Loader with `cloudFiles.schemaEvolutionMode = 'addNewColumns'`",
+        "es_correcta": true,
+        "explicacion": "Auto Loader (file notification or directory listing mode) handles continuous file arrival and evolves the schema automatically when new fields appear."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect with a file connector",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect targets structured SaaS or database sources, not raw object storage file streams."
+      },
+      {
+        "texto_opcion": "`spark.read.json` inside a scheduled job",
+        "es_correcta": false,
+        "explicacion": "A scheduled batch read cannot react in near-real-time to files landing every few seconds."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A company wants to replicate data from a Salesforce CRM into Databricks for analytics, with daily syncs and built-in governance through Unity Catalog.\n\nWhich ingestion approach should the data engineer choose?",
+    "opciones": [
+      {
+        "texto_opcion": "Auto Loader monitoring a Salesforce export folder",
+        "es_correcta": false,
+        "explicacion": "Auto Loader reads files from object storage, not from SaaS APIs directly. This would require an intermediate export step."
+      },
+      {
+        "texto_opcion": "JDBC connector pointing to Salesforce JDBC driver",
+        "es_correcta": false,
+        "explicacion": "Salesforce does not expose a standard JDBC endpoint for bulk replication; this approach is fragile and lacks governance features."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect managed connector for Salesforce",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect provides a managed Salesforce connector with native Unity Catalog governance, incremental sync, and no custom code."
+      },
+      {
+        "texto_opcion": "`COPY INTO` from Salesforce export CSVs",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` loads files from cloud storage; it cannot connect to Salesforce directly and offers no governance integration."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must load a new partition of Parquet files from GCS into an existing Delta table every night. The same files might be re-delivered occasionally and must not create duplicates.\n\nWhich method is most suitable?",
+    "opciones": [
+      {
+        "texto_opcion": "Auto Loader with trigger-once",
+        "es_correcta": false,
+        "explicacion": "Auto Loader tracks processed files via checkpoint but is better suited for continuous or incremental streaming rather than idempotent nightly batch loads."
+      },
+      {
+        "texto_opcion": "`COPY INTO` with default options",
+        "es_correcta": true,
+        "explicacion": "`COPY INTO` is idempotent by design — it skips files already loaded. It's the correct choice for nightly batch loads from object storage where duplicate files may appear."
+      },
+      {
+        "texto_opcion": "`spark.read.parquet` with `mode('overwrite')`",
+        "es_correcta": false,
+        "explicacion": "Overwrite rewrites the whole table on each run and does not protect against duplicate file delivery."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect with GCS standard connector",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect is designed for structured source systems (databases, SaaS apps), not for loading Parquet partitions from raw GCS buckets."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "The data engineering team needs to ingest IoT sensor events at sub-minute latency from an ADLS path into a Delta table. The data volume is high and schema is fixed.\n\nWhich approach provides the lowest latency?",
+    "opciones": [
+      {
+        "texto_opcion": "`COPY INTO` scheduled every minute",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` is a batch operation. Scheduling it every minute adds overhead and is not designed for sub-minute latency."
+      },
+      {
+        "texto_opcion": "Auto Loader in streaming mode with file notification",
+        "es_correcta": true,
+        "explicacion": "Auto Loader in file notification mode detects new files within seconds of arrival, making it ideal for low-latency, high-volume IoT ingestion."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect with a real-time connector",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect targets SaaS/database sources; it is not designed for raw IoT file streams from ADLS."
+      },
+      {
+        "texto_opcion": "JDBC polling every 30 seconds",
+        "es_correcta": false,
+        "explicacion": "JDBC reads from relational databases. IoT sensor data on ADLS is not a JDBC source."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is choosing between Auto Loader and `COPY INTO` for loading files from S3. The data arrives in large batches monthly, and exactly-once semantics are required.\n\nWhich statement best describes the trade-offs?",
+    "opciones": [
+      {
+        "texto_opcion": "`COPY INTO` is better for continuous streaming but not for monthly batches.",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` is a batch command, not a streaming one. It is well-suited for infrequent, bounded loads."
+      },
+      {
+        "texto_opcion": "Auto Loader is required when the number of files exceeds 10,000 per batch.",
+        "es_correcta": false,
+        "explicacion": "While Auto Loader scales better for very large file counts, the 10,000-file threshold is not a hard requirement; `COPY INTO` can also handle large file sets."
+      },
+      {
+        "texto_opcion": "`COPY INTO` provides idempotent, exactly-once file loading and suits infrequent large batches.",
+        "es_correcta": true,
+        "explicacion": "`COPY INTO` records which files have been loaded and skips re-ingesting them, ensuring exactly-once semantics. Monthly large batches are a perfect fit."
+      },
+      {
+        "texto_opcion": "Auto Loader and `COPY INTO` are interchangeable for all scenarios.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader is optimized for incremental streaming pipelines; `COPY INTO` for bounded batch loads. They serve different use cases."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A team ingests JSON files with deeply nested structures from Azure Blob Storage. Analysts need access to nested fields as first-class columns. Schema is unknown upfront.\n\nWhich combination is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "`COPY INTO` with `FORMAT = 'JSON'` and manual schema definition",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` does not automatically infer or evolve schema for deeply nested JSON; manual schema definition defeats the purpose when schema is unknown."
+      },
+      {
+        "texto_opcion": "Auto Loader with `cloudFiles.inferColumnTypes = true` and schema evolution",
+        "es_correcta": true,
+        "explicacion": "Auto Loader can infer schema from sampled files (including nested JSON) and evolve it as new fields appear, making it ideal for unknown or changing schemas."
+      },
+      {
+        "texto_opcion": "JDBC read with JSON deserialization at the application layer",
+        "es_correcta": false,
+        "explicacion": "JDBC targets relational databases; it cannot read JSON files from Blob Storage."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect with a Blob Storage connector",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect is intended for structured SaaS/database sources, not raw semi-structured file ingestion."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "An engineer is ingesting data from a PostgreSQL database into Databricks. The source table has 50 million rows and updates happen throughout the day.\n\nWhich approach should the engineer use for incremental daily loads?",
+    "opciones": [
+      {
+        "texto_opcion": "Full `spark.read.jdbc` reload with `mode('overwrite')` each day",
+        "es_correcta": false,
+        "explicacion": "A full reload of 50M rows daily is inefficient and expensive; it does not scale for large tables."
+      },
+      {
+        "texto_opcion": "`COPY INTO` from PostgreSQL",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` reads from cloud object storage (S3/ADLS/GCS), not directly from a PostgreSQL database."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect managed connector for PostgreSQL with CDC",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect supports managed PostgreSQL connectors with change data capture, enabling efficient incremental replication with Unity Catalog governance."
+      },
+      {
+        "texto_opcion": "Auto Loader monitoring a PostgreSQL export bucket",
+        "es_correcta": false,
+        "explicacion": "Auto Loader reads files from object storage. While PostgreSQL exports could be staged there, this adds unnecessary complexity vs. Lakeflow Connect."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to give external data scientists (outside the company's Databricks workspace) access to a curated Gold table without copying data.\n\nWhich ingestion or sharing approach is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Export the table to S3 and have scientists use `COPY INTO`",
+        "es_correcta": false,
+        "explicacion": "Exporting creates data copies with no governance; `COPY INTO` is an ingestion command, not a sharing mechanism."
+      },
+      {
+        "texto_opcion": "Use Delta Sharing via Unity Catalog to share the table directly",
+        "es_correcta": true,
+        "explicacion": "Delta Sharing allows secure, governed, cross-organization data sharing without copying data. Recipients access live Delta tables via a share URL."
+      },
+      {
+        "texto_opcion": "Grant external users `SELECT` on the table in the current metastore",
+        "es_correcta": false,
+        "explicacion": "Unity Catalog metastore access is workspace-scoped; external users outside the organization cannot use internal GRANT permissions."
+      },
+      {
+        "texto_opcion": "Use Auto Loader to push data to an external location",
+        "es_correcta": false,
+        "explicacion": "Auto Loader is an ingestion tool (reads incoming files into Delta). It does not push or share data to external consumers."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A manufacturing company collects machine log files (CSV) on an on-premises server. Files are synced to S3 every hour. A new set of files with the same names can overwrite older ones.\n\nWhich ingestion method handles this correctly?",
+    "opciones": [
+      {
+        "texto_opcion": "Auto Loader with `cloudFiles.includeExistingFiles = true`",
+        "es_correcta": false,
+        "explicacion": "Auto Loader tracks files by name/path hash. If files are overwritten with the same name, it may not re-ingest them unless the checkpoint is cleared."
+      },
+      {
+        "texto_opcion": "`COPY INTO` with `FORCE = TRUE`",
+        "es_correcta": true,
+        "explicacion": "`COPY INTO` with `FORCE = TRUE` re-ingests files even if they were previously loaded, which is correct when files with the same name are overwritten with new content."
+      },
+      {
+        "texto_opcion": "`COPY INTO` with default idempotency options",
+        "es_correcta": false,
+        "explicacion": "Default `COPY INTO` skips already-loaded filenames. If overwritten files share the same name, new content would not be re-ingested."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect with an S3 standard connector",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect targets structured SaaS/DB sources, not raw CSV files on S3."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "Which of the following best describes when a data engineer should prefer **Lakeflow Connect** over **Auto Loader**?",
+    "opciones": [
+      {
+        "texto_opcion": "When source data arrives as Parquet files on ADLS",
+        "es_correcta": false,
+        "explicacion": "Parquet files on ADLS are a file-based source — Auto Loader is the right tool, not Lakeflow Connect."
+      },
+      {
+        "texto_opcion": "When ingesting from a SaaS application like Salesforce, SAP, or ServiceNow",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect provides managed connectors for SaaS and enterprise systems, handling API authentication, pagination, incremental sync, and Unity Catalog governance automatically."
+      },
+      {
+        "texto_opcion": "When schema evolution is needed for JSON files",
+        "es_correcta": false,
+        "explicacion": "Schema evolution for JSON files is a feature of Auto Loader, not Lakeflow Connect."
+      },
+      {
+        "texto_opcion": "When a one-time historical file load from S3 is needed",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` is the appropriate tool for one-time batch loads from cloud object storage."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following code:\n\n```python\n(spark.readStream\n  .format('cloudFiles')\n  .option('cloudFiles.format', 'csv')\n  .option('cloudFiles.schemaLocation', '/checkpoints/schema')\n  .load('s3://landing/raw/')\n  .writeStream\n  .format('delta')\n  .option('checkpointLocation', '/checkpoints/raw')\n  .start('/delta/raw')\n)\n```\n\nWhat type of ingestion does this implement?",
+    "opciones": [
+      {
+        "texto_opcion": "One-time batch load with idempotency",
+        "es_correcta": false,
+        "explicacion": "`readStream` + `writeStream.start()` is a continuous streaming pipeline, not a one-time batch load."
+      },
+      {
+        "texto_opcion": "Incremental streaming ingestion using Auto Loader",
+        "es_correcta": true,
+        "explicacion": "`format('cloudFiles')` is the Auto Loader format. Combined with `readStream`/`writeStream`, this is a continuous incremental pipeline that processes new files as they arrive."
+      },
+      {
+        "texto_opcion": "`COPY INTO` with a CSV format option",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` is a SQL command, not a PySpark streaming API. The `cloudFiles` format is Auto Loader-specific."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect pipeline for S3",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect pipelines are configured via the UI or YAML, not through `readStream.format('cloudFiles')`."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "An organization has strict data residency requirements: ingested data must never leave the corporate VPC. The source is an internal MySQL database.\n\nWhich ingestion option is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "Lakeflow Connect managed connector for MySQL",
+        "es_correcta": false,
+        "explicacion": "Managed Lakeflow Connect connectors may route data through Databricks-managed infrastructure, which could violate VPC residency requirements."
+      },
+      {
+        "texto_opcion": "JDBC ingestion via a notebook running on a cluster in the customer VPC",
+        "es_correcta": true,
+        "explicacion": "JDBC reads run on compute inside the customer's data plane (VPC). Data never leaves the customer network, satisfying residency requirements."
+      },
+      {
+        "texto_opcion": "`COPY INTO` from a MySQL export on S3",
+        "es_correcta": false,
+        "explicacion": "Staging data to S3 first does not eliminate residency concerns — the export step itself moves data outside the VPC boundary."
+      },
+      {
+        "texto_opcion": "Auto Loader monitoring a MySQL change log folder",
+        "es_correcta": false,
+        "explicacion": "Auto Loader reads files from object storage; it cannot directly connect to a MySQL database."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to ingest data from a REST API that returns paginated JSON responses. The API is not supported by Lakeflow Connect.\n\nWhich approach should the engineer use?",
+    "opciones": [
+      {
+        "texto_opcion": "Auto Loader with `cloudFiles.format = 'json'`",
+        "es_correcta": false,
+        "explicacion": "Auto Loader reads files from cloud object storage. It cannot call a REST API directly."
+      },
+      {
+        "texto_opcion": "Custom notebook using Python `requests` library, writing results to Delta via PySpark",
+        "es_correcta": true,
+        "explicacion": "When no managed connector exists, a custom notebook using Python HTTP libraries is the standard approach. Results can be written to Delta for downstream processing."
+      },
+      {
+        "texto_opcion": "`COPY INTO` with `FORMAT = 'JSON'` pointing to the API URL",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` reads from cloud storage paths (S3/ADLS/GCS), not from HTTP URLs."
+      },
+      {
+        "texto_opcion": "JDBC connector with REST API driver",
+        "es_correcta": false,
+        "explicacion": "JDBC is designed for SQL databases. REST APIs require HTTP client libraries, not JDBC drivers."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "The following ingestion requirements apply:\n- Source: Google BigQuery\n- Volume: 200M rows\n- Frequency: daily full refresh\n- Governance: Unity Catalog\n\nWhich method is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "Auto Loader reading BigQuery export files from GCS",
+        "es_correcta": false,
+        "explicacion": "This approach requires an intermediate export step and does not leverage native connector governance."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect managed connector for BigQuery",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect provides a managed BigQuery connector with Unity Catalog governance, handling authentication, volume, and incremental/full sync without custom code."
+      },
+      {
+        "texto_opcion": "`COPY INTO` from BigQuery",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` reads from cloud object storage (S3/ADLS/GCS), not directly from BigQuery."
+      },
+      {
+        "texto_opcion": "JDBC read from BigQuery with Spark JDBC connector",
+        "es_correcta": false,
+        "explicacion": "While BigQuery has a Spark connector, it lacks built-in Unity Catalog governance and is harder to manage at 200M rows compared to Lakeflow Connect."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to load Avro files from ADLS into a Delta table. The files arrive once per day and the engineer wants to avoid reprocessing files already loaded.\n\nWhich SQL command should the engineer use?",
+    "opciones": [
+      {
+        "texto_opcion": "```sql\nCOPY INTO target_table\nFROM 'abfss://container@storage.dfs.core.windows.net/avro/'\nFILEFORMAT = AVRO;\n```",
+        "es_correcta": true,
+        "explicacion": "`COPY INTO` with `FILEFORMAT = AVRO` loads Avro files idempotently — files already loaded are skipped automatically."
+      },
+      {
+        "texto_opcion": "```sql\nINSERT INTO target_table\nSELECT * FROM avro.`abfss://container@storage.dfs.core.windows.net/avro/`;\n```",
+        "es_correcta": false,
+        "explicacion": "A plain `INSERT INTO` does not track which files were previously loaded and will re-insert data on each run."
+      },
+      {
+        "texto_opcion": "```sql\nCREATE OR REPLACE TABLE target_table\nAS SELECT * FROM avro.`abfss://container@storage.dfs.core.windows.net/avro/`;\n```",
+        "es_correcta": false,
+        "explicacion": "`CREATE OR REPLACE TABLE` rewrites the entire table on each run and does not support idempotent incremental loading."
+      },
+      {
+        "texto_opcion": "```sql\nMERGE INTO target_table USING avro_source ON id = avro_source.id\nWHEN NOT MATCHED THEN INSERT *;\n```",
+        "es_correcta": false,
+        "explicacion": "`MERGE` can prevent duplicates but requires a pre-loaded source reference. It does not inherently track processed files like `COPY INTO` does."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A governance team requires that all ingested data from third-party sources be catalogued automatically in Unity Catalog with column-level lineage.\n\nWhich ingestion method natively supports this requirement?",
+    "opciones": [
+      {
+        "texto_opcion": "Custom PySpark notebooks writing to Delta tables",
+        "es_correcta": false,
+        "explicacion": "Custom notebooks can write to Unity Catalog tables, but column-level lineage tracking requires explicit configuration and is not automatic."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect with Unity Catalog integration",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect natively integrates with Unity Catalog, automatically registering ingested tables and capturing lineage at the column level."
+      },
+      {
+        "texto_opcion": "`COPY INTO` with Unity Catalog target table",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` can write to Unity Catalog tables but does not automatically capture column-level lineage from the external source."
+      },
+      {
+        "texto_opcion": "Auto Loader writing to an external table",
+        "es_correcta": false,
+        "explicacion": "Auto Loader populates Delta tables but does not automatically register column-level lineage from the external source system."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A team is choosing between `COPY INTO` and Auto Loader. Their pipeline will process up to 100,000 files per day arriving continuously.\n\nWhich statement is accurate?",
+    "opciones": [
+      {
+        "texto_opcion": "`COPY INTO` is preferred because it scales to any number of files without configuration.",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` lists all unprocessed files on each run. At very high file counts, this listing can become a bottleneck; Auto Loader's file notification mode is more scalable."
+      },
+      {
+        "texto_opcion": "Auto Loader in file notification mode scales better for high file counts and continuous arrival.",
+        "es_correcta": true,
+        "explicacion": "Auto Loader's file notification mode (using cloud events) processes files as they arrive without full directory listing, scaling efficiently to hundreds of thousands of files."
+      },
+      {
+        "texto_opcion": "Both tools have the same performance characteristics at scale.",
+        "es_correcta": false,
+        "explicacion": "At high file counts, Auto Loader with file notification is significantly more efficient than `COPY INTO` due to event-driven discovery vs. full directory listing."
+      },
+      {
+        "texto_opcion": "Neither tool supports 100,000 files per day without partitioning.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader in file notification mode is designed to handle exactly this scale without special partitioning."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is designing a Bronze layer pipeline. Raw data arrives as XML files in GCS and must be preserved as-is with minimal transformation.\n\nWhich ingestion approach is most suitable for Bronze ingestion of XML?",
+    "opciones": [
+      {
+        "texto_opcion": "Lakeflow Connect with GCS connector",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect targets structured SaaS/database sources. Raw XML on GCS requires file-based ingestion."
+      },
+      {
+        "texto_opcion": "Auto Loader with `cloudFiles.format = 'binaryFile'` to preserve raw bytes",
+        "es_correcta": true,
+        "explicacion": "Loading XML as `binaryFile` preserves the raw content in the Bronze layer. Parsing can be done downstream in Silver, following medallion best practices."
+      },
+      {
+        "texto_opcion": "`COPY INTO` with `FORMAT = 'XML'`",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` supports formats like CSV, JSON, Parquet, Avro, and ORC — not XML. XML files would require a custom reader."
+      },
+      {
+        "texto_opcion": "JDBC connector with XML deserialization plugin",
+        "es_correcta": false,
+        "explicacion": "JDBC connects to relational databases; it cannot read XML files from GCS."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to build a pipeline that:\n1. Ingests from an S3 bucket\n2. Runs every 15 minutes\n3. Must not reprocess files\n4. Should trigger on a Lakeflow Job schedule\n\nWhich combination is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Auto Loader with `trigger(processingTime='15 minutes')` inside a streaming job",
+        "es_correcta": false,
+        "explicacion": "This works but runs a long-lived streaming job. The question asks for a scheduled Lakeflow Job, which maps better to a triggered batch approach."
+      },
+      {
+        "texto_opcion": "`COPY INTO` inside a Lakeflow Job notebook task, scheduled every 15 minutes",
+        "es_correcta": true,
+        "explicacion": "`COPY INTO` is idempotent (skips already-loaded files) and runs as a notebook SQL command inside a scheduled Lakeflow Job — the simplest and most appropriate setup."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect with a 15-minute sync interval",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect targets SaaS/DB connectors, not raw S3 file ingestion."
+      },
+      {
+        "texto_opcion": "Auto Loader with `trigger(once=True)` inside a Lakeflow Job, scheduled every 15 minutes",
+        "es_correcta": false,
+        "explicacion": "While this works, it restarts the streaming context on each run. `COPY INTO` is simpler and purpose-built for scheduled batch loads from object storage."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer observes that a `COPY INTO` command is re-ingesting files that were already loaded in a previous run.\n\nWhat is the most likely cause?",
+    "opciones": [
+      {
+        "texto_opcion": "The target Delta table was recreated with `CREATE OR REPLACE TABLE`",
+        "es_correcta": true,
+        "explicacion": "`COPY INTO` stores the list of loaded files in the Delta transaction log of the target table. If the table is dropped and recreated, this history is lost and all files are treated as new."
+      },
+      {
+        "texto_opcion": "The source files were compressed with gzip",
+        "es_correcta": false,
+        "explicacion": "Compression format does not affect `COPY INTO`'s file tracking. It supports gzip-compressed files without re-ingestion issues."
+      },
+      {
+        "texto_opcion": "The `FORMAT` option was changed between runs",
+        "es_correcta": false,
+        "explicacion": "Changing the format option does not reset the list of loaded files stored in the transaction log."
+      },
+      {
+        "texto_opcion": "Auto Loader checkpoint was deleted",
+        "es_correcta": false,
+        "explicacion": "Auto Loader uses checkpoints; `COPY INTO` uses the Delta transaction log. Deleting an Auto Loader checkpoint does not affect `COPY INTO` behavior."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A startup wants the simplest possible pipeline to load CSV files from S3 into a Delta table with no streaming infrastructure. They expect files once a week.\n\nWhich is the recommended approach?",
+    "opciones": [
+      {
+        "texto_opcion": "Auto Loader streaming pipeline with a Lakeflow Job trigger",
+        "es_correcta": false,
+        "explicacion": "Auto Loader introduces streaming complexity (checkpoints, streaming queries) that is unnecessary for weekly batch loads."
+      },
+      {
+        "texto_opcion": "`COPY INTO` in a scheduled SQL notebook",
+        "es_correcta": true,
+        "explicacion": "`COPY INTO` is the simplest option — no streaming, no checkpoint management, built-in idempotency. Perfect for weekly batch loads with minimal operational overhead."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect S3 connector with weekly sync",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect is designed for structured DB/SaaS sources. Raw S3 CSV loads are better served by `COPY INTO`."
+      },
+      {
+        "texto_opcion": "JDBC batch read from S3",
+        "es_correcta": false,
+        "explicacion": "JDBC reads from SQL databases. S3 CSV files are object storage, not a JDBC-accessible source."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to ingest data from an on-premises Oracle database that sits behind a corporate firewall. No direct internet connectivity is allowed from the database server.\n\nWhich is the correct approach?",
+    "opciones": [
+      {
+        "texto_opcion": "Lakeflow Connect managed connector for Oracle",
+        "es_correcta": false,
+        "explicacion": "Managed Lakeflow Connect connectors run on Databricks-managed infrastructure and require internet connectivity from the source, which is not available here."
+      },
+      {
+        "texto_opcion": "JDBC read using a Databricks cluster deployed in the same VPC/on-premises network via VPN or PrivateLink",
+        "es_correcta": true,
+        "explicacion": "For on-premises sources behind a firewall, a Databricks cluster in the customer's data plane (connected via VPN or PrivateLink) can use JDBC to reach the database without public internet exposure."
+      },
+      {
+        "texto_opcion": "Auto Loader monitoring an Oracle export folder on S3",
+        "es_correcta": false,
+        "explicacion": "This requires the Oracle server to export files to S3, which itself may violate the firewall restriction. It also adds unnecessary complexity."
+      },
+      {
+        "texto_opcion": "`COPY INTO` from Oracle",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` reads from cloud object storage (S3/ADLS/GCS), not from on-premises databases."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must choose between a **standard connector** and a **managed connector** in Lakeflow Connect.\n\nWhich statement correctly describes the difference?",
+    "opciones": [
+      {
+        "texto_opcion": "Standard connectors require customer-managed compute; managed connectors run on Databricks-managed compute.",
+        "es_correcta": true,
+        "explicacion": "Standard connectors use the customer's existing compute (classic clusters), while managed connectors run on Databricks-managed serverless infrastructure, reducing operational overhead."
+      },
+      {
+        "texto_opcion": "Managed connectors only support file-based sources; standard connectors support databases.",
+        "es_correcta": false,
+        "explicacion": "Both connector types support database and SaaS sources. The distinction is about compute ownership, not source type."
+      },
+      {
+        "texto_opcion": "Standard connectors support Unity Catalog; managed connectors do not.",
+        "es_correcta": false,
+        "explicacion": "Both connector types integrate with Unity Catalog. Governance is not tied to compute type in Lakeflow Connect."
+      },
+      {
+        "texto_opcion": "Managed connectors are only available for Databricks-to-Databricks transfers.",
+        "es_correcta": false,
+        "explicacion": "Managed connectors support a wide range of external sources including Salesforce, MySQL, PostgreSQL, and others — not just Databricks-to-Databricks."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs the following command:\n\n```sql\nCOPY INTO my_catalog.my_schema.events\nFROM 's3://raw-bucket/events/'\nFILEFORMAT = JSON\nCOPY_OPTIONS ('mergeSchema' = 'true');\n```\n\nWhat does the `mergeSchema` option enable?",
+    "opciones": [
+      {
+        "texto_opcion": "It merges duplicate rows during ingestion.",
+        "es_correcta": false,
+        "explicacion": "`mergeSchema` is a schema evolution option, not a deduplication feature. Deduplication requires `MERGE INTO` or `dropDuplicates`."
+      },
+      {
+        "texto_opcion": "It allows new columns in incoming JSON files to be added to the target Delta table schema.",
+        "es_correcta": true,
+        "explicacion": "`mergeSchema = 'true'` in `COPY_OPTIONS` enables schema evolution — new columns discovered in incoming files are automatically added to the target table."
+      },
+      {
+        "texto_opcion": "It combines multiple JSON files into a single file before loading.",
+        "es_correcta": false,
+        "explicacion": "`mergeSchema` affects schema evolution only. File consolidation is a separate concern handled by `OPTIMIZE` or `COMPACT`."
+      },
+      {
+        "texto_opcion": "It merges the incoming data with the target table using a primary key.",
+        "es_correcta": false,
+        "explicacion": "Key-based merging requires `MERGE INTO`. `mergeSchema` only controls whether the table schema can evolve to include new columns."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A team must ingest 10 TB of historical Parquet data from S3 as a one-time migration, followed by ongoing daily incremental loads.\n\nWhich ingestion strategy should be used for each phase?",
+    "opciones": [
+      {
+        "texto_opcion": "Historical: Auto Loader with `trigger(once=True)`. Incremental: `COPY INTO` scheduled daily.",
+        "es_correcta": false,
+        "explicacion": "While this could work, `COPY INTO` is simpler than Auto Loader for the historical phase. For incrementals, Auto Loader is more suitable than `COPY INTO` at scale."
+      },
+      {
+        "texto_opcion": "Historical: `COPY INTO`. Incremental: Auto Loader in streaming mode.",
+        "es_correcta": true,
+        "explicacion": "`COPY INTO` is ideal for the bounded historical migration (idempotent, simple). Auto Loader in streaming mode handles ongoing daily incremental files efficiently."
+      },
+      {
+        "texto_opcion": "Historical: Lakeflow Connect. Incremental: JDBC polling.",
+        "es_correcta": false,
+        "explicacion": "Neither tool is appropriate here. Lakeflow Connect targets DB/SaaS sources; JDBC reads databases, not Parquet files on S3."
+      },
+      {
+        "texto_opcion": "Historical: `spark.read.parquet` with overwrite. Incremental: `COPY INTO` with `FORCE = TRUE`.",
+        "es_correcta": false,
+        "explicacion": "`FORCE = TRUE` re-ingests all files each run, defeating the purpose of incremental loads. `spark.read.parquet` with overwrite also rewrites the full table each time."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must ingest data from **Snowflake** into Databricks with incremental sync and Unity Catalog governance.\n\nWhich ingestion option should the engineer select?",
+    "opciones": [
+      {
+        "texto_opcion": "`COPY INTO` from Snowflake export files on S3",
+        "es_correcta": false,
+        "explicacion": "This approach requires manual export orchestration from Snowflake to S3. It adds operational complexity and lacks native governance."
+      },
+      {
+        "texto_opcion": "Lakeflow Connect managed connector for Snowflake",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Connect provides a managed Snowflake connector with incremental sync and native Unity Catalog integration, eliminating custom export/load code."
+      },
+      {
+        "texto_opcion": "JDBC read from Snowflake with incremental watermark in a notebook",
+        "es_correcta": false,
+        "explicacion": "JDBC can connect to Snowflake but requires manual watermark logic and does not provide Unity Catalog lineage integration."
+      },
+      {
+        "texto_opcion": "Auto Loader monitoring a Snowflake data share folder",
+        "es_correcta": false,
+        "explicacion": "Auto Loader reads files from cloud object storage. It cannot directly integrate with a Snowflake data share."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is selecting an ingestion method. The requirements are:\n- Source: relational database (MySQL)\n- Volume: small (< 1M rows)\n- Frequency: ad hoc, on-demand\n- No ongoing pipeline needed\n\nWhich method is simplest for this use case?",
+    "opciones": [
+      {
+        "texto_opcion": "Lakeflow Connect managed connector with on-demand trigger",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect is designed for recurring, managed pipelines. It introduces more setup overhead than needed for a simple ad-hoc query."
+      },
+      {
+        "texto_opcion": "`spark.read.jdbc` in a notebook, writing results to Delta",
+        "es_correcta": true,
+        "explicacion": "For small, infrequent ad-hoc reads from a relational database, a simple JDBC notebook read is the most pragmatic approach — no pipeline infrastructure needed."
+      },
+      {
+        "texto_opcion": "Auto Loader with `trigger(once=True)` targeting MySQL",
+        "es_correcta": false,
+        "explicacion": "Auto Loader reads files from object storage, not databases. It cannot directly connect to MySQL."
+      },
+      {
+        "texto_opcion": "`COPY INTO` from MySQL",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` reads from cloud object storage paths (S3/ADLS/GCS). It cannot read directly from a MySQL database."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "Auto Loader can operate in two file discovery modes. A data engineer must choose between them for a bucket with over 1 million existing files.\n\nWhich mode is recommended, and why?",
+    "opciones": [
+      {
+        "texto_opcion": "Directory listing mode — it scans all files on each trigger and is simpler to configure.",
+        "es_correcta": false,
+        "explicacion": "Directory listing mode lists all files each trigger cycle. At 1M+ files this becomes slow and costly."
+      },
+      {
+        "texto_opcion": "File notification mode — it uses cloud storage events and scales to millions of files without full directory listing.",
+        "es_correcta": true,
+        "explicacion": "File notification mode subscribes to cloud events (S3 EventBridge, ADLS Event Grid) and triggers only on new file events, making it highly scalable for large buckets."
+      },
+      {
+        "texto_opcion": "Directory listing mode — it is the only mode that supports schema evolution.",
+        "es_correcta": false,
+        "explicacion": "Both modes support schema evolution. The difference is file discovery mechanism, not schema handling."
+      },
+      {
+        "texto_opcion": "File notification mode — it does not require a checkpoint location.",
+        "es_correcta": false,
+        "explicacion": "Both Auto Loader modes require a checkpoint location for tracking processed files and maintaining exactly-once semantics."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to ingest data from both an S3 bucket (CSV files) and a Salesforce org into the same Bronze Delta table.\n\nWhat is the recommended approach?",
+    "opciones": [
+      {
+        "texto_opcion": "Use Auto Loader for both sources in the same streaming query.",
+        "es_correcta": false,
+        "explicacion": "Auto Loader reads files from cloud storage. It cannot connect to Salesforce directly."
+      },
+      {
+        "texto_opcion": "Use `COPY INTO` for both sources in a single command.",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` reads from cloud object storage paths only. It cannot ingest from Salesforce."
+      },
+      {
+        "texto_opcion": "Use Auto Loader for the S3 CSV files and Lakeflow Connect for Salesforce; merge outputs into the Bronze table.",
+        "es_correcta": true,
+        "explicacion": "Each source type has its best-fit tool: Auto Loader for file-based S3 ingestion, Lakeflow Connect for SaaS (Salesforce). Outputs can be written to the same or separate Bronze tables."
+      },
+      {
+        "texto_opcion": "Use Lakeflow Connect for both, since it supports all source types.",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect does not support raw S3 file ingestion as a source type. It targets structured SaaS and database connectors."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer must ingest data from an SFTP server that is not supported by any Lakeflow Connect connector. Files arrive daily in CSV format.\n\nWhat is the recommended pattern?",
+    "opciones": [
+      {
+        "texto_opcion": "Use `COPY INTO` with an SFTP path prefix",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` only supports cloud object storage paths (S3, ADLS, GCS). It cannot connect to SFTP servers."
+      },
+      {
+        "texto_opcion": "Stage files from SFTP to S3/ADLS first, then use `COPY INTO` or Auto Loader to ingest",
+        "es_correcta": true,
+        "explicacion": "The standard pattern for unsupported protocols is to stage files to cloud object storage first (using a custom transfer script or third-party tool), then apply standard Databricks ingestion."
+      },
+      {
+        "texto_opcion": "Use JDBC with an SFTP JDBC driver",
+        "es_correcta": false,
+        "explicacion": "SFTP is a file transfer protocol, not a SQL database. JDBC drivers are not applicable."
+      },
+      {
+        "texto_opcion": "Auto Loader with `cloudFiles.format = 'sftp'`",
+        "es_correcta": false,
+        "explicacion": "Auto Loader does not support `sftp` as a cloudFiles format. It only supports cloud object storage (S3/ADLS/GCS)."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer reviews this code:\n\n```python\ndf = spark.read.format('jdbc') \\\n    .option('url', 'jdbc:postgresql://host:5432/db') \\\n    .option('dbtable', 'orders') \\\n    .option('user', 'etl_user') \\\n    .option('password', dbutils.secrets.get('scope', 'pg_pass')) \\\n    .option('numPartitions', 8) \\\n    .load()\n\ndf.write.format('delta').mode('append').save('/bronze/orders')\n```\n\nWhich concern should the engineer address before promoting this to production?",
+    "opciones": [
+      {
+        "texto_opcion": "The `numPartitions` option is invalid for JDBC reads.",
+        "es_correcta": false,
+        "explicacion": "`numPartitions` is a valid JDBC read option that controls parallelism. It is widely used in production JDBC ingestion."
+      },
+      {
+        "texto_opcion": "The code does not include a `partitionColumn`, `lowerBound`, or `upperBound`, so all 8 partitions will read the full table in serial.",
+        "es_correcta": true,
+        "explicacion": "Without `partitionColumn`, `lowerBound`, and `upperBound`, Spark cannot split the read across partitions. All data is loaded by a single connection, making `numPartitions` ineffective."
+      },
+      {
+        "texto_opcion": "Using `dbutils.secrets` is not allowed in JDBC options.",
+        "es_correcta": false,
+        "explicacion": "`dbutils.secrets.get` is the recommended way to retrieve credentials in Databricks. It is fully supported in JDBC options."
+      },
+      {
+        "texto_opcion": "`mode('append')` will cause duplicates on reruns.",
+        "es_correcta": false,
+        "explicacion": "While append mode does not deduplicate, this is a design choice. The specific concern here is the parallelism configuration, which affects performance but not correctness."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is choosing an ingestion method. The decision matrix shows:\n\n| Criterion          | Value              |\n|--------------------|--------------------|\n| Source             | Parquet on ADLS    |\n| Volume             | 10M rows/day       |\n| Latency req.       | < 5 minutes        |\n| Schema changes     | Occasional         |\n| Governance         | Unity Catalog      |\n\nWhich ingestion method is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "Lakeflow Connect with ADLS connector",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect targets DB/SaaS sources. Raw Parquet files on ADLS are a file-based source better handled by Auto Loader."
+      },
+      {
+        "texto_opcion": "`COPY INTO` scheduled every 5 minutes",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` is a batch command. Sub-5-minute latency with high volume and occasional schema changes is better served by Auto Loader in streaming mode."
+      },
+      {
+        "texto_opcion": "Auto Loader in file notification mode with `schemaEvolutionMode = 'addNewColumns'`, writing to Unity Catalog Delta table",
+        "es_correcta": true,
+        "explicacion": "Auto Loader (file notification) meets all criteria: < 5-minute latency, high volume scalability, schema evolution support, and writes directly to Unity Catalog tables."
+      },
+      {
+        "texto_opcion": "JDBC read from ADLS with Spark connector",
+        "es_correcta": false,
+        "explicacion": "JDBC reads from SQL databases. ADLS Parquet files are object storage, not a JDBC source."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to apply column masking on PII fields during ingestion so that downstream consumers never see raw values.\n\nAt which layer and with which tool should this be implemented?",
+    "opciones": [
+      {
+        "texto_opcion": "In the `COPY INTO` command using a `MASK` clause",
+        "es_correcta": false,
+        "explicacion": "`COPY INTO` does not support inline column masking. It loads raw data as-is from the source files."
+      },
+      {
+        "texto_opcion": "In Auto Loader `cloudFiles` options using `maskColumns`",
+        "es_correcta": false,
+        "explicacion": "Auto Loader has no built-in `maskColumns` option. It ingests raw data; masking must be applied post-ingestion."
+      },
+      {
+        "texto_opcion": "After ingestion, by applying Unity Catalog column masking policies on the target Delta table",
+        "es_correcta": true,
+        "explicacion": "Unity Catalog's column masking feature applies masking functions to sensitive columns at query time, governing access for all downstream consumers regardless of ingestion method."
+      },
+      {
+        "texto_opcion": "At Lakeflow Connect configuration time using the PII filter toggle",
+        "es_correcta": false,
+        "explicacion": "Lakeflow Connect does not expose a PII filter toggle for column masking. Data masking governance is a Unity Catalog feature applied post-ingestion."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  },
+  {
+    "pregunta": "A data engineering team wants to automate ingestion so that a Lakeflow Job triggers whenever new files land in an S3 bucket.\n\nWhich trigger type and ingestion method should they use?",
+    "opciones": [
+      {
+        "texto_opcion": "Scheduled trigger every 1 minute + `COPY INTO`",
+        "es_correcta": false,
+        "explicacion": "A 1-minute schedule approximates file arrival but is not event-driven. True file-arrival triggering requires a different trigger type."
+      },
+      {
+        "texto_opcion": "File arrival trigger on the S3 path + `COPY INTO` or Auto Loader notebook task",
+        "es_correcta": true,
+        "explicacion": "Lakeflow Jobs support a file arrival trigger that detects new files in a cloud storage path and starts the job automatically. Paired with `COPY INTO` or Auto Loader, this enables event-driven ingestion."
+      },
+      {
+        "texto_opcion": "Table update trigger + Lakeflow Connect connector",
+        "es_correcta": false,
+        "explicacion": "A table update trigger fires when a Delta table changes, not when files land in S3. Lakeflow Connect also doesn't read raw S3 files."
+      },
+      {
+        "texto_opcion": "Continuous trigger + JDBC notebook task",
+        "es_correcta": false,
+        "explicacion": "JDBC reads databases, not S3 files. A continuous trigger runs the job constantly rather than responding to file arrival events."
+      }
+    ],
+    "tags": [
+      "2.7",
+      "Choosing the right ingestion method"
+    ]
+  }
+]

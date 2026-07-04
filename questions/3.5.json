@@ -1,0 +1,872 @@
+[
+  {
+    "pregunta": "A data engineer runs the following code on a DataFrame `orders_df`:\n\n```python\norders_df.groupBy(\"region\").count().show()\n```\n\nWhat does the `count()` column represent in the result?",
+    "opciones": [
+      {
+        "texto_opcion": "The number of rows in each region group.",
+        "es_correcta": true,
+        "explicacion": "`groupBy(...).count()` returns the row count per group, regardless of null values in other columns."
+      },
+      {
+        "texto_opcion": "The number of distinct values across all columns in each region group.",
+        "es_correcta": false,
+        "explicacion": "`count()` counts rows, not distinct values across columns; that would require `countDistinct` on specific columns."
+      },
+      {
+        "texto_opcion": "The sum of all numeric columns in each region group.",
+        "es_correcta": false,
+        "explicacion": "`count()` does not sum anything; `sum()` would be needed for that aggregation."
+      },
+      {
+        "texto_opcion": "The number of partitions used to compute each region group.",
+        "es_correcta": false,
+        "explicacion": "Partition count is unrelated to `count()`, which is a row-counting aggregate function."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "groupBy / count"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to count the number of unique customer IDs in a 50-billion-row table, but exact precision is not required and query speed is a priority.\n\nWhich function should the engineer use?",
+    "opciones": [
+      {
+        "texto_opcion": "`approx_count_distinct(\"customer_id\")`",
+        "es_correcta": true,
+        "explicacion": "`approx_count_distinct` uses the HyperLogLog algorithm to estimate cardinality much faster than an exact count on very large datasets."
+      },
+      {
+        "texto_opcion": "`count_distinct(\"customer_id\")`",
+        "es_correcta": false,
+        "explicacion": "`count_distinct` computes an exact result, which requires a full shuffle and is slower on massive datasets."
+      },
+      {
+        "texto_opcion": "`count(\"customer_id\")`",
+        "es_correcta": false,
+        "explicacion": "`count` counts all non-null rows, not unique values, so it would overcount duplicates."
+      },
+      {
+        "texto_opcion": "`mean(\"customer_id\")`",
+        "es_correcta": false,
+        "explicacion": "`mean` computes an average and is not applicable to counting unique identifiers."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "approx_count_distinct"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```python\ndf.select(mean(\"sales_amount\")).show()\n```\n\nWhat does this return?",
+    "opciones": [
+      {
+        "texto_opcion": "The average value of the `sales_amount` column across all rows.",
+        "es_correcta": true,
+        "explicacion": "`mean()` is an alias for `avg()` and computes the arithmetic mean of the specified column."
+      },
+      {
+        "texto_opcion": "The median value of the `sales_amount` column.",
+        "es_correcta": false,
+        "explicacion": "Median requires `percentile_approx` or `median()`; `mean` always computes the arithmetic average."
+      },
+      {
+        "texto_opcion": "The most frequently occurring value in `sales_amount`.",
+        "es_correcta": false,
+        "explicacion": "Mode is not what `mean` calculates; mean is strictly the arithmetic average."
+      },
+      {
+        "texto_opcion": "The total sum of `sales_amount` divided by the number of distinct values.",
+        "es_correcta": false,
+        "explicacion": "Mean divides the sum by the total row count, not by the count of distinct values."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "mean"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants a quick statistical overview (count, mean, stddev, min, max) of all numeric columns in a DataFrame `inventory_df` for a data quality check.\n\nWhich command provides this in one call?",
+    "opciones": [
+      {
+        "texto_opcion": "`inventory_df.summary().show()`",
+        "es_correcta": true,
+        "explicacion": "`summary()` computes count, mean, stddev, min, max, and percentiles for numeric and string columns in a single call."
+      },
+      {
+        "texto_opcion": "`inventory_df.describe().show()`",
+        "es_correcta": false,
+        "explicacion": "`describe()` only returns count, mean, stddev, min, and max — it omits percentiles that `summary()` includes by default."
+      },
+      {
+        "texto_opcion": "`inventory_df.groupBy().agg(mean(\"*\")).show()`",
+        "es_correcta": false,
+        "explicacion": "`mean(\"*\")` is invalid syntax; aggregate functions require explicit column names."
+      },
+      {
+        "texto_opcion": "`inventory_df.stat().show()`",
+        "es_correcta": false,
+        "explicacion": "There is no `stat()` method that returns a summary DataFrame; `stat` is a namespace for functions like `corr` and `cov`."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "summary"
+    ]
+  },
+  {
+    "pregunta": "A table `events` contains duplicate rows due to an upstream retry mechanism that resent identical records. A data engineer needs to remove exact duplicate rows across all columns.\n\nWhich code accomplishes this?",
+    "opciones": [
+      {
+        "texto_opcion": "`events_df.dropDuplicates()`",
+        "es_correcta": true,
+        "explicacion": "Calling `dropDuplicates()` with no arguments compares all columns and removes fully identical rows."
+      },
+      {
+        "texto_opcion": "`events_df.distinct(subset=[\"event_id\"])`",
+        "es_correcta": false,
+        "explicacion": "`distinct()` does not accept a `subset` parameter; that syntax is invalid in PySpark."
+      },
+      {
+        "texto_opcion": "`events_df.dropna()`",
+        "es_correcta": false,
+        "explicacion": "`dropna()` removes rows with null values; it has no effect on duplicate rows."
+      },
+      {
+        "texto_opcion": "`events_df.filter(col(\"event_id\").isNotNull())`",
+        "es_correcta": false,
+        "explicacion": "This filters out nulls in one column but does not detect or remove duplicate rows."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "dropDuplicates"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has a table `subscriptions` where each `customer_id` may have multiple rows with different `updated_at` timestamps. The engineer wants to keep only the most recent row per customer.\n\n```python\nfrom pyspark.sql import Window\nfrom pyspark.sql.functions import row_number, col\n\nwindowSpec = Window.partitionBy(\"customer_id\").orderBy(col(\"updated_at\").desc())\nresult_df = subscriptions.withColumn(\"rn\", row_number().over(windowSpec)) \\\n    .filter(col(\"rn\") == 1) \\\n    .drop(\"rn\")\n```\n\nWhat does this code produce?",
+    "opciones": [
+      {
+        "texto_opcion": "One row per customer, containing the row with the latest `updated_at` value.",
+        "es_correcta": true,
+        "explicacion": "`row_number()` assigns 1 to the latest row per partition due to the descending order, and filtering on `rn == 1` keeps only that row."
+      },
+      {
+        "texto_opcion": "All rows, with a new column ranking them by recency.",
+        "es_correcta": false,
+        "explicacion": "The `.filter(col(\"rn\") == 1)` step removes all rows except the top-ranked one per customer."
+      },
+      {
+        "texto_opcion": "One row per customer containing the oldest `updated_at` value.",
+        "es_correcta": false,
+        "explicacion": "`.desc()` orders by `updated_at` descending, so rank 1 corresponds to the newest, not oldest, record."
+      },
+      {
+        "texto_opcion": "The total count of rows per customer.",
+        "es_correcta": false,
+        "explicacion": "This code does not aggregate counts; it ranks and filters individual rows using a window function."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "window functions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is asked to find the number of distinct `device_id` values per `app_version` in a 200 GB clickstream table, with exact results required for compliance reporting.\n\nWhich code should the engineer use?",
+    "opciones": [
+      {
+        "texto_opcion": "`df.groupBy(\"app_version\").agg(countDistinct(\"device_id\"))`",
+        "es_correcta": true,
+        "explicacion": "`countDistinct` provides an exact unique count per group, which is required when approximation is not acceptable."
+      },
+      {
+        "texto_opcion": "`df.groupBy(\"app_version\").agg(approx_count_distinct(\"device_id\"))`",
+        "es_correcta": false,
+        "explicacion": "`approx_count_distinct` returns an estimate, not the exact count needed for compliance reporting."
+      },
+      {
+        "texto_opcion": "`df.groupBy(\"app_version\").count()`",
+        "es_correcta": false,
+        "explicacion": "Plain `count()` counts all rows per group, including duplicate `device_id` values, not unique devices."
+      },
+      {
+        "texto_opcion": "`df.select(\"device_id\").distinct().count()`",
+        "es_correcta": false,
+        "explicacion": "This returns a single global distinct count and loses the per-`app_version` breakdown required."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "groupBy / countDistinct"
+    ]
+  },
+  {
+    "pregunta": "A data engineer writes the following code to deduplicate a `customers` table based only on `email`, keeping any one row per email:\n\n```python\nresult_df = customers.dropDuplicates([\"email\"])\n```\n\nWhich statement about this code is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "It keeps one arbitrary row per distinct `email` value, dropping the rest.",
+        "es_correcta": true,
+        "explicacion": "Passing a column subset to `dropDuplicates` deduplicates based only on those columns, and Spark does not guarantee which duplicate row is retained."
+      },
+      {
+        "texto_opcion": "It keeps the row with the most recent timestamp for each `email`.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates` has no concept of recency; it does not order by any timestamp column unless explicitly combined with a window function."
+      },
+      {
+        "texto_opcion": "It raises an error because a subset list is not a valid argument.",
+        "es_correcta": false,
+        "explicacion": "Passing a list of column names to `dropDuplicates` is valid syntax and is the standard way to deduplicate by subset."
+      },
+      {
+        "texto_opcion": "It removes all rows that contain duplicate emails, including the first occurrence.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates` retains one representative row per group rather than removing every duplicate occurrence."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "dropDuplicates with subset"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to calculate, for each `store_id`, the running total of `daily_sales` ordered by `sale_date`.\n\nWhich code correctly implements this?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\nw = Window.partitionBy(\"store_id\").orderBy(\"sale_date\").rowsBetween(Window.unboundedPreceding, Window.currentRow)\ndf.withColumn(\"running_total\", sum(\"daily_sales\").over(w))\n```",
+        "es_correcta": true,
+        "explicacion": "Partitioning by `store_id`, ordering by date, and summing over an unbounded-preceding-to-current-row frame produces a correct running total per store."
+      },
+      {
+        "texto_opcion": "```python\ndf.groupBy(\"store_id\").agg(sum(\"daily_sales\").alias(\"running_total\"))\n```",
+        "es_correcta": false,
+        "explicacion": "`groupBy` collapses each store into a single total row and cannot produce a row-by-row running total."
+      },
+      {
+        "texto_opcion": "```python\nw = Window.partitionBy(\"sale_date\").orderBy(\"store_id\")\ndf.withColumn(\"running_total\", sum(\"daily_sales\").over(w))\n```",
+        "es_correcta": false,
+        "explicacion": "Partitioning by `sale_date` instead of `store_id` groups the wrong dimension and does not produce a per-store running total."
+      },
+      {
+        "texto_opcion": "```python\ndf.withColumn(\"running_total\", cumsum(\"daily_sales\"))\n```",
+        "es_correcta": false,
+        "explicacion": "`cumsum` is not a PySpark function; cumulative sums must be implemented with a window function."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "window functions / running totals"
+    ]
+  },
+  {
+    "pregunta": "What is the primary architectural reason `approx_count_distinct` is faster than `count_distinct` on very large datasets?",
+    "opciones": [
+      {
+        "texto_opcion": "It uses a probabilistic sketch (HyperLogLog) that avoids shuffling and comparing every individual value.",
+        "es_correcta": true,
+        "explicacion": "HyperLogLog estimates cardinality using compact sketches, drastically reducing the shuffle and comparison work needed for an exact distinct count."
+      },
+      {
+        "texto_opcion": "It only scans a random 10% sample of the table.",
+        "es_correcta": false,
+        "explicacion": "`approx_count_distinct` processes the full dataset; it does not subsample rows."
+      },
+      {
+        "texto_opcion": "It runs entirely on the driver node instead of distributing work to executors.",
+        "es_correcta": false,
+        "explicacion": "The computation is still distributed across executors; only the final sketch merge happens centrally."
+      },
+      {
+        "texto_opcion": "It caches the entire dataset in memory before counting.",
+        "es_correcta": false,
+        "explicacion": "Caching is unrelated to why the function is faster; the speed gain comes from the probabilistic algorithm itself."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "approx_count_distinct concept"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs:\n\n```python\ndf.groupBy(\"category\").agg(\n    sum(\"revenue\").alias(\"total_revenue\"),\n    avg(\"revenue\").alias(\"avg_revenue\")\n).show()\n```\n\nWhich statement about this query is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "It returns one row per distinct `category` with both the total and average revenue computed within that group.",
+        "es_correcta": true,
+        "explicacion": "`groupBy` followed by `.agg` with multiple aggregate functions computes each aggregate independently per group, returning one row per group."
+      },
+      {
+        "texto_opcion": "It returns one row total, with global sum and average across the entire DataFrame.",
+        "es_correcta": false,
+        "explicacion": "Because `groupBy(\"category\")` is specified, the aggregation is computed per category, not globally."
+      },
+      {
+        "texto_opcion": "It throws an error because `.agg()` only accepts a single aggregate function.",
+        "es_correcta": false,
+        "explicacion": "`.agg()` accepts multiple aggregate expressions in a single call; this is standard usage."
+      },
+      {
+        "texto_opcion": "It computes `avg_revenue` as a running average ordered by row position.",
+        "es_correcta": false,
+        "explicacion": "There is no window or ordering involved; `avg` here is a simple per-group aggregate, not a running calculation."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "groupBy multiple aggregations"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to identify and keep only the rows representing duplicate `order_id` values that occurred more than once, for further investigation — not the deduplicated table itself.\n\nWhich approach is most appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "Group by `order_id`, count occurrences, filter where count > 1, then join back to the original table.",
+        "es_correcta": true,
+        "explicacion": "Counting occurrences per `order_id` and filtering for counts greater than one identifies which IDs are duplicated, which can then be joined back to retrieve the full duplicate rows."
+      },
+      {
+        "texto_opcion": "Call `dropDuplicates([\"order_id\"])` and inspect the result.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates` removes duplicates and returns unique rows; it does not surface which rows were duplicated."
+      },
+      {
+        "texto_opcion": "Call `df.distinct()` and compare row counts before and after.",
+        "es_correcta": false,
+        "explicacion": "This only reveals how many duplicate rows existed in total, not which specific `order_id` values or rows were duplicated."
+      },
+      {
+        "texto_opcion": "Use `approx_count_distinct(\"order_id\")` to estimate duplicate rows.",
+        "es_correcta": false,
+        "explicacion": "`approx_count_distinct` estimates cardinality and does not identify or return the duplicate rows themselves."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "groupBy + count for duplicate detection"
+    ]
+  },
+  {
+    "pregunta": "Which window function should a data engineer use to assign a unique, sequential rank to rows within each partition, even when tie values exist, such that no two rows ever share the same rank?",
+    "opciones": [
+      {
+        "texto_opcion": "`row_number()`",
+        "es_correcta": true,
+        "explicacion": "`row_number()` always assigns a strictly sequential, unique value within each partition regardless of ties in the ordering column."
+      },
+      {
+        "texto_opcion": "`rank()`",
+        "es_correcta": false,
+        "explicacion": "`rank()` assigns the same rank to tied rows and skips subsequent rank values, so ties do not get unique numbers."
+      },
+      {
+        "texto_opcion": "`dense_rank()`",
+        "es_correcta": false,
+        "explicacion": "`dense_rank()` also assigns equal ranks to ties, just without leaving gaps in the rank sequence."
+      },
+      {
+        "texto_opcion": "`ntile()`",
+        "es_correcta": false,
+        "explicacion": "`ntile()` divides rows into a fixed number of buckets and does not guarantee unique sequential values per row."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "window functions: row_number vs rank"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs `df.describe(\"price\").show()` on a column containing some null values.\n\nHow does `describe()` handle the nulls when computing `count`, `mean`, and `stddev`?",
+    "opciones": [
+      {
+        "texto_opcion": "Null values are excluded from `count`, `mean`, and `stddev` calculations.",
+        "es_correcta": true,
+        "explicacion": "`describe()` follows standard SQL aggregate semantics, ignoring nulls when computing count, mean, and standard deviation."
+      },
+      {
+        "texto_opcion": "Null values are treated as zero in all calculations.",
+        "es_correcta": false,
+        "explicacion": "Nulls are excluded, not converted to zero, which would otherwise skew the mean and standard deviation incorrectly."
+      },
+      {
+        "texto_opcion": "The function throws an error if any nulls are present.",
+        "es_correcta": false,
+        "explicacion": "`describe()` runs successfully on columns containing nulls; it does not raise an error."
+      },
+      {
+        "texto_opcion": "Null values are counted but excluded only from `mean`.",
+        "es_correcta": false,
+        "explicacion": "Nulls are excluded consistently from count, mean, and stddev calculations, not selectively from just one."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "describe/summary null handling"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to deduplicate a streaming DataFrame `events_stream` based on an `event_id` column while the stream is running.\n\n```python\ndeduped_df = events_stream.dropDuplicates([\"event_id\"])\n```\n\nWhat is an important consideration about this operation in Structured Streaming?",
+    "opciones": [
+      {
+        "texto_opcion": "Without a watermark, Spark must retain all previously seen `event_id` state indefinitely to detect duplicates, which can grow state size unbounded.",
+        "es_correcta": true,
+        "explicacion": "Streaming deduplication state grows continuously unless bounded by a watermark on an event-time column, since Spark needs to remember past keys to detect new duplicates."
+      },
+      {
+        "texto_opcion": "Streaming DataFrames do not support `dropDuplicates` and this code throws an exception.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates` is supported on streaming DataFrames; the concern is unbounded state growth, not lack of support."
+      },
+      {
+        "texto_opcion": "Spark automatically purges deduplication state every micro-batch regardless of watermark settings.",
+        "es_correcta": false,
+        "explicacion": "State is not automatically purged each micro-batch; it persists across batches unless a watermark defines an eviction policy."
+      },
+      {
+        "texto_opcion": "Deduplication in streaming only works on the `event_id` column if it is the partition column of the source.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates` works on any specified column regardless of how the source data is physically partitioned."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "dropDuplicates in streaming"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to find, for each `customer_id`, the difference in days between consecutive `order_date` values.\n\nWhich window function combination is appropriate?",
+    "opciones": [
+      {
+        "texto_opcion": "Use `lag(\"order_date\")` over a window partitioned by `customer_id` and ordered by `order_date`, then compute `datediff` against the current row.",
+        "es_correcta": true,
+        "explicacion": "`lag` retrieves the previous row's value within the partition, allowing a direct date difference calculation between consecutive orders per customer."
+      },
+      {
+        "texto_opcion": "Use `row_number()` over a window partitioned by `customer_id`.",
+        "es_correcta": false,
+        "explicacion": "`row_number()` only assigns sequential numbers; it does not provide access to a prior row's date value for comparison."
+      },
+      {
+        "texto_opcion": "Use `groupBy(\"customer_id\").agg(max(\"order_date\") - min(\"order_date\"))`.",
+        "es_correcta": false,
+        "explicacion": "This computes only the overall span between the first and last order, not the difference between each pair of consecutive orders."
+      },
+      {
+        "texto_opcion": "Use `count(\"order_date\")` partitioned by `customer_id`.",
+        "es_correcta": false,
+        "explicacion": "`count` only tallies the number of orders and provides no information about the time gap between them."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "window functions: lag/lead"
+    ]
+  },
+  {
+    "pregunta": "Which code correctly computes the percentage each `category`'s `sales` contributes to the overall total sales, displayed alongside each category's row?",
+    "opciones": [
+      {
+        "texto_opcion": "```python\nw = Window.partitionBy()\ndf.withColumn(\"pct_total\", col(\"sales\") / sum(\"sales\").over(w) * 100)\n```",
+        "es_correcta": true,
+        "explicacion": "An empty `partitionBy()` window treats the entire DataFrame as one partition, so `sum(\"sales\").over(w)` gives the grand total against which each row's percentage can be computed."
+      },
+      {
+        "texto_opcion": "```python\ndf.groupBy(\"category\").agg((col(\"sales\") / sum(\"sales\") * 100).alias(\"pct_total\"))\n```",
+        "es_correcta": false,
+        "explicacion": "`col(\"sales\")` cannot be referenced directly inside `.agg()` outside of an aggregate function once grouping collapses rows."
+      },
+      {
+        "texto_opcion": "```python\ndf.withColumn(\"pct_total\", col(\"sales\") / count(\"sales\") * 100)\n```",
+        "es_correcta": false,
+        "explicacion": "Dividing by `count` instead of `sum` produces an incorrect ratio, not a percentage of total sales."
+      },
+      {
+        "texto_opcion": "```python\ndf.select(\"category\", \"sales\").distinct()\n```",
+        "es_correcta": false,
+        "explicacion": "This only removes duplicate rows and performs no percentage calculation whatsoever."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "window functions: ratio to total"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has a table where some rows are true duplicates (identical across all columns) and others share the same business key but have different `last_modified` values due to legitimate updates. The engineer needs to keep only the latest version per business key while also removing exact duplicate rows first.\n\nWhich processing order is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "First apply `dropDuplicates()` with no arguments to remove exact duplicate rows, then use a window function ranked by `last_modified` to keep only the latest row per business key.",
+        "es_correcta": true,
+        "explicacion": "Removing exact duplicates first avoids skewing the ranking step, and the window function then correctly isolates the most recent legitimate update per key."
+      },
+      {
+        "texto_opcion": "Apply `dropDuplicates([\"business_key\"])` only, since it will automatically retain the most recently modified row.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates` on a subset does not consider any ordering column like `last_modified`; it can arbitrarily keep any row for that key."
+      },
+      {
+        "texto_opcion": "Use only `distinct()` on the full DataFrame, since it removes both exact duplicates and old versions.",
+        "es_correcta": false,
+        "explicacion": "`distinct()` only removes fully identical rows; it has no awareness of business keys or recency and won't resolve differing `last_modified` versions."
+      },
+      {
+        "texto_opcion": "Apply a window function first, then `dropDuplicates()`, since order does not affect the result.",
+        "es_correcta": false,
+        "explicacion": "Order matters: ranking before removing exact duplicates can let duplicate rows distort row numbering, whereas removing them first ensures clean ranking."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "scenario: combining dropDuplicates and window functions"
+    ]
+  },
+  {
+    "pregunta": "What does the following code return?\n\n```python\nfrom pyspark.sql.functions import countDistinct\n\ndf.select(countDistinct(\"region\", \"product\")).show()\n```",
+    "opciones": [
+      {
+        "texto_opcion": "The count of distinct combinations of `region` and `product` values together.",
+        "es_correcta": true,
+        "explicacion": "Passing multiple columns to `countDistinct` counts unique combinations across those columns jointly, not each column separately."
+      },
+      {
+        "texto_opcion": "Two separate counts: one for distinct `region` values and one for distinct `product` values.",
+        "es_correcta": false,
+        "explicacion": "`countDistinct` with multiple arguments returns a single combined count, not two independent results."
+      },
+      {
+        "texto_opcion": "The total number of rows in the DataFrame.",
+        "es_correcta": false,
+        "explicacion": "This computes distinct combinations, not the raw row count, which would simply be `df.count()`."
+      },
+      {
+        "texto_opcion": "An error, since `countDistinct` only accepts a single column.",
+        "es_correcta": false,
+        "explicacion": "`countDistinct` accepts multiple column arguments and treats them as a composite key for distinctness."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "countDistinct with multiple columns"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to compute, for each `department`, the average salary but only include employees with `status = 'active'`, while still keeping all employees (active and inactive) in the final output with the department average attached as a new column.\n\nWhich approach is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Use a window function with `avg(when(col(\"status\") == \"active\", col(\"salary\")))` partitioned by `department`, applied via `withColumn`.",
+        "es_correcta": true,
+        "explicacion": "Combining a conditional `when` expression inside a windowed `avg` allows filtering which rows contribute to the average while preserving every row in the output via `withColumn`."
+      },
+      {
+        "texto_opcion": "Filter the DataFrame to `status = 'active'` first, then use `groupBy(\"department\").agg(avg(\"salary\"))`.",
+        "es_correcta": false,
+        "explicacion": "Filtering before grouping removes inactive employees entirely from the result, but the requirement is to retain all employees in the output."
+      },
+      {
+        "texto_opcion": "Use `groupBy(\"department\", \"status\").agg(avg(\"salary\"))` and join back on department only.",
+        "es_correcta": false,
+        "explicacion": "Grouping by both `department` and `status` produces separate averages per status, not a single active-only average attached to every employee row."
+      },
+      {
+        "texto_opcion": "Use `dropDuplicates([\"department\"])` to get one row per department, then compute the average manually.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates` arbitrarily picks one row per department and does not compute any aggregate value."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "scenario: conditional aggregation with window"
+    ]
+  },
+  {
+    "pregunta": "Which statement accurately describes a key limitation of `dropDuplicates()` when no column subset is specified?",
+    "opciones": [
+      {
+        "texto_opcion": "Rows that differ by even a single column value, such as a slightly different timestamp, will not be considered duplicates.",
+        "es_correcta": true,
+        "explicacion": "With no subset specified, `dropDuplicates()` compares all columns, so any difference — even in a single field — means the rows are treated as distinct."
+      },
+      {
+        "texto_opcion": "It can only be applied to DataFrames with fewer than 1 million rows.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates()` has no such row-count restriction and scales across distributed datasets of any size."
+      },
+      {
+        "texto_opcion": "It requires the DataFrame to be sorted beforehand.",
+        "es_correcta": false,
+        "explicacion": "`dropDuplicates()` does not require any prior sorting; it operates correctly on unsorted data."
+      },
+      {
+        "texto_opcion": "It permanently mutates the original DataFrame in place.",
+        "es_correcta": false,
+        "explicacion": "PySpark DataFrames are immutable; `dropDuplicates()` returns a new DataFrame rather than modifying the original."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "dropDuplicates limitations"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to assign each transaction within a `customer_id` partition to one of 4 equally sized buckets based on `transaction_amount` order, for quartile analysis.\n\nWhich window function is designed for this purpose?",
+    "opciones": [
+      {
+        "texto_opcion": "`ntile(4)`",
+        "es_correcta": true,
+        "explicacion": "`ntile(n)` divides ordered rows within each partition into `n` roughly equal-sized groups, which is exactly what quartile bucketing requires."
+      },
+      {
+        "texto_opcion": "`rank()`",
+        "es_correcta": false,
+        "explicacion": "`rank()` assigns a position based on ordering but does not group rows into a fixed number of buckets."
+      },
+      {
+        "texto_opcion": "`dense_rank()`",
+        "es_correcta": false,
+        "explicacion": "`dense_rank()` produces a compact ranking without gaps but still does not create equally sized buckets."
+      },
+      {
+        "texto_opcion": "`row_number()`",
+        "es_correcta": false,
+        "explicacion": "`row_number()` simply numbers rows sequentially and has no bucketing behavior."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "window functions: ntile"
+    ]
+  },
+  {
+    "pregunta": "A data engineer notices that `df.agg(sum(\"amount\"))` returns `null` even though the `amount` column contains some non-null numeric values.\n\nWhat is the most likely explanation?",
+    "opciones": [
+      {
+        "texto_opcion": "The `amount` column is stored as a string type containing non-numeric values that cannot be implicitly cast, causing the sum to fail silently and return null.",
+        "es_correcta": true,
+        "explicacion": "When a column intended to be numeric contains non-castable string values, Spark's sum aggregation can return null instead of throwing an error, depending on configuration."
+      },
+      {
+        "texto_opcion": "`sum()` always returns null when grouping is not applied.",
+        "es_correcta": false,
+        "explicacion": "`sum()` works correctly without `groupBy`, returning a single aggregate row over the entire DataFrame; this is not the cause of a null result."
+      },
+      {
+        "texto_opcion": "`sum()` requires the column to be explicitly cast using `approx_count_distinct` first.",
+        "es_correcta": false,
+        "explicacion": "`approx_count_distinct` is unrelated to summing values and is not a prerequisite for using `sum()`."
+      },
+      {
+        "texto_opcion": "PySpark's `sum()` function does not support floating-point columns.",
+        "es_correcta": false,
+        "explicacion": "`sum()` fully supports floating-point and other numeric types; this is not a known limitation."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "troubleshooting: sum with nulls"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to deduplicate a table by keeping the row with the highest `priority` value for each `ticket_id`, breaking ties by the earliest `created_at`.\n\nWhich window specification correctly implements this tie-breaking logic?",
+    "opciones": [
+      {
+        "texto_opcion": "`Window.partitionBy(\"ticket_id\").orderBy(col(\"priority\").desc(), col(\"created_at\").asc())`",
+        "es_correcta": true,
+        "explicacion": "Ordering first by `priority` descending ranks the highest priority first, and the secondary ascending sort on `created_at` correctly breaks ties by earliest creation time."
+      },
+      {
+        "texto_opcion": "`Window.partitionBy(\"priority\").orderBy(col(\"ticket_id\").desc())`",
+        "es_correcta": false,
+        "explicacion": "Partitioning by `priority` instead of `ticket_id` groups the wrong dimension and does not deduplicate per ticket."
+      },
+      {
+        "texto_opcion": "`Window.partitionBy(\"ticket_id\").orderBy(col(\"created_at\").desc())`",
+        "es_correcta": false,
+        "explicacion": "This orders only by creation time and ignores `priority` entirely, which is the primary ranking criterion specified."
+      },
+      {
+        "texto_opcion": "`Window.partitionBy(\"ticket_id\", \"created_at\").orderBy(col(\"priority\").desc())`",
+        "es_correcta": false,
+        "explicacion": "Including `created_at` in `partitionBy` creates a separate partition for every timestamp, preventing proper ranking across all rows of the same ticket."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "window functions: multi-column ordering"
+    ]
+  },
+  {
+    "pregunta": "What is the key difference between `rank()` and `dense_rank()` when there are tied values in the ordering column?",
+    "opciones": [
+      {
+        "texto_opcion": "`rank()` leaves gaps in the ranking sequence after ties, while `dense_rank()` assigns consecutive ranks with no gaps.",
+        "es_correcta": true,
+        "explicacion": "After a tie, `rank()` skips ahead by the number of tied rows, whereas `dense_rank()` continues with the next consecutive integer."
+      },
+      {
+        "texto_opcion": "`dense_rank()` assigns the same value to all rows in a partition, while `rank()` assigns unique values.",
+        "es_correcta": false,
+        "explicacion": "Both functions assign equal values only to tied rows, not to the entire partition uniformly."
+      },
+      {
+        "texto_opcion": "`rank()` requires a `partitionBy` clause while `dense_rank()` does not.",
+        "es_correcta": false,
+        "explicacion": "Both functions can be used with or without `partitionBy`; this is not a distinguishing requirement."
+      },
+      {
+        "texto_opcion": "`dense_rank()` can only be used on numeric columns, while `rank()` works on any data type.",
+        "es_correcta": false,
+        "explicacion": "Both `rank()` and `dense_rank()` work on any orderable data type, including strings and dates."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "window functions: rank vs dense_rank"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to find the top 3 highest-paid employees within each `department`.\n\n```python\nw = Window.partitionBy(\"department\").orderBy(col(\"salary\").desc())\nresult_df = employees.withColumn(\"rnk\", dense_rank().over(w)).filter(col(\"rnk\") <= 3)\n```\n\nWhat is a potential issue with using `dense_rank()` for this requirement?",
+    "opciones": [
+      {
+        "texto_opcion": "If multiple employees tie for 3rd place in salary, all of them will be included, resulting in more than 3 rows for that department.",
+        "es_correcta": true,
+        "explicacion": "`dense_rank()` assigns the same rank to tied values, so ties at the cutoff rank cause extra rows to satisfy `rnk <= 3`, exceeding exactly 3 results."
+      },
+      {
+        "texto_opcion": "`dense_rank()` will throw an error when combined with `filter()`.",
+        "es_correcta": false,
+        "explicacion": "Filtering on a `dense_rank()` output column is valid and commonly used; no error occurs."
+      },
+      {
+        "texto_opcion": "The window will return results sorted by `department` alphabetically instead of by `salary`.",
+        "es_correcta": false,
+        "explicacion": "The `orderBy(col(\"salary\").desc())` clause controls ranking order; sorting of the final result is unaffected by department name."
+      },
+      {
+        "texto_opcion": "`dense_rank()` cannot be partitioned by a string column like `department`.",
+        "es_correcta": false,
+        "explicacion": "`partitionBy` supports string columns without restriction; this is not a valid limitation."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "scenario: top-N with dense_rank"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs `df.groupBy(\"product_id\").agg(sum(\"quantity\"), avg(\"price\")).explain()` and notices a shuffle stage in the physical plan.\n\nWhy does this shuffle occur?",
+    "opciones": [
+      {
+        "texto_opcion": "Rows with the same `product_id` may reside on different partitions, so Spark must shuffle data to bring matching keys together before aggregating.",
+        "es_correcta": true,
+        "explicacion": "Grouping requires co-locating all rows of the same key, which typically necessitates a shuffle unless the data is already partitioned by that key."
+      },
+      {
+        "texto_opcion": "Shuffles only occur when using `avg()`, never with `sum()`.",
+        "es_correcta": false,
+        "explicacion": "Both `sum()` and `avg()` are aggregate functions that can trigger a shuffle; the shuffle is caused by the grouping operation itself, not the specific function."
+      },
+      {
+        "texto_opcion": "The shuffle is caused by calling `.explain()`, which forces data redistribution.",
+        "es_correcta": false,
+        "explicacion": "`.explain()` only displays the execution plan; it does not trigger any data movement or affect query behavior."
+      },
+      {
+        "texto_opcion": "Shuffles happen because two aggregate functions were used in the same `.agg()` call.",
+        "es_correcta": false,
+        "explicacion": "Using multiple aggregate functions in one `.agg()` call does not cause additional shuffles; the shuffle is tied to the grouping key redistribution, computed once regardless of function count."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "groupBy execution / shuffle"
+    ]
+  },
+  {
+    "pregunta": "Which scenario is the most appropriate use case for `approx_count_distinct` over `countDistinct`?",
+    "opciones": [
+      {
+        "texto_opcion": "Generating a daily dashboard metric showing roughly how many unique website visitors there were, where speed matters more than exact precision.",
+        "es_correcta": true,
+        "explicacion": "Dashboard metrics that tolerate small estimation error benefit from the speed of `approx_count_distinct`, especially on large-scale data."
+      },
+      {
+        "texto_opcion": "Calculating the exact number of unique patient IDs for a regulatory compliance audit.",
+        "es_correcta": false,
+        "explicacion": "Regulatory and compliance use cases require exact figures, making `countDistinct` the appropriate choice rather than an estimate."
+      },
+      {
+        "texto_opcion": "Validating that a primary key column contains zero duplicate values before a merge operation.",
+        "es_correcta": false,
+        "explicacion": "Validating uniqueness for a primary key constraint requires an exact count to guarantee correctness, not an approximation."
+      },
+      {
+        "texto_opcion": "Reconciling financial transaction counts between two systems during month-end close.",
+        "es_correcta": false,
+        "explicacion": "Financial reconciliation demands exact matching figures, so an approximate count would be unsuitable and risk masking discrepancies."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "scenario: choosing approximate vs exact distinct"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs to deduplicate IoT sensor readings where the same `sensor_id` and `reading_timestamp` combination might be reported twice due to network retries, but slightly different `reading_value` due to floating-point rounding differences between retries should still be treated as the same event.\n\nWhich deduplication strategy is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Use `dropDuplicates([\"sensor_id\", \"reading_timestamp\"])` to deduplicate based only on the identifying key columns, ignoring minor differences in `reading_value`.",
+        "es_correcta": true,
+        "explicacion": "Specifying only the key columns as the subset ensures duplicates are identified by the logical identity of the event, ignoring inconsequential value differences."
+      },
+      {
+        "texto_opcion": "Use `dropDuplicates()` with no arguments to remove rows that are fully identical.",
+        "es_correcta": false,
+        "explicacion": "Without a subset, rows with slightly different `reading_value` due to rounding will not be considered duplicates and will both be retained."
+      },
+      {
+        "texto_opcion": "Round `reading_value` to zero decimal places and then call `distinct()`.",
+        "es_correcta": false,
+        "explicacion": "Aggressively rounding to zero decimals could destroy meaningful sensor precision and is not the intended deduplication key."
+      },
+      {
+        "texto_opcion": "Use `groupBy(\"sensor_id\").count()` to identify and remove duplicate sensors.",
+        "es_correcta": false,
+        "explicacion": "Grouping only by `sensor_id` ignores the timestamp dimension entirely and would incorrectly treat all readings from one sensor as duplicates."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "scenario: subset-based deduplication"
+    ]
+  },
+  {
+    "pregunta": "What does the following code compute for each row in the `sales` DataFrame?\n\n```python\nw = Window.partitionBy(\"region\").orderBy(\"sale_date\") \\\n    .rowsBetween(-2, 0)\ndf.withColumn(\"moving_avg\", avg(\"amount\").over(w))\n```",
+    "opciones": [
+      {
+        "texto_opcion": "A 3-row moving average of `amount` (the current row and the two preceding rows) within each region, ordered by `sale_date`.",
+        "es_correcta": true,
+        "explicacion": "`rowsBetween(-2, 0)` defines a frame spanning the current row and the two rows before it, so `avg` computes a 3-row moving average per region."
+      },
+      {
+        "texto_opcion": "The average `amount` across the entire `region` partition, identical for every row.",
+        "es_correcta": false,
+        "explicacion": "A whole-partition average would require `rowsBetween(Window.unboundedPreceding, Window.unboundedFollowing)`, not a bounded frame of `(-2, 0)`."
+      },
+      {
+        "texto_opcion": "The average of the next two rows following the current row.",
+        "es_correcta": false,
+        "explicacion": "Negative frame boundaries refer to preceding rows, not following ones; `(-2, 0)` looks backward, not forward."
+      },
+      {
+        "texto_opcion": "A cumulative average from the first row in the partition through the current row.",
+        "es_correcta": false,
+        "explicacion": "A cumulative average from the start would require `Window.unboundedPreceding` as the lower bound, not a fixed value of `-2`."
+      }
+    ],
+    "tags": [
+      "3.5",
+      "window functions: moving average"
+    ]
+  }
+]

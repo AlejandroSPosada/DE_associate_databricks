@@ -1,0 +1,893 @@
+[
+  {
+    "pregunta": "A data engineering team often encounters the problem: *'It works in dev but breaks in production.'* According to Databricks best practices, which root cause does this symptom indicate?",
+    "opciones": [
+      {
+        "texto_opcion": "Manual, inconsistent configuration between environments — the same pipeline was not deployed with the same settings.",
+        "es_correcta": true,
+        "explicacion": "When configuration is managed manually (through the UI or ad-hoc CLI calls), differences accumulate between environments. The solution is Infrastructure as Code (IaC) via DABs, where the same YAML and code are deployed consistently to every environment."
+      },
+      {
+        "texto_opcion": "The `databricks bundle validate` command was not run before deployment.",
+        "es_correcta": false,
+        "explicacion": "`bundle validate` catches YAML syntax errors but cannot detect logic or behavioral differences caused by inconsistent environment configurations. The root cause is lack of a unified IaC approach."
+      },
+      {
+        "texto_opcion": "The dev workspace uses a different Databricks Runtime version than production.",
+        "es_correcta": false,
+        "explicacion": "While runtime mismatches can contribute, they are a symptom — not the root cause. The root cause is inconsistent configuration between environments, addressed by defining all configuration in version-controlled YAML."
+      },
+      {
+        "texto_opcion": "The pipeline was built with Delta Live Tables, which behaves differently in dev mode.",
+        "es_correcta": false,
+        "explicacion": "DLT dev mode is one behavioral difference, but the overarching cause of environment-specific failures is inconsistent, manually managed configuration — not DLT mode alone."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "IaC",
+      "Concepts"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is designing a multi-environment bundle strategy. According to the IaC principles for pipeline promotion, which items should NOT be committed to Git?",
+    "opciones": [
+      {
+        "texto_opcion": "Built artifacts (`.whl`, `.jar`) and credentials/tokens.",
+        "es_correcta": true,
+        "explicacion": "Compiled binaries should be built in CI/CD, not committed. Credentials must never appear in Git. All YAML, source code, and test files should be committed."
+      },
+      {
+        "texto_opcion": "`databricks.yml`, resource YAML files, and source notebooks.",
+        "es_correcta": false,
+        "explicacion": "These should all be committed to Git — they are the source of truth for the bundle. Only artifacts and credentials should be excluded."
+      },
+      {
+        "texto_opcion": "The `tests/` directory and GitHub Actions workflow YAML.",
+        "es_correcta": false,
+        "explicacion": "`tests/` and `.github/workflows/` are core components that must be committed. Only artifacts and credentials are excluded."
+      },
+      {
+        "texto_opcion": "The `databricks.yml` file — it contains workspace URLs that are environment-sensitive.",
+        "es_correcta": false,
+        "explicacion": "`databricks.yml` must be committed — workspace URLs are handled safely through `targets` blocks. The file does not contain secrets."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "IaC",
+      "Best Practices"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has the following `databricks.yml` snippet:\n\n```yaml\ntargets:\n  dev:\n    default: true\n    mode: development\n  staging:\n    mode: production\n  prod:\n    mode: production\n    git:\n      branch: main\n```\n\nThe engineer runs `databricks bundle deploy` from branch `feature/fix-123`. Which target receives the deployment?",
+    "opciones": [
+      {
+        "texto_opcion": "`dev` — it is the `default: true` target and has no branch restriction.",
+        "es_correcta": true,
+        "explicacion": "Without a `-t` flag, the `default: true` target (`dev`) is selected. Development mode has no `git.branch` validation, so the deploy proceeds regardless of the current branch."
+      },
+      {
+        "texto_opcion": "`prod` — bundles always prefer the production target.",
+        "es_correcta": false,
+        "explicacion": "There is no preference for production targets. Without `-t`, only the `default: true` target is used."
+      },
+      {
+        "texto_opcion": "The command fails because the branch is not `main`.",
+        "es_correcta": false,
+        "explicacion": "The branch restriction (`git.branch: main`) only applies to the `prod` target. The `dev` target has no such restriction."
+      },
+      {
+        "texto_opcion": "Both `dev` and `staging` — bundles deploy to all non-production targets by default.",
+        "es_correcta": false,
+        "explicacion": "`databricks bundle deploy` deploys to exactly one target — the default target or the one specified with `-t`. Simultaneous multi-target deploy is not supported."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Targets",
+      "Deployment"
+    ]
+  },
+  {
+    "pregunta": "A data engineering team wants `staging` to behave as close to `production` as possible, including having active job schedules. Which `mode` should the `staging` target use?",
+    "opciones": [
+      {
+        "texto_opcion": "`mode: production` — this keeps schedules active and uses production-like naming, providing genuine staging validation.",
+        "es_correcta": true,
+        "explicacion": "`mode: production` on staging prevents auto-pausing of schedules, uses clean resource naming (no prefix), and sets DLT pipelines to `development: false` — making staging truly reflect production behavior."
+      },
+      {
+        "texto_opcion": "`mode: development` — this gives more flexibility for testing.",
+        "es_correcta": false,
+        "explicacion": "`mode: development` pauses all schedules and prefixes resource names — neither behavior is suitable for a staging environment meant to mirror production."
+      },
+      {
+        "texto_opcion": "No `mode` setting — the default behavior is most appropriate for staging.",
+        "es_correcta": false,
+        "explicacion": "Without `mode`, some production-safety validations (like Git branch checks and DLT mode enforcement) are skipped. `mode: production` is recommended for staging."
+      },
+      {
+        "texto_opcion": "`mode: staging` — Databricks provides a dedicated staging mode.",
+        "es_correcta": false,
+        "explicacion": "There is no `mode: staging`. Databricks only supports `mode: development` and `mode: production`."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Deployment Modes"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs different cluster sizes in different environments: 2 workers in dev and 8 workers in prod. Review this configuration:\n\n```yaml\nvariables:\n  num_workers:\n    default: 2\n\ntargets:\n  dev:\n    variables:\n      num_workers: 2\n  prod:\n    variables:\n      num_workers: 8\n```\n\nHow are the cluster workers referenced in the job definition?",
+    "opciones": [
+      {
+        "texto_opcion": "`num_workers: ${var.num_workers}` in the `new_cluster` block of the job definition.",
+        "es_correcta": true,
+        "explicacion": "Variables are referenced with `${var.<name>}` syntax anywhere in YAML. The value is resolved at deploy time based on the active target — 2 for dev, 8 for prod."
+      },
+      {
+        "texto_opcion": "`num_workers: $num_workers` using a dollar-sign shorthand.",
+        "es_correcta": false,
+        "explicacion": "Bundle substitution syntax is `${var.<name>}` — the dollar-brace format. `$num_workers` without braces is not valid."
+      },
+      {
+        "texto_opcion": "`num_workers: {{var.num_workers}}` using Jinja templating.",
+        "es_correcta": false,
+        "explicacion": "Databricks bundles use `${...}` syntax, not Jinja `{{...}}` syntax. The correct reference is `${var.num_workers}`."
+      },
+      {
+        "texto_opcion": "Variables cannot be used in `new_cluster` blocks — they are only valid in notebook task parameters.",
+        "es_correcta": false,
+        "explicacion": "Variables can be used anywhere in bundle YAML, including cluster definitions. There are no restrictions on where `${var.*}` substitutions can appear."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Variables",
+      "Resource Overrides"
+    ]
+  },
+  {
+    "pregunta": "A data engineer needs a job to send failure alerts to `dev@company.com` in dev, `staging-alerts@company.com` in staging, and `oncall@company.com` in production. What is the correct approach?",
+    "opciones": [
+      {
+        "texto_opcion": "Define a `alert_email` variable with a default, override per target in `targets.variables`, and reference `${var.alert_email}` in `email_notifications.on_failure`.",
+        "es_correcta": true,
+        "explicacion": "This is the textbook variable parameterization pattern. Define once, override per target — no duplication of the resource definition."
+      },
+      {
+        "texto_opcion": "Create three separate job YAML files — one per environment — each with the hardcoded email.",
+        "es_correcta": false,
+        "explicacion": "Separate YAML files per environment create duplication and divergence — the exact anti-pattern DABs is designed to prevent. Use variables instead."
+      },
+      {
+        "texto_opcion": "Add `email_notifications.on_failure` inside each `targets` block directly without using variables.",
+        "es_correcta": false,
+        "explicacion": "While target-level resource overrides work, using a variable is the cleaner and more maintainable approach for scalar values like email addresses."
+      },
+      {
+        "texto_opcion": "Set the email at the workspace level using a `DATABRICKS_ALERT_EMAIL` environment variable.",
+        "es_correcta": false,
+        "explicacion": "`DATABRICKS_ALERT_EMAIL` is not a recognized Databricks environment variable. Bundle variables are the correct mechanism."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Variables",
+      "Environment-Specific Config"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses a per-target resource override for the production cluster in a job:\n\n```yaml\nresources:\n  jobs:\n    my-job:\n      job_clusters:\n        - job_cluster_key: main-cluster\n          new_cluster:\n            node_type_id: i3.xlarge\n            num_workers: 2\n\ntargets:\n  prod:\n    resources:\n      jobs:\n        my-job:\n          job_clusters:\n            - job_cluster_key: main-cluster\n              new_cluster:\n                node_type_id: i3.4xlarge\n                num_workers: 16\n```\n\nWhen deploying to `prod`, what node type and worker count does the job use?",
+    "opciones": [
+      {
+        "texto_opcion": "`i3.4xlarge` with 16 workers — the `targets.prod.resources` block overrides the top-level definition.",
+        "es_correcta": true,
+        "explicacion": "Settings defined in `targets.<target>.resources` always take precedence over the top-level `resources` block. The prod target's cluster spec fully replaces the default."
+      },
+      {
+        "texto_opcion": "`i3.xlarge` with 16 workers — the node type comes from the top level, workers from the override.",
+        "es_correcta": false,
+        "explicacion": "Target overrides replace the entire matched block, not individual fields. Both `node_type_id` and `num_workers` come from the prod override."
+      },
+      {
+        "texto_opcion": "`i3.xlarge` with 2 workers — the top-level definition is always used.",
+        "es_correcta": false,
+        "explicacion": "Target-level resource overrides have the highest precedence. The prod target's values (`i3.4xlarge`, 16 workers) take effect."
+      },
+      {
+        "texto_opcion": "The deploy fails — you cannot override cluster specs in a target block.",
+        "es_correcta": false,
+        "explicacion": "Per-target cluster overrides are a supported and recommended pattern in DABs. The configuration shown is valid."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Resource Overrides"
+    ]
+  },
+  {
+    "pregunta": "A DLT pipeline uses `label: default` for its cluster configuration. A data engineer wants to use a larger cluster in production. Which configuration pattern is correct?",
+    "opciones": [
+      {
+        "texto_opcion": "Override in `targets.prod.resources.pipelines.<name>.clusters` using the same `label: default` to match and replace the cluster configuration.",
+        "es_correcta": true,
+        "explicacion": "DLT pipeline cluster overrides use the `label` field to identify which cluster configuration to override. The `label: default` identifies the main compute cluster."
+      },
+      {
+        "texto_opcion": "Override in `targets.prod.resources.pipelines.<name>.job_clusters` using the cluster key.",
+        "es_correcta": false,
+        "explicacion": "DLT pipelines use `clusters` with `label`, not `job_clusters` with `job_cluster_key`. The `job_clusters` field is for Lakeflow Jobs, not pipelines."
+      },
+      {
+        "texto_opcion": "Set `development: false` in the prod target to unlock larger cluster sizes.",
+        "es_correcta": false,
+        "explicacion": "`development: false` affects DLT mode behavior, not cluster size. Cluster overrides require specifying the cluster configuration in the target override block."
+      },
+      {
+        "texto_opcion": "Use `--cluster-id <id>` when deploying to prod to override the cluster.",
+        "es_correcta": false,
+        "explicacion": "`--cluster-id` is only allowed in `mode: development`. Production mode blocks cluster overrides via CLI flag."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Resource Overrides",
+      "DLT"
+    ]
+  },
+  {
+    "pregunta": "A data engineer configures Unity Catalog per-environment using this pattern:\n\n```yaml\nvariables:\n  catalog:\n    default: dev_catalog\n\ntargets:\n  prod:\n    variables:\n      catalog: prod_catalog\n\nresources:\n  pipelines:\n    silver_pipeline:\n      catalog: ${var.catalog}\n      schema: silver\n```\n\nWhat catalog does the pipeline use when deployed to `prod`?",
+    "opciones": [
+      {
+        "texto_opcion": "`prod_catalog` — the prod target's variable override is applied at deploy time.",
+        "es_correcta": true,
+        "explicacion": "Target-level variables override the global default. When deploying to `prod`, `${var.catalog}` resolves to `prod_catalog`."
+      },
+      {
+        "texto_opcion": "`dev_catalog` — the default is always used regardless of target.",
+        "es_correcta": false,
+        "explicacion": "The global default (`dev_catalog`) is only used when no target-level override is provided. The `prod` target specifies `catalog: prod_catalog`."
+      },
+      {
+        "texto_opcion": "The deployment fails because `catalog` must be hardcoded in a pipeline resource.",
+        "es_correcta": false,
+        "explicacion": "Bundle variables can be used for any field in a pipeline resource, including `catalog`. This is the recommended pattern for environment-specific Unity Catalog targets."
+      },
+      {
+        "texto_opcion": "`${var.catalog}` — the substitution is not resolved and appears literally.",
+        "es_correcta": false,
+        "explicacion": "Substitutions are resolved at deploy time. The literal `${var.catalog}` string never appears in the deployed configuration."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Unity Catalog",
+      "Variables"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to name DLT pipeline schemas differently per environment to avoid collision:\n- Dev: `silver_dev`\n- Staging: `silver_staging`\n- Prod: `silver`\n\nWhich approach implements this cleanly?",
+    "opciones": [
+      {
+        "texto_opcion": "Define a `silver_schema` variable with a per-target override for each environment, and set `schema: ${var.silver_schema}` in the pipeline resource.",
+        "es_correcta": true,
+        "explicacion": "Variables with per-target overrides is the clean, DRY approach. Each environment gets its own schema value without duplicating the pipeline definition."
+      },
+      {
+        "texto_opcion": "Use `schema: silver_${bundle.target}` directly — this auto-generates `silver_dev`, `silver_staging`, `silver_prod`.",
+        "es_correcta": false,
+        "explicacion": "While `silver_${bundle.target}` works for `silver_dev` and `silver_staging`, it produces `silver_prod` — not `silver` as required. Variables with explicit overrides are needed."
+      },
+      {
+        "texto_opcion": "Create three separate pipeline YAML files, one per environment, each with a hardcoded schema name.",
+        "es_correcta": false,
+        "explicacion": "Separate YAML files per environment violate the single-source-of-truth principle and create maintenance burden. Use variable overrides instead."
+      },
+      {
+        "texto_opcion": "Use conditional logic in the YAML: `schema: (if bundle.target == prod then silver else silver_${bundle.target})`.",
+        "es_correcta": false,
+        "explicacion": "DABs YAML does not support conditional expressions. Per-target variable overrides are the correct mechanism."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Unity Catalog",
+      "Environment-Specific Config"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses `${bundle.target}` in their job name:\n\n```yaml\nresources:\n  jobs:\n    etl_job:\n      name: \"ETL Pipeline [${bundle.target}]\"\n```\n\nWhen deployed to `staging`, what is the job name? The target has `mode: production`.",
+    "opciones": [
+      {
+        "texto_opcion": "`ETL Pipeline [staging]` — `${bundle.target}` resolves to the target key name; `mode: production` adds no prefix.",
+        "es_correcta": true,
+        "explicacion": "`${bundle.target}` resolves to the YAML key of the current target (`staging`). Production mode does not add a prefix — only development mode adds `[dev <username>]`."
+      },
+      {
+        "texto_opcion": "`[dev alice]ETL Pipeline [staging]` — production mode still adds the dev prefix.",
+        "es_correcta": false,
+        "explicacion": "The `[dev <username>]` prefix is only applied by `mode: development`. Production mode does not add any prefix."
+      },
+      {
+        "texto_opcion": "`ETL Pipeline [production]` — `mode: production` overrides the target name to `production`.",
+        "es_correcta": false,
+        "explicacion": "`${bundle.target}` resolves to the YAML key exactly as written (`staging`), not to the mode name (`production`)."
+      },
+      {
+        "texto_opcion": "`ETL Pipeline [${bundle.target}]` — substitutions are not resolved for job names.",
+        "es_correcta": false,
+        "explicacion": "Substitutions are resolved at deploy time for all YAML fields, including `name`. The literal string does not appear in the deployed job."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Substitutions",
+      "Deployment Modes"
+    ]
+  },
+  {
+    "pregunta": "A team sets `git.branch: main` in their prod target. A developer on branch `feature/new-transform` accidentally runs `databricks bundle deploy -t prod`. What happens?",
+    "opciones": [
+      {
+        "texto_opcion": "The deployment fails with a validation error — the current branch `feature/new-transform` does not match the required `main`.",
+        "es_correcta": true,
+        "explicacion": "`mode: production` enforces that the current Git branch matches the configured `git.branch` value. This prevents accidental production deploys from non-main branches."
+      },
+      {
+        "texto_opcion": "The deployment succeeds because `git.branch` only generates a warning.",
+        "es_correcta": false,
+        "explicacion": "`git.branch` in a production target is enforced — it causes a hard failure, not a warning."
+      },
+      {
+        "texto_opcion": "The CLI automatically switches to `main` before deploying.",
+        "es_correcta": false,
+        "explicacion": "The Databricks CLI does not perform Git operations like branch switching. If the branch doesn't match, the deploy fails."
+      },
+      {
+        "texto_opcion": "The deployment succeeds but creates a separate deployment isolated from the main production resources.",
+        "es_correcta": false,
+        "explicacion": "The deployment is blocked entirely. There is no concept of an isolated or shadow deployment triggered by a branch mismatch."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Git Enforcement",
+      "Deployment Modes"
+    ]
+  },
+  {
+    "pregunta": "According to DABs best practices, what is the recommended Git branching strategy for pipeline promotion?",
+    "opciones": [
+      {
+        "texto_opcion": "Trunk-based development — short-lived feature branches merged into a single `main` branch that is always deployment-ready.",
+        "es_correcta": true,
+        "explicacion": "Trunk-based development minimizes merge conflicts and keeps `main` production-ready. Feature branches are short-lived, merged quickly, and promotion is handled by CI/CD pipelines targeting different bundle targets — not separate long-lived branches."
+      },
+      {
+        "texto_opcion": "GitFlow — with long-lived `dev`, `staging`, and `release` branches connected to their respective workspaces.",
+        "es_correcta": false,
+        "explicacion": "GitFlow with environment-specific branches is the older pattern. DABs replaces the need for separate branches by using `targets` with environment-specific overrides within a single branch."
+      },
+      {
+        "texto_opcion": "One branch per developer — each developer maintains their own version of the pipeline.",
+        "es_correcta": false,
+        "explicacion": "Per-developer branches create long-lived divergence and integration problems. Trunk-based development with short-lived feature branches is recommended."
+      },
+      {
+        "texto_opcion": "No branching — all developers commit directly to `main`.",
+        "es_correcta": false,
+        "explicacion": "Direct commits to `main` skip peer review and validation. Short-lived feature branches with PR-based integration is the recommended pattern."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Branching Strategy"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is reading about **configuration drift**. Which of the following best describes this concept in a Databricks context?",
+    "opciones": [
+      {
+        "texto_opcion": "When the actual state of a deployed resource (job, pipeline) diverges from its desired state defined in the YAML bundle configuration, typically due to manual changes made in the UI.",
+        "es_correcta": true,
+        "explicacion": "Configuration drift occurs when ad-hoc changes (via UI, direct CLI calls, or hotfixes) are applied to deployed resources without updating the source YAML. The next bundle deploy corrects the drift."
+      },
+      {
+        "texto_opcion": "When a bundle variable gradually changes its value across multiple deploys.",
+        "es_correcta": false,
+        "explicacion": "Variable values do not change on their own — they are set explicitly. Configuration drift refers to divergence between source-controlled YAML and the actual deployed state."
+      },
+      {
+        "texto_opcion": "When the Databricks Runtime version in dev is different from prod.",
+        "es_correcta": false,
+        "explicacion": "Runtime version mismatches are a configuration inconsistency, but not what configuration drift specifically refers to. Drift is about deployed resource state diverging from YAML-defined desired state."
+      },
+      {
+        "texto_opcion": "When Git branches fall behind `main` and accumulate unmerged changes.",
+        "es_correcta": false,
+        "explicacion": "Stale branches are a Git hygiene issue. Configuration drift is specifically about deployed infrastructure state diverging from the code-defined desired state."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Configuration Drift"
+    ]
+  },
+  {
+    "pregunta": "A data engineer runs `databricks bundle deploy -t prod` three times in a row with no changes to the YAML. What is the result of the second and third runs?",
+    "opciones": [
+      {
+        "texto_opcion": "The same result as the first run — `bundle deploy` is idempotent and produces the same state regardless of how many times it runs.",
+        "es_correcta": true,
+        "explicacion": "`databricks bundle deploy` is idempotent: it reconciles the current deployed state with the desired state in the YAML. Running it repeatedly with no changes produces no additional changes."
+      },
+      {
+        "texto_opcion": "The second and third runs fail because resources already exist.",
+        "es_correcta": false,
+        "explicacion": "`bundle deploy` is idempotent — it updates existing resources, not fails on them. Re-running is safe and is the drift correction mechanism."
+      },
+      {
+        "texto_opcion": "Each run creates duplicate resources with incrementing version suffixes.",
+        "es_correcta": false,
+        "explicacion": "Bundle resources are identified by their key name and `root_path`. Re-deploying updates them in place — no duplicates are created."
+      },
+      {
+        "texto_opcion": "The second run requires `--force` to proceed.",
+        "es_correcta": false,
+        "explicacion": "`--force` is only needed to bypass the Git branch check. Repeat deploys with no configuration changes do not require `--force`."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Configuration Drift",
+      "Deployment"
+    ]
+  },
+  {
+    "pregunta": "A data engineer wants to preview what changes a production bundle deploy would make before actually running it. Which command achieves this?",
+    "opciones": [
+      {
+        "texto_opcion": "`databricks bundle plan -t prod`",
+        "es_correcta": true,
+        "explicacion": "`databricks bundle plan` previews the changes (create / update / delete per resource) that a deploy would apply, without making any actual changes. It's ideal for detecting drift or previewing what a promotion would do."
+      },
+      {
+        "texto_opcion": "`databricks bundle validate -t prod`",
+        "es_correcta": false,
+        "explicacion": "`bundle validate` checks YAML syntax and schema, not what changes would be applied to existing resources. Use `bundle plan` to preview resource-level changes."
+      },
+      {
+        "texto_opcion": "`databricks bundle deploy -t prod --dry-run`",
+        "es_correcta": false,
+        "explicacion": "`--dry-run` is not a valid flag for `bundle deploy`. Use `databricks bundle plan -t prod` for a no-changes preview."
+      },
+      {
+        "texto_opcion": "`databricks bundle summary -t prod`",
+        "es_correcta": false,
+        "explicacion": "`bundle summary` shows details of what was previously deployed. It does not preview future changes like `bundle plan` does."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Configuration Drift"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses the following full CI/CD promotion pipeline. Place the steps in the correct order:\n\n- A) `databricks bundle deploy -t prod`\n- B) `databricks bundle validate -t staging`\n- C) `databricks bundle deploy -t staging`\n- D) Manual approval gate\n- E) Run integration tests on staging\n\nWhat is the correct sequence?",
+    "opciones": [
+      {
+        "texto_opcion": "B → C → E → D → A",
+        "es_correcta": true,
+        "explicacion": "Standard promotion: validate first (B), deploy to staging (C), run integration tests (E), gate on manual approval (D), then deploy to prod (A)."
+      },
+      {
+        "texto_opcion": "A → D → B → C → E",
+        "es_correcta": false,
+        "explicacion": "Deploying to prod first (A) before staging (C) defeats the purpose of a staged promotion strategy."
+      },
+      {
+        "texto_opcion": "C → B → E → A → D",
+        "es_correcta": false,
+        "explicacion": "Validation (B) should happen before deployment (C), and manual approval (D) must happen before production deploy (A)."
+      },
+      {
+        "texto_opcion": "B → E → C → D → A",
+        "es_correcta": false,
+        "explicacion": "Integration tests (E) cannot run until staging is deployed (C). The correct order is validate (B) → deploy staging (C) → test (E) → approve (D) → deploy prod (A)."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "CI/CD Workflow"
+    ]
+  },
+  {
+    "pregunta": "A data engineer configures the `run_as` field differently per environment:\n\n```yaml\ntargets:\n  dev:\n    run_as:\n      user_name: \"${workspace.current_user.userName}\"\n  prod:\n    run_as:\n      service_principal_name: \"prod-sp@company.com\"\n```\n\nWhy is a service principal recommended for the `prod` target instead of the developer's identity?",
+    "opciones": [
+      {
+        "texto_opcion": "Service principals are stable identities not tied to individual users — they don't break if a developer leaves, and they enforce separation of duties between deployers and executors.",
+        "es_correcta": true,
+        "explicacion": "If a developer's account is used for `run_as` in production and they leave the company or change roles, production jobs break. Service principals are long-lived, non-human identities designed for automation."
+      },
+      {
+        "texto_opcion": "Service principals can run jobs faster than user identities due to higher priority scheduling.",
+        "es_correcta": false,
+        "explicacion": "Job execution priority is not affected by whether the runner is a user or service principal. The reason for service principals is governance and stability, not performance."
+      },
+      {
+        "texto_opcion": "User identities are blocked by `mode: production` from being used in `run_as`.",
+        "es_correcta": false,
+        "explicacion": "`mode: production` does not technically block user identities in `run_as`. The preference for service principals is a best-practice governance recommendation, not a hard CLI restriction."
+      },
+      {
+        "texto_opcion": "Service principals have access to Unity Catalog; user identities do not.",
+        "es_correcta": false,
+        "explicacion": "Both users and service principals can be granted access to Unity Catalog. The rationale for service principals in prod is governance and stability, not catalog access."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Security",
+      "run_as"
+    ]
+  },
+  {
+    "pregunta": "A data engineer's team wants to prevent any manual changes to production resources from persisting. What governance rule should they enforce?",
+    "opciones": [
+      {
+        "texto_opcion": "Grant `CAN_MANAGE` on production resources only to the CI/CD service principal — remove `CAN_MANAGE` for individual user accounts.",
+        "es_correcta": true,
+        "explicacion": "If users have `CAN_MANAGE` on prod resources, they can make UI-based changes that cause drift. Restricting `CAN_MANAGE` to the CI/CD service principal enforces all changes to flow through the bundle deploy pipeline."
+      },
+      {
+        "texto_opcion": "Use `mode: production` on all targets — this blocks all manual UI access.",
+        "es_correcta": false,
+        "explicacion": "`mode: production` validates bundle configuration; it does not restrict Databricks workspace UI access. Permissions must be configured separately."
+      },
+      {
+        "texto_opcion": "Schedule `databricks bundle validate` to run hourly to detect and revert changes.",
+        "es_correcta": false,
+        "explicacion": "`bundle validate` checks YAML syntax only — it does not detect deployed-state drift. `bundle plan` detects drift, and `bundle deploy` corrects it. However, preventing drift via permissions is more robust."
+      },
+      {
+        "texto_opcion": "Set `read_only: true` in the `databricks.yml` to lock all resources.",
+        "es_correcta": false,
+        "explicacion": "`read_only` is not a valid bundle configuration option. Access control via `permissions` is the correct mechanism."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Configuration Drift",
+      "Security"
+    ]
+  },
+  {
+    "pregunta": "A data engineer commits built `.whl` files to Git alongside their source code. A senior engineer flags this as a bad practice. Why?",
+    "opciones": [
+      {
+        "texto_opcion": "Built artifacts are binary files that don't diff well in Git, can be large, and should always be built from source during CI/CD to ensure reproducibility.",
+        "es_correcta": true,
+        "explicacion": "Binary artifacts committed to Git grow the repo, don't show meaningful diffs in code review, and can become stale or inconsistent. The best practice is to build from source in CI/CD and upload via `bundle deploy`."
+      },
+      {
+        "texto_opcion": "Databricks does not support uploading pre-built `.whl` files — only source code is accepted.",
+        "es_correcta": false,
+        "explicacion": "Databricks absolutely supports pre-built `.whl` files — `bundle deploy` builds and uploads them automatically. The issue is committing them to Git, not using them."
+      },
+      {
+        "texto_opcion": "`.whl` files contain credentials and must not be committed for security reasons.",
+        "es_correcta": false,
+        "explicacion": "Python wheels do not inherently contain credentials. The issue is version control hygiene and reproducibility, not security."
+      },
+      {
+        "texto_opcion": "The `artifacts` section in `databricks.yml` only works if no `.whl` files exist in the project.",
+        "es_correcta": false,
+        "explicacion": "This is not true. The `artifacts` section defines how to build the wheel — pre-built wheels can coexist. The problem with committing them is a code management concern."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Artifacts",
+      "Best Practices"
+    ]
+  },
+  {
+    "pregunta": "A data engineer configures an integration test as a bundle job that runs in the staging environment. What is the purpose of running this test as a `bundle run` command in CI/CD?",
+    "opciones": [
+      {
+        "texto_opcion": "To validate the pipeline's behavior against real staging data and infrastructure after deployment, before promoting to production.",
+        "es_correcta": true,
+        "explicacion": "Integration tests run after staging deployment to verify real end-to-end behavior. If they fail, the CI/CD pipeline halts and does not promote to production."
+      },
+      {
+        "texto_opcion": "To validate YAML syntax and variable resolution before deploying to staging.",
+        "es_correcta": false,
+        "explicacion": "Syntax and variable validation is done by `bundle validate`, not integration tests. Integration tests run after staging deployment to verify real behavior."
+      },
+      {
+        "texto_opcion": "To replace unit tests — integration tests are sufficient and unit tests are optional.",
+        "es_correcta": false,
+        "explicacion": "Integration tests complement unit tests — they don't replace them. Unit tests catch logic errors early (fast feedback); integration tests validate behavior in the real environment."
+      },
+      {
+        "texto_opcion": "To run the same test code against the production environment in parallel with staging.",
+        "es_correcta": false,
+        "explicacion": "Integration tests run only against the staging environment before the production gate. Running untested code in production is the anti-pattern being prevented."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Testing Strategy",
+      "CI/CD"
+    ]
+  },
+  {
+    "pregunta": "A data engineer defines this workspace path in `databricks.yml`:\n\n```yaml\nworkspace:\n  root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}\n```\n\nTwo developers, Alice and Bob, both deploy to the `dev` target. Do their deployments conflict?",
+    "opciones": [
+      {
+        "texto_opcion": "No — each developer gets a unique path because `${workspace.current_user.userName}` resolves to their own email, creating isolated workspace paths.",
+        "es_correcta": true,
+        "explicacion": "`${workspace.current_user.userName}` resolves to the deploying user's email. Alice gets `.../alice@co.com/...` and Bob gets `.../bob@co.com/...` — fully isolated paths."
+      },
+      {
+        "texto_opcion": "Yes — both write to the same workspace path because they use the same `bundle.name` and `bundle.target`.",
+        "es_correcta": false,
+        "explicacion": "The `${workspace.current_user.userName}` component makes each path unique per user, even when `bundle.name` and `bundle.target` are the same."
+      },
+      {
+        "texto_opcion": "Yes — the deployment lock prevents simultaneous dev deploys.",
+        "es_correcta": false,
+        "explicacion": "Development mode disables the deployment lock to enable fast iteration. And with user-specific paths, there is no conflict anyway."
+      },
+      {
+        "texto_opcion": "No — `mode: development` automatically creates isolated workspaces per user.",
+        "es_correcta": false,
+        "explicacion": "`mode: development` prefixes resource names with `[dev <username>]`, but workspace isolation comes from the `root_path` substitution using `${workspace.current_user.userName}`, not from the mode itself."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Isolation",
+      "Substitutions"
+    ]
+  },
+  {
+    "pregunta": "A team has three environments using the same `databricks.yml`. A developer makes a hotfix directly in the Databricks UI on a production job without updating the YAML. A week later, the CI/CD pipeline runs `databricks bundle deploy -t prod`. What happens to the UI change?",
+    "opciones": [
+      {
+        "texto_opcion": "The UI change is overwritten — `bundle deploy` reconciles the production job to match the YAML-defined desired state.",
+        "es_correcta": true,
+        "explicacion": "`bundle deploy` is idempotent and always drives resources toward the state defined in YAML. Any out-of-band changes (UI edits, direct CLI calls) are overwritten on the next deploy."
+      },
+      {
+        "texto_opcion": "The UI change is preserved — `bundle deploy` only adds new resources, never modifies existing ones.",
+        "es_correcta": false,
+        "explicacion": "`bundle deploy` updates existing resources. It does not skip resources that already exist — it reconciles them to the YAML-defined state."
+      },
+      {
+        "texto_opcion": "The deployment fails because there is a conflict between the UI state and the YAML state.",
+        "es_correcta": false,
+        "explicacion": "There is no conflict detection or failure. `bundle deploy` simply writes the YAML-defined state, overwriting any UI changes."
+      },
+      {
+        "texto_opcion": "The UI change is merged with the YAML — both sets of changes are preserved.",
+        "es_correcta": false,
+        "explicacion": "There is no merge. `bundle deploy` defines the authoritative desired state. The YAML always wins."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Configuration Drift"
+    ]
+  },
+  {
+    "pregunta": "A data engineer compares two approaches for managing environment-specific pipeline configuration:\n\n**Approach A**: Keep one `databricks.yml` with `targets` for dev/staging/prod.\n**Approach B**: Keep three separate `databricks.yml` files — one per environment.\n\nWhy is Approach A preferred?",
+    "opciones": [
+      {
+        "texto_opcion": "Approach A maintains a single source of truth. Approach B creates duplication and risks environments drifting apart as changes are applied inconsistently across files.",
+        "es_correcta": true,
+        "explicacion": "Multiple YAML files per environment inevitably diverge as some files receive updates and others don't. A single YAML with targets ensures consistent promotion of the same configuration across all environments."
+      },
+      {
+        "texto_opcion": "Approach B is actually preferred — separate files give more flexibility and are easier to manage.",
+        "es_correcta": false,
+        "explicacion": "Separate files per environment are an anti-pattern. They create duplication, divergence risk, and increased maintenance overhead."
+      },
+      {
+        "texto_opcion": "Both approaches are equivalent — the choice is a matter of team preference.",
+        "es_correcta": false,
+        "explicacion": "They are not equivalent. Approach A (single YAML with targets) is the official Databricks recommendation and prevents configuration divergence."
+      },
+      {
+        "texto_opcion": "Approach A is only better if the bundle has more than 10 resources.",
+        "es_correcta": false,
+        "explicacion": "The benefit of a single YAML with targets applies regardless of the number of resources. It's about maintaining a single source of truth."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "IaC",
+      "Best Practices"
+    ]
+  },
+  {
+    "pregunta": "A data engineer sees this recommendation: *'Use `bundle deploy` regularly on a schedule as a drift reconciliation mechanism.'*\n\nWhat does this mean in practice?",
+    "opciones": [
+      {
+        "texto_opcion": "Running `bundle deploy` periodically overwrites any manual UI changes back to the YAML-defined state, continuously maintaining alignment between code and infrastructure.",
+        "es_correcta": true,
+        "explicacion": "Because `bundle deploy` is idempotent, scheduling it regularly (e.g., nightly) ensures that any out-of-band changes are automatically corrected. It turns the bundle deploy into a continuous reconciliation loop."
+      },
+      {
+        "texto_opcion": "Databricks automatically schedules bundle deploys every 24 hours as a platform feature.",
+        "es_correcta": false,
+        "explicacion": "There is no automatic bundle deployment scheduling built into the Databricks platform. Teams must explicitly set up scheduled runs in their CI/CD pipelines."
+      },
+      {
+        "texto_opcion": "Running `bundle deploy` on a schedule creates new versions of each resource, allowing rollback.",
+        "es_correcta": false,
+        "explicacion": "`bundle deploy` is idempotent — it reconciles to the current YAML state. It does not create versioned snapshots unless that logic is built separately (e.g., via Git tags)."
+      },
+      {
+        "texto_opcion": "Scheduled bundle deploys replace the need for CI/CD pipelines on pull requests.",
+        "es_correcta": false,
+        "explicacion": "Scheduled drift reconciliation complements, not replaces, PR-triggered CI/CD pipelines. PR validation catches errors before merge; scheduled deploys maintain alignment over time."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Configuration Drift",
+      "IaC"
+    ]
+  },
+  {
+    "pregunta": "A data engineer uses the `${bundle.target}` substitution to tag deployed resources:\n\n```yaml\nresources:\n  jobs:\n    etl_job:\n      name: \"ETL Job\"\n      tags:\n        environment: ${bundle.target}\n        team: data-engineering\n```\n\nWhen deployed to staging, what is the `environment` tag value?",
+    "opciones": [
+      {
+        "texto_opcion": "`staging` — `${bundle.target}` resolves to the exact key name of the active target.",
+        "es_correcta": true,
+        "explicacion": "`${bundle.target}` resolves to the YAML key of the current target. Since the target is named `staging`, the tag value is `staging`."
+      },
+      {
+        "texto_opcion": "`production` — the tag reflects the `mode` setting, not the target name.",
+        "es_correcta": false,
+        "explicacion": "`${bundle.target}` reflects the target key name, not the `mode` value. Even with `mode: production`, the tag resolves to the target's key (`staging`)."
+      },
+      {
+        "texto_opcion": "`${bundle.target}` — custom tags do not support substitutions.",
+        "es_correcta": false,
+        "explicacion": "Bundle substitutions work in all YAML fields, including tags. The resolved value is `staging`."
+      },
+      {
+        "texto_opcion": "No tag is applied — `${bundle.target}` is only valid in `name` and `workspace` fields.",
+        "es_correcta": false,
+        "explicacion": "There are no field-level restrictions on bundle substitutions. `${bundle.target}` works in tags, parameters, names, paths, and all other string fields."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Substitutions"
+    ]
+  },
+  {
+    "pregunta": "A data engineer is told: *'Do not connect different Databricks Git folders (Repos) to separate branches for environment management.'*\n\nWhich approach replaces this pattern?",
+    "opciones": [
+      {
+        "texto_opcion": "Use a single Git branch (`main`) with DABs targets to promote the same code across environments via `databricks bundle deploy -t <target>`.",
+        "es_correcta": true,
+        "explicacion": "The modern approach replaces environment-specific Git branches with bundle targets. The same code on `main` is deployed to different workspaces by switching the `-t` flag, using per-target variable overrides for environment differences."
+      },
+      {
+        "texto_opcion": "Use one Git repository per environment — a dev repo, a staging repo, and a prod repo.",
+        "es_correcta": false,
+        "explicacion": "Multiple repositories per environment make code promotion complex and error-prone. A single repo with bundle targets is the recommended approach."
+      },
+      {
+        "texto_opcion": "Use `databricks repos update` to switch the prod workspace to `main` and dev workspace to `develop` before each deployment.",
+        "es_correcta": false,
+        "explicacion": "Managing Repos per environment via `repos update` is the old, manual approach. DABs with bundle targets replaces this with automated, code-based promotion."
+      },
+      {
+        "texto_opcion": "Use `databricks bundle deploy --all-targets` to deploy to all environments from any branch.",
+        "es_correcta": false,
+        "explicacion": "`--all-targets` is not a valid flag. Each target requires a separate deploy command. The promotion sequence is controlled by the CI/CD pipeline."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Branching Strategy",
+      "GitOps"
+    ]
+  },
+  {
+    "pregunta": "A data engineer has the following GitHub Actions step:\n\n```yaml\n- name: Deploy to production\n  env:\n    DATABRICKS_HOST: ${{ vars.PROD_HOST }}\n    DATABRICKS_CLIENT_ID: ${{ vars.PROD_CLIENT_ID }}\n  run: |\n    databricks bundle validate -t prod\n    databricks bundle deploy -t prod\n```\n\nWhy does this step run `validate` before `deploy` in the same job?",
+    "opciones": [
+      {
+        "texto_opcion": "As a final safety check — validate catches any configuration issues with the prod target before making changes to the production workspace.",
+        "es_correcta": true,
+        "explicacion": "Running `validate` immediately before `deploy` is a belt-and-suspenders safety measure. Even if validation ran on PR open, re-validating at deploy time catches any changes made between PR merge and prod deployment."
+      },
+      {
+        "texto_opcion": "`bundle deploy` requires `bundle validate` to be run first — it is a prerequisite command.",
+        "es_correcta": false,
+        "explicacion": "`bundle validate` is not a required prerequisite for `bundle deploy`. The CLI runs its own internal validation before deploying. Running it explicitly is a best-practice safety step, not a requirement."
+      },
+      {
+        "texto_opcion": "`bundle validate` generates the auth token needed for `bundle deploy` to connect to the workspace.",
+        "es_correcta": false,
+        "explicacion": "`bundle validate` is a client-side YAML check with no auth token generation. Authentication comes from the environment variables (`DATABRICKS_HOST`, `DATABRICKS_CLIENT_ID`)."
+      },
+      {
+        "texto_opcion": "Running both in sequence avoids the deployment lock on the production workspace.",
+        "es_correcta": false,
+        "explicacion": "The deployment lock is managed by `bundle deploy`, not `bundle validate`. Running `validate` does not affect the deployment lock."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "CI/CD Workflow"
+    ]
+  },
+  {
+    "pregunta": "A data engineer's team has identified the following as an **anti-pattern**: using `mode: development` for the staging target. Why is this wrong?",
+    "opciones": [
+      {
+        "texto_opcion": "Development mode pauses all job schedules, prefixes resource names, and sets DLT pipelines to dev mode — none of which mirror production behavior, making staging an unreliable test gate.",
+        "es_correcta": true,
+        "explicacion": "The purpose of staging is to validate behavior under production-like conditions. `mode: development` auto-pauses schedules, uses naming prefixes, and uses DLT dev mode — all of which mask real production issues."
+      },
+      {
+        "texto_opcion": "Development mode is only licensed for single-user workspaces and cannot be used on shared staging clusters.",
+        "es_correcta": false,
+        "explicacion": "There is no licensing restriction on `mode: development`. The problem is behavioral — it doesn't reflect production conditions."
+      },
+      {
+        "texto_opcion": "Development mode blocks the deployment lock, causing concurrent staging deploys to corrupt resources.",
+        "es_correcta": false,
+        "explicacion": "While development mode disables the deployment lock, this is not the primary reason it's wrong for staging. The core issue is that paused schedules and dev naming don't reflect production behavior."
+      },
+      {
+        "texto_opcion": "`mode: development` on staging causes the `git.branch` check to enforce the main branch, blocking feature branch deploys.",
+        "es_correcta": false,
+        "explicacion": "Development mode does NOT enforce `git.branch` — that is a production mode feature. The problem with `mode: development` on staging is the opposite: it's too permissive."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Deployment Modes",
+      "Anti-Patterns"
+    ]
+  },
+  {
+    "pregunta": "A data engineer reviews the following in the documentation:\n\n> *\"Any changes to pipelines, schemas, or catalog settings should be made in the YAML files and deployed via the bundle to prevent configuration drift.\"*\n\nA team member responds: *\"But what if we need a quick fix in production right now?\"* What is the correct response?",
+    "opciones": [
+      {
+        "texto_opcion": "Make the fix in the YAML, fast-track through the CI/CD pipeline with `--force` if needed, and document the emergency. UI fixes must still be reflected in YAML promptly.",
+        "es_correcta": true,
+        "explicacion": "Emergency fixes should go through the pipeline if at all possible. If a UI change is unavoidable, it must be immediately reflected in the YAML to prevent it from being overwritten on the next deploy and to maintain the source-of-truth principle."
+      },
+      {
+        "texto_opcion": "Make the fix directly in the UI — quick UI fixes are acceptable as a documented exception.",
+        "es_correcta": false,
+        "explicacion": "UI fixes create configuration drift. The next bundle deploy will overwrite them, causing the fix to disappear. All changes must ultimately be reflected in the YAML."
+      },
+      {
+        "texto_opcion": "Set `read_only: true` in `databricks.yml` during the incident to prevent the UI fix from being overwritten.",
+        "es_correcta": false,
+        "explicacion": "`read_only` is not a valid bundle option. There is no mechanism to temporarily freeze bundle deploys — the solution is to update the YAML quickly."
+      },
+      {
+        "texto_opcion": "Use `databricks bundle destroy -t prod` to clear the state, then make the fix, then redeploy.",
+        "es_correcta": false,
+        "explicacion": "Destroying a production environment to make a fix is extremely disruptive. The correct approach is to update the YAML and redeploy through the CI/CD pipeline."
+      }
+    ],
+    "tags": [
+      "5.4",
+      "Configuration Drift",
+      "Best Practices"
+    ]
+  }
+]
