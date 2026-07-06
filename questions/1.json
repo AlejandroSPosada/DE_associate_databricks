@@ -2006,40 +2006,6 @@
     ]
   },
   {
-    "pregunta": "What is the three-level namespace in Unity Catalog, and how are objects referenced within it?",
-    "opciones": [
-      {
-        "texto_opcion": "The three levels are Catalog > Schema (Database) > Table/View/Volume. Objects are referenced with the fully qualified name `catalog_name.schema_name.object_name`.",
-        "es_correcta": true,
-        "explicacion": "Unity Catalog introduces a three-level namespace hierarchy. The catalog is the top-level container, schemas (formerly called databases) group related objects, and tables/views/volumes are the leaf objects. The full reference format is `catalog.schema.table`."
-      },
-      {
-        "texto_opcion": "The three levels are Workspace > Database > Table. Objects are referenced as `workspace.database.table`.",
-        "es_correcta": false,
-        "explicacion": "Workspaces are not part of the three-level namespace. The correct hierarchy is Catalog > Schema > Table. Multiple workspaces can share the same catalog/schema hierarchy through a single Unity Catalog metastore."
-      },
-      {
-        "texto_opcion": "The three levels are Account > Catalog > Table. Schemas do not exist in Unity Catalog.",
-        "es_correcta": false,
-        "explicacion": "The account is above the metastore level but is not part of the object namespace. Schemas are a core part of Unity Catalog — the correct hierarchy is Catalog > Schema > Table."
-      },
-      {
-        "texto_opcion": "The three levels are Metastore > Catalog > Table. Schemas are optional and exist only for Hive compatibility.",
-        "es_correcta": false,
-        "explicacion": "The metastore is the governance container but not a namespace level used in object references. The correct three levels are Catalog > Schema > Table. Schemas are required, not optional."
-      },
-      {
-        "texto_opcion": "The three levels are Cloud > Region > Table. Unity Catalog uses cloud provider namespaces directly.",
-        "es_correcta": false,
-        "explicacion": "Unity Catalog has its own namespace independent of cloud provider constructs. The correct hierarchy is Catalog > Schema > Table, not tied to cloud regions in the reference format."
-      }
-    ],
-    "tags": [
-      "1.1",
-      "Databricks Data Intelligence Platform architecture"
-    ]
-  },
-  {
     "pregunta": "Which compute type is most cost-effective for running a scheduled nightly ETL job in Databricks that does not require interactive development?",
     "opciones": [
       {

@@ -192,6 +192,19 @@
       font-family: var(--mono);
       font-size: 10.5px;
       color: var(--ink-faint);
+      white-space: nowrap;
+    }
+
+    .file-item .count .c-right {
+      color: var(--good);
+    }
+
+    .file-item .count .c-wrong {
+      color: var(--bad);
+    }
+
+    .file-item .count .c-tot {
+      color: var(--ink-faint);
     }
 
     #empty-hint {
@@ -230,6 +243,29 @@
 
     #progress b {
       color: var(--amber);
+    }
+
+    #score {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink-dim);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    #score .val {
+      color: var(--good);
+      font-weight: 600;
+    }
+
+    #score .wrong {
+      color: var(--bad);
+      font-weight: 600;
+    }
+
+    #score .sep {
+      color: var(--ink-faint);
     }
 
     #tagbar {
@@ -525,11 +561,15 @@
 
   <main id="main">
     <div id="topbar">
-      <div style="display:flex;align-items:center;">
+      <div style="display:flex;align-items:center;gap:18px;">
         <button id="menu-toggle" aria-label="Open menu">☰</button>
         <div id="progress">No data loaded</div>
+        <div id="score"></div>
       </div>
-      <div id="tagbar"></div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div id="tagbar"></div>
+        <button id="resetBtn" class="nav-btn" style="display:none;padding:6px 12px;font-size:12px;">Reset progress</button>
+      </div>
     </div>
     <div id="content">
       <div id="welcome">
@@ -550,6 +590,8 @@
       const searchBox = document.getElementById('searchBox');
       const menuToggle = document.getElementById('menu-toggle');
       const sidebar = document.getElementById('sidebar');
+      const scoreEl = document.getElementById('score');
+      const resetBtn = document.getElementById('resetBtn');
 
       pickBtn.addEventListener('click', () => fileInput.click());
       menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
@@ -559,6 +601,57 @@
       let filtered = [];
       let currentIdx = 0;
       let filesLoaded = []; // {name, count}
+      let currentOptDivs = []; // option elements for the question on screen (keyboard select)
+
+      // ---------- Progress persistence ----------
+      const PROGRESS_KEY = 'deQuizProgress_v1';
+      let progress = loadProgress(); // { qid: { chosen: <origIndex>, correct: bool } }
+
+      function loadProgress() {
+        try { return JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'); }
+        catch (e) { return {}; }
+      }
+      function saveProgress() {
+        try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch (e) { }
+      }
+      function qid(q) { return q.fileName + '#' + q.idxInFile; }
+
+      // Fisher-Yates shuffle
+      function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function updateScore() {
+        if (!allQuestions.length) { scoreEl.innerHTML = ''; resetBtn.style.display = 'none'; return; }
+        let answered = 0, correct = 0;
+        allQuestions.forEach(q => {
+          const p = progress[qid(q)];
+          if (p) { answered++; if (p.correct) correct++; }
+        });
+        const pct = answered ? Math.round((correct / answered) * 100) : 0;
+        scoreEl.innerHTML =
+          `<span class="val">${correct} ✓</span>` +
+          `<span class="wrong">${answered - correct} ✗</span>` +
+          `<span class="sep">·</span>` +
+          `<span>${answered}/${allQuestions.length} answered</span>` +
+          (answered ? `<span class="sep">·</span><span>${pct}%</span>` : '');
+        resetBtn.style.display = 'inline-flex';
+        updateSidebarStats();
+      }
+
+      resetBtn.addEventListener('click', () => {
+        if (!confirm('Clear all saved answers and score? This cannot be undone.')) return;
+        progress = {};
+        saveProgress();
+        allQuestions.forEach(q => { q.order = shuffle([...Array(q.opciones.length).keys()]); });
+        updateScore();
+        renderQuestion();
+      });
 
       function naturalSectionKey(name) {
         // "3.8.json" -> section "3", sub 8 ; "1.json" -> section "1", sub 0
@@ -586,12 +679,14 @@
             const json = JSON.parse(text);
             const arr = Array.isArray(json) ? json : [json];
             arr.forEach((q, i) => {
+              const opciones = q.opciones || [];
               allQuestions.push({
                 pregunta: q.pregunta || '(no text)',
                 tags: q.tags || [],
-                opciones: q.opciones || [],
+                opciones: opciones,
                 fileName: file.name,
-                idxInFile: i + 1
+                idxInFile: i + 1,
+                order: shuffle([...Array(opciones.length).keys()])
               });
             });
             filesLoaded.push({ name: file.name, count: arr.length });
@@ -604,6 +699,7 @@
         buildSidebar();
         filtered = allQuestions.slice();
         currentIdx = 0;
+        updateScore();
         renderQuestion();
       });
 
@@ -642,7 +738,7 @@
             nameSpan.textContent = f.error ? 'read error' : '';
             const countSpan = document.createElement('span');
             countSpan.className = 'count';
-            countSpan.textContent = f.count + (f.count === 1 ? ' q.' : ' q.');
+            countSpan.dataset.file = f.name;
             item.appendChild(numSpan);
             item.appendChild(nameSpan);
             item.appendChild(countSpan);
@@ -658,6 +754,30 @@
             groupDiv.appendChild(item);
           });
           fileListEl.appendChild(groupDiv);
+        });
+        updateSidebarStats();
+      }
+
+      // Per-file right/wrong/unanswered, shown in the sidebar count column
+      function updateSidebarStats() {
+        const stats = {}; // fileName -> {right, wrong, total}
+        allQuestions.forEach(q => {
+          const s = stats[q.fileName] || (stats[q.fileName] = { right: 0, wrong: 0, total: 0 });
+          s.total++;
+          const p = progress[qid(q)];
+          if (p) { p.correct ? s.right++ : s.wrong++; }
+        });
+        document.querySelectorAll('.count[data-file]').forEach(el => {
+          const s = stats[el.dataset.file] || { right: 0, wrong: 0, total: 0 };
+          const done = s.right + s.wrong;
+          if (!done) {
+            el.innerHTML = `<span class="c-tot">${s.total} q.</span>`;
+          } else {
+            el.innerHTML =
+              `<span class="c-right">${s.right}✓</span> ` +
+              `<span class="c-wrong">${s.wrong}✗</span> ` +
+              `<span class="c-tot">/${s.total}</span>`;
+          }
         });
       }
 
@@ -720,15 +840,23 @@
         const optionsWrap = document.createElement('div');
         optionsWrap.className = 'options';
 
-        let answered = false;
+        const id = qid(q);
+        // ensure an order exists (defensive for older sessions)
+        if (!q.order || q.order.length !== (q.opciones || []).length) {
+          q.order = shuffle([...Array((q.opciones || []).length).keys()]);
+        }
 
-        (q.opciones || []).forEach((op, i) => {
+        const optDivs = []; // parallel to q.order; each carries its original index
+
+        q.order.forEach((origIdx, displayPos) => {
+          const op = q.opciones[origIdx];
           const optDiv = document.createElement('div');
           optDiv.className = 'opt';
+          optDiv.dataset.orig = origIdx;
 
           const letter = document.createElement('div');
           letter.className = 'letter';
-          letter.textContent = letterFor(i);
+          letter.textContent = letterFor(displayPos);
 
           const right = document.createElement('div');
           right.style.flex = '1';
@@ -747,24 +875,38 @@
           optDiv.appendChild(right);
 
           optDiv.addEventListener('click', () => {
-            if (answered) return;
-            answered = true;
-            const opts = optionsWrap.querySelectorAll('.opt');
-            opts.forEach((el, j) => {
-              el.classList.add('answered', 'locked');
-              const isCorrect = (q.opciones[j].es_correcta === true);
-              if (isCorrect) {
-                el.classList.add('correct');
-              } else if (el === optDiv) {
-                el.classList.add('incorrect');
-              } else {
-                el.classList.add('dimmed');
-              }
-            });
+            if (progress[id]) return; // already answered
+            progress[id] = {
+              chosen: origIdx,
+              correct: q.opciones[origIdx].es_correcta === true
+            };
+            saveProgress();
+            paintAnswered();
+            updateScore();
           });
 
+          optDivs.push(optDiv);
           optionsWrap.appendChild(optDiv);
         });
+        currentOptDivs = optDivs; // expose for keyboard A–E selection
+
+        // Apply correct/incorrect styling based on saved answer
+        function paintAnswered() {
+          const p = progress[id];
+          if (!p) return;
+          optDivs.forEach(el => {
+            const oi = Number(el.dataset.orig);
+            el.classList.add('answered', 'locked');
+            if (q.opciones[oi].es_correcta === true) {
+              el.classList.add('correct');
+            } else if (oi === p.chosen) {
+              el.classList.add('incorrect');
+            } else {
+              el.classList.add('dimmed');
+            }
+          });
+        }
+        paintAnswered(); // restore state on (re)render
 
         card.appendChild(optionsWrap);
         contentEl.innerHTML = '';
@@ -789,12 +931,37 @@
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       }
 
-      // Keyboard navigation
+      // Keyboard: arrows navigate, A–E select an option
       document.addEventListener('keydown', (e) => {
         if (!filtered.length) return;
-        if (e.key === 'ArrowRight' && currentIdx < filtered.length - 1) { currentIdx++; renderQuestion(); }
-        if (e.key === 'ArrowLeft' && currentIdx > 0) { currentIdx--; renderQuestion(); }
+        // ignore when typing in the search box
+        if (document.activeElement === searchBox) return;
+
+        if (e.key === 'ArrowRight' && currentIdx < filtered.length - 1) {
+          currentIdx++; renderQuestion(); scrollTop();
+          return;
+        }
+        if (e.key === 'ArrowLeft' && currentIdx > 0) {
+          currentIdx--; renderQuestion(); scrollTop();
+          return;
+        }
+
+        // A/B/C/D/E (and 1–5) select the option at that display position
+        const k = e.key.toLowerCase();
+        let pos = -1;
+        if (k >= 'a' && k <= 'e') pos = k.charCodeAt(0) - 97;
+        else if (k >= '1' && k <= '5') pos = k.charCodeAt(0) - 49;
+        if (pos >= 0 && pos < currentOptDivs.length) {
+          e.preventDefault();
+          currentOptDivs[pos].click(); // reuses click handler + answered guard
+        }
       });
+
+      function scrollTop() {
+        window.scrollTo(0, 0);
+        contentEl.scrollTop = 0;
+        document.getElementById('main').scrollTop = 0;
+      }
     })();
   </script>
 </body>
